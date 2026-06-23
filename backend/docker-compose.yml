@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: crow_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crow
+      POSTGRES_PASSWORD: crow_dev_password
+      POSTGRES_DB: crow_repuestos
+    ports:
+      - "5432:5432"
+    volumes:
+      - crow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crow -d crow_repuestos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: crow_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://crow:crow_dev_password@db:5432/crow_repuestos
+      SECRET_KEY: change-me-in-production-please
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_MINUTES: "60"
+      BACKEND_CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      SEED_ADMIN_EMAIL: admin@crowrepuestos.com
+      SEED_ADMIN_PASSWORD: admin1234
+      SEED_USER_EMAIL: cliente@crowrepuestos.com
+      SEED_USER_PASSWORD: cliente1234
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+
+volumes:
+  crow_pgdata:

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:"IBM Plex Sans",system-ui,sans-serif;color:#16202B;background:#F4F6F8;-webkit-font-smoothing:antialiased}
+  ::selection{background:#0066FF;color:#fff}
+  input,textarea,button,select{font-family:inherit}
+  a{color:inherit;text-decoration:none}
+  select{appearance:none;-webkit-appearance:none}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div style="background:#F4F6F8;color:#16202B;min-height:100vh">
+
+  <!-- ============ UTILITY BAR ============ -->
+  <div style="background:#0A1622;border-bottom:1px solid rgba(255,255,255,.07)">
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px;height:42px;display:flex;align-items:center;justify-content:space-between;gap:24px">
+      <div style="display:flex;align-items:center;gap:26px;color:#9FB0C0;font-size:12.5px">
+        <span style="display:inline-flex;align-items:center;gap:8px"><span style="width:5px;height:5px;background:#0066FF;border-radius:50%;display:inline-block"></span>Distribuidor autorizado de repuestos y lubricantes</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:24px;color:#C3CFDA;font:500 12.5px/1 'IBM Plex Mono',monospace">
+        <a href="tel:+573001234567" style="color:#C3CFDA">TEL +57 (300) 123-4567</a>
+        <span style="width:1px;height:14px;background:rgba(255,255,255,.14)"></span>
+        <span>LUN–SÁB · 8:00–18:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STICKY NAV ============ -->
+  <header style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #E6EAEF;box-shadow:{{ navShadow }};transition:box-shadow .25s ease">
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px;height:74px;display:flex;align-items:center;justify-content:space-between;gap:32px">
+      <a href="Crow Repuestos.dc.html#inicio" style="display:flex;align-items:center;gap:13px">
+        <span style="width:40px;height:40px;background:#0A1622;display:flex;align-items:center;justify-content:center"><span style="width:13px;height:13px;background:#0066FF;transform:rotate(45deg);display:block"></span></span>
+        <span style="display:flex;flex-direction:column;line-height:1">
+          <span style="font:900 22px/1 'Archivo',sans-serif;letter-spacing:.04em;color:#0A1622">CROW</span>
+          <span style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.42em;color:#0066FF;margin-top:3px">REPUESTOS</span>
+        </span>
+      </a>
+      <nav style="display:flex;align-items:center;gap:30px">
+        <a href="Crow Repuestos.dc.html#inicio" style="font:600 14px/1 'IBM Plex Sans',sans-serif;color:#2B3744">Inicio</a>
+        <a href="Crow Repuestos.dc.html#categorias" style="font:600 14px/1 'IBM Plex Sans',sans-serif;color:#2B3744">Categorías</a>
+        <a href="Catalogo.dc.html" style="font:600 14px/1 'IBM Plex Sans',sans-serif;color:#0066FF;position:relative">Catálogo<span style="position:absolute;left:0;right:0;bottom:-26px;height:2px;background:#0066FF"></span></a>
+        <a href="Crow Repuestos.dc.html#detailing" style="font:600 14px/1 'IBM Plex Sans',sans-serif;color:#2B3744">Detailing</a>
+        <a href="Crow Repuestos.dc.html#contacto" style="font:600 14px/1 'IBM Plex Sans',sans-serif;color:#2B3744">Contacto</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="{{ wa }}" target="_blank" style="display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 18px;border:1px solid #D7DDE4;border-radius:2px;font:600 13.5px/1 'IBM Plex Sans',sans-serif;color:#1B2735" style-hover="border-color:#1FAE54;color:#117a3a"><span style="width:8px;height:8px;background:#25D366;border-radius:50%;display:inline-block"></span>WhatsApp</a>
+        <button onClick="{{ openBlank }}" style="display:inline-flex;align-items:center;height:42px;padding:0 22px;background:#0066FF;color:#fff;border:none;border-radius:2px;font:700 13.5px/1 'IBM Plex Sans',sans-serif;cursor:pointer" style-hover="background:#0a57d0">Solicitar cotización</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ CATALOG HEADER ============ -->
+  <section style="background:#0A1622;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(900px 360px at 85% -20%,rgba(0,102,255,.16),transparent 60%)"></div>
+    <div style="position:relative;max-width:1320px;margin:0 auto;padding:40px 40px 36px">
+      <div style="font:500 12px/1 'IBM Plex Mono',monospace;color:#7E90A2;letter-spacing:.06em;margin-bottom:18px"><a href="Crow Repuestos.dc.html#inicio" style="color:#7E90A2">INICIO</a> <span style="color:#3F5165">/</span> <span style="color:#0066FF">CATÁLOGO</span></div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap">
+        <div>
+          <h1 style="font:800 44px/1.04 'Archivo',sans-serif;letter-spacing:-.015em;color:#fff;margin-bottom:14px">Catálogo de repuestos</h1>
+          <p style="font:400 16px/1.6 'IBM Plex Sans',sans-serif;color:#A9B8C7;max-width:560px">Busca por vehículo, categoría o marca. Disponibilidad actualizada y cotización directa por WhatsApp.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;width:100%;max-width:540px">
+          <div style="position:relative;flex:1">
+            <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#8A97A6;font-size:16px">⌕</span>
+            <input value="{{ query }}" onInput="{{ onSearch }}" placeholder="Buscar repuesto, SKU o marca…" style="width:100%;height:54px;padding:0 16px 0 42px;background:#fff;border:1px solid transparent;border-radius:2px;font:400 15px/1 'IBM Plex Sans',sans-serif;color:#0A1622;outline:none" style-focus="border-color:#0066FF">
+          </div>
+          <a href="{{ wa }}" target="_blank" style="display:inline-flex;align-items:center;gap:9px;height:54px;padding:0 22px;background:#25D366;color:#062a14;border-radius:2px;font:700 14px/1 'IBM Plex Sans',sans-serif;white-space:nowrap"><span style="width:8px;height:8px;background:#062a14;border-radius:50%;display:inline-block"></span>Consultar</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CATALOG BODY ============ -->
+  <section style="max-width:1320px;margin:0 auto;padding:36px 40px 90px;display:grid;grid-template-columns:282px 1fr;gap:32px;align-items:start">
+
+    <!-- SIDEBAR -->
+    <aside style="position:sticky;top:90px;display:flex;flex-direction:column;gap:14px">
+      <!-- vehicle finder -->
+      <div style="background:#fff;border:1px solid #E4E8ED">
+        <div style="background:#0A1622;padding:15px 18px;display:flex;align-items:center;gap:9px"><span style="width:7px;height:7px;background:#0066FF;transform:rotate(45deg);display:block"></span><span style="font:600 12.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:#fff">BUSCAR POR VEHÍCULO</span></div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label style="font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#8A97A6">MARCA DEL VEHÍCULO</label>
+            <div style="position:relative">
+              <select value="{{ vBrand }}" onChange="{{ onVBrand }}" style="width:100%;height:44px;padding:0 34px 0 13px;background:#F4F6F8;border:1px solid #DDE3E9;border-radius:2px;font:500 14px/1 'IBM Plex Sans',sans-serif;color:#16202B;cursor:pointer">
+                <option value="Todas">Todas las marcas</option>
+                <sc-for list="{{ vehicleBrands }}" as="b" hint-placeholder-count="6"><option value="{{ b }}">{{ b }}</option></sc-for>
+              </select>
+              <span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:#8A97A6;font-size:11px">▾</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label style="font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#8A97A6">AÑO</label>
+            <div style="position:relative">
+              <select value="{{ year }}" onChange="{{ onYear }}" style="width:100%;height:44px;padding:0 34px 0 13px;background:#F4F6F8;border:1px solid #DDE3E9;border-radius:2px;font:500 14px/1 'IBM Plex Sans',sans-serif;color:#16202B;cursor:pointer">
+                <option value="Todos">Cualquier año</option>
+                <sc-for list="{{ years }}" as="y" hint-placeholder-count="6"><option value="{{ y }}">{{ y }}</option></sc-for>
+              </select>
+              <span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:#8A97A6;font-size:11px">▾</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- vehicle type -->
+      <div style="background:#fff;border:1px solid #E4E8ED;padding:18px">
+        <div style="font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#8A97A6;margin-bottom:13px">TIPO DE VEHÍCULO</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          <sc-for list="{{ vtypeItems }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- category -->
+      <div style="background:#fff;border:1px solid #E4E8ED;padding:18px">
+        <div style="font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#8A97A6;margin-bottom:13px">CATEGORÍA</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ categoryItems }}" as="c" hint-placeholder-count="9">
+            <button onClick="{{ c.onClick }}" style="{{ c.style }}"><span>{{ c.label }}</span><span style="{{ c.countStyle }}">{{ c.count }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- part brand -->
+      <div style="background:#fff;border:1px solid #E4E8ED;padding:18px">
+        <div style="font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#8A97A6;margin-bottom:13px">MARCA DEL REPUESTO</div>
+        <div style="position:relative">
+          <select value="{{ partBrand }}" onChange="{{ onPartBrand }}" style="width:100%;height:44px;padding:0 34px 0 13px;background:#F4F6F8;border:1px solid #DDE3E9;border-radius:2px;font:500 14px/1 'IBM Plex Sans',sans-serif;color:#16202B;cursor:pointer">
+            <option value="Todas">Todas las marcas</option>
+            <sc-for list="{{ partBrands }}" as="b" hint-placeholder-count="6"><option value="{{ b }}">{{ b }}</option></sc-for>
+          </select>
+          <span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:#8A97A6;font-size:11px">▾</span>
+        </div>
+      </div>
+
+      <button onClick="{{ clearFilters }}" style="height:46px;background:transparent;border:1px solid #D7DDE4;border-radius:2px;color:#5A6675;font:600 13px/1 'IBM Plex Sans',sans-serif;cursor:pointer" style-hover="border-color:#0066FF;color:#0066FF">Limpiar filtros</button>
+    </aside>
+
+    <!-- RESULTS -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px;flex-wrap:wrap">
+        <div style="font:400 14px/1 'IBM Plex Sans',sans-serif;color:#5A6675"><strong style="font-weight:700;color:#0A1622">{{ count }}</strong> productos · <span style="font:500 13px/1 'IBM Plex Mono',monospace;color:#8A97A6">{{ activeLabel }}</span></div>
+        <div style="font:500 12px/1 'IBM Plex Mono',monospace;color:#8A97A6;letter-spacing:.04em">STOCK ACTUALIZADO HOY</div>
+      </div>
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #E4E8ED;padding:70px 30px;text-align:center">
+          <div style="font:700 20px/1.2 'Archivo',sans-serif;color:#0A1622;margin-bottom:10px">Sin resultados</div>
+          <p style="font:400 14.5px/1.6 'IBM Plex Sans',sans-serif;color:#6B7886;margin-bottom:22px">No encontramos productos con esos filtros. Escríbenos y lo conseguimos para ti.</p>
+          <div style="display:flex;gap:12px;justify-content:center">
+            <button onClick="{{ clearFilters }}" style="height:44px;padding:0 22px;background:#0A1622;color:#fff;border:none;border-radius:2px;font:600 13.5px/1 'IBM Plex Sans',sans-serif;cursor:pointer">Limpiar filtros</button>
+            <a href="{{ wa }}" target="_blank" style="display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 22px;background:#25D366;color:#062a14;border-radius:2px;font:700 13.5px/1 'IBM Plex Sans',sans-serif">Consultar por WhatsApp</a>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px">
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="9">
+          <div style="background:#fff;border:1px solid #E4E8ED;display:flex;flex-direction:column;transition:.18s" style-hover="border-color:#0066FF;box-shadow:0 12px 30px rgba(10,22,34,.08)">
+            <div style="aspect-ratio:1.35;background:#F4F6F8;background-image:repeating-linear-gradient(135deg,rgba(10,22,34,.05) 0 13px,rgba(10,22,34,0) 13px 26px);position:relative;display:flex;align-items:flex-start;justify-content:space-between;padding:13px">
+              <span style="{{ p.availStyle }}">{{ p.avail }}</span>
+              <span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#0066FF;background:#fff;border:1px solid #E4E8ED;padding:5px 8px">{{ p.sku }}</span>
+            </div>
+            <div style="padding:16px 16px 18px;display:flex;flex-direction:column;flex:1">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+                <span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#9AA6B3;letter-spacing:.06em">{{ p.brand }}</span>
+                <span style="width:3px;height:3px;background:#CCD4DC;border-radius:50%"></span>
+                <span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#9AA6B3">{{ p.cat }}</span>
+              </div>
+              <h3 style="font:700 16px/1.22 'Archivo',sans-serif;color:#0A1622;margin-bottom:14px;flex:1">{{ p.name }}</h3>
+              <div style="display:flex;gap:8px">
+                <button onClick="{{ p.onQuote }}" style="flex:1;height:42px;background:#0066FF;color:#fff;border:none;border-radius:2px;font:700 12.5px/1 'IBM Plex Sans',sans-serif;cursor:pointer" style-hover="background:#0a57d0">Cotizar</button>
+                <a href="{{ p.waHref }}" target="_blank" title="Consultar por WhatsApp" style="width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #D7DDE4;border-radius:2px" style-hover="border-color:#25D366"><span style="width:11px;height:11px;background:#25D366;border-radius:50%;display:block"></span></a>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="background:#070F18;padding:56px 0 30px">
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:34px;margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:38px;height:38px;background:#0066FF;display:flex;align-items:center;justify-content:center"><span style="width:12px;height:12px;background:#070F18;transform:rotate(45deg);display:block"></span></span>
+        <span style="display:flex;flex-direction:column;line-height:1"><span style="font:900 20px/1 'Archivo',sans-serif;letter-spacing:.04em;color:#fff">CROW</span><span style="font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#7E90A2;margin-top:3px">REPUESTOS</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:26px">
+        <a href="Crow Repuestos.dc.html#inicio" style="font:500 14px/1 'IBM Plex Sans',sans-serif;color:#AEBECD" style-hover="color:#fff">Inicio</a>
+        <a href="Crow Repuestos.dc.html#nosotros" style="font:500 14px/1 'IBM Plex Sans',sans-serif;color:#AEBECD" style-hover="color:#fff">Nosotros</a>
+        <a href="Crow Repuestos.dc.html#detailing" style="font:500 14px/1 'IBM Plex Sans',sans-serif;color:#AEBECD" style-hover="color:#fff">Detailing</a>
+        <a href="{{ wa }}" target="_blank" style="font:500 14px/1 'IBM Plex Sans',sans-serif;color:#AEBECD" style-hover="color:#fff">WhatsApp</a>
+      </div>
+    </div>
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:#5E6F80">© 2026 CROW REPUESTOS · TODOS LOS DERECHOS RESERVADOS</span>
+      <span style="font:500 12px/1 'IBM Plex Mono',monospace;color:#5E6F80">+57 (300) 123-4567 · VENTAS@CROWREPUESTOS.COM</span>
+    </div>
+  </footer>
+
+  <!-- ============ QUOTE MODAL ============ -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:100;background:rgba(7,15,24,.7);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeUp .25s ease both" onClick="{{ closeModal }}">
+      <div onClick="{{ stop }}" style="background:#fff;width:100%;max-width:480px;border-radius:2px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.5)">
+        <div style="background:#0A1622;padding:26px 30px;display:flex;align-items:flex-start;justify-content:space-between">
+          <div><div style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#0066FF;margin-bottom:12px">SOLICITAR COTIZACIÓN</div><div style="font:800 24px/1.1 'Archivo',sans-serif;color:#fff">Cuéntanos qué necesitas</div></div>
+          <button onClick="{{ closeModal }}" style="width:34px;height:34px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:18px;cursor:pointer;border-radius:2px;flex:none">×</button>
+        </div>
+        <form ref="{{ formRef }}" onSubmit="{{ submitQuote }}" style="padding:28px 30px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="font:600 12px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#5A6675">NOMBRE</label>
+            <input name="nombre" required placeholder="Tu nombre" style="height:46px;padding:0 14px;border:1px solid #D7DDE4;border-radius:2px;font:400 15px/1 'IBM Plex Sans',sans-serif;color:#0A1622;outline:none" style-focus="border-color:#0066FF">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="font:600 12px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#5A6675">VEHÍCULO (MARCA · MODELO · AÑO)</label>
+            <input name="vehiculo" required placeholder="Ej. Toyota Hilux 2019" style="height:46px;padding:0 14px;border:1px solid #D7DDE4;border-radius:2px;font:400 15px/1 'IBM Plex Sans',sans-serif;color:#0A1622;outline:none" style-focus="border-color:#0066FF">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="font:600 12px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#5A6675">QUÉ NECESITAS</label>
+            <textarea name="detalle" value="{{ detalle }}" onInput="{{ onDetalle }}" required rows="3" placeholder="Repuesto, producto o referencia que buscas" style="padding:12px 14px;border:1px solid #D7DDE4;border-radius:2px;font:400 15px/1.5 'IBM Plex Sans',sans-serif;color:#0A1622;outline:none;resize:none" style-focus="border-color:#0066FF"></textarea>
+          </div>
+          <button type="submit" style="height:50px;background:#25D366;color:#062a14;border:none;border-radius:2px;font:700 15px/1 'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px" style-hover="background:#1fbb59"><span style="width:9px;height:9px;background:#062a14;border-radius:50%;display:inline-block"></span>Enviar por WhatsApp</button>
+        </form>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { scrolled:false, query:'', category:'Todas', vtype:'Todos', vBrand:'Todas', year:'Todos', partBrand:'Todas', modalOpen:false, detalle:'' };
+  formRef = React.createRef();
+
+  CATALOG = [
+    { name:'Pastillas de Freno Cerámicas', sku:'BRK-204', brand:'FrenoTech', cat:'Autos', vtype:'Autos', avail:'En stock', makes:['Toyota','Chevrolet','Renault','Mazda','Nissan','Kia','Ford'], yf:2012, yt:2023 },
+    { name:'Kit de Embrague Reforzado', sku:'CLT-118', brand:'AutoPro', cat:'Autos', vtype:'Autos', avail:'Bajo pedido', makes:['Chevrolet','Renault','Nissan','Ford'], yf:2010, yt:2020 },
+    { name:'Amortiguador Delantero', sku:'SUS-210', brand:'RodaMax', cat:'Autos', vtype:'Autos', avail:'En stock', makes:['Toyota','Mazda','Kia','Nissan'], yf:2013, yt:2024 },
+    { name:'Bujías de Iridio (juego x4)', sku:'IGN-044', brand:'Crow Select', cat:'Autos', vtype:'Autos', avail:'En stock', makes:['Toyota','Chevrolet','Mazda','Ford','Kia'], yf:2014, yt:2024 },
+    { name:'Bomba de Agua', sku:'COO-301', brand:'AutoPro', cat:'Autos', vtype:'Autos', avail:'Bajo pedido', makes:['Renault','Chevrolet','Nissan'], yf:2011, yt:2021 },
+    { name:'Radiador de Aluminio', sku:'COO-118', brand:'Crow Select', cat:'Autos', vtype:'Autos', avail:'En stock', makes:['Toyota','Chevrolet','Kia'], yf:2012, yt:2022 },
+    { name:'Correa de Distribución', sku:'TIM-076', brand:'AutoPro', cat:'Autos', vtype:'Autos', avail:'En stock', makes:['Renault','Mazda','Ford','Nissan'], yf:2010, yt:2019 },
+    { name:'Sensor de Oxígeno', sku:'ELE-233', brand:'Crow Select', cat:'Autos', vtype:'Autos', avail:'Bajo pedido', makes:['Toyota','Chevrolet','Kia','Ford'], yf:2013, yt:2023 },
+
+    { name:'Amortiguadores Heavy Duty', sku:'SUS-336', brand:'TruckLine', cat:'Camiones', vtype:'Camiones', avail:'En stock', makes:['Hino','Foton','JAC','Chevrolet'], yf:2012, yt:2024 },
+    { name:'Filtro de Combustible Diésel', sku:'FLT-410', brand:'FilterTech', cat:'Filtros', vtype:'Camiones', avail:'En stock', makes:['Hino','Foton','JAC'], yf:2010, yt:2024 },
+    { name:'Pastillas de Freno Carga Pesada', sku:'BRK-560', brand:'TruckLine', cat:'Camiones', vtype:'Camiones', avail:'Bajo pedido', makes:['Hino','Foton','Chevrolet'], yf:2011, yt:2023 },
+    { name:'Kit de Reparación de Turbo', sku:'TUR-090', brand:'TruckLine', cat:'Camiones', vtype:'Camiones', avail:'Bajo pedido', makes:['Hino','Foton','JAC'], yf:2012, yt:2022 },
+
+    { name:'Kit de Transmisión (cadena y piñón)', sku:'MOT-091', brand:'MotoMax', cat:'Motos', vtype:'Motos', avail:'En stock', makes:['Yamaha','Honda','Bajaj','AKT'], yf:2014, yt:2024 },
+    { name:'Pastillas de Freno Moto', sku:'MOT-114', brand:'MotoMax', cat:'Motos', vtype:'Motos', avail:'En stock', makes:['Yamaha','Honda','Bajaj','AKT'], yf:2013, yt:2024 },
+    { name:'Kit de Arrastre Reforzado', sku:'MOT-220', brand:'MotoMax', cat:'Motos', vtype:'Motos', avail:'Bajo pedido', makes:['Yamaha','Honda','Bajaj'], yf:2012, yt:2023 },
+    { name:'Batería de Moto 12V · 7Ah', sku:'BAT-120', brand:'PowerCell', cat:'Baterías', vtype:'Motos', avail:'En stock', makes:['Yamaha','Honda','Bajaj','AKT'], yf:2010, yt:2026 },
+
+    { name:'Aceite Sintético 5W-30', sku:'OIL-530', brand:'LubriMax', cat:'Lubricantes', vtype:'Universal', avail:'En stock', makes:null, yf:2000, yt:2026 },
+    { name:'Aceite Mineral 20W-50', sku:'OIL-205', brand:'LubriMax', cat:'Lubricantes', vtype:'Universal', avail:'En stock', makes:null, yf:2000, yt:2026 },
+    { name:'Aceite Diésel 15W-40', sku:'OIL-154', brand:'LubriMax', cat:'Lubricantes', vtype:'Universal', avail:'En stock', makes:null, yf:2000, yt:2026 },
+    { name:'Refrigerante Concentrado', sku:'COO-500', brand:'LubriMax', cat:'Lubricantes', vtype:'Universal', avail:'En stock', makes:null, yf:2000, yt:2026 },
+
+    { name:'Batería 12V · 70Ah', sku:'BAT-700', brand:'PowerCell', cat:'Baterías', vtype:'Autos', avail:'En stock', makes:['Toyota','Chevrolet','Renault','Mazda','Nissan','Kia','Ford'], yf:2005, yt:2026 },
+    { name:'Batería 12V · 100Ah', sku:'BAT-100', brand:'PowerCell', cat:'Baterías', vtype:'Camiones', avail:'Bajo pedido', makes:['Hino','Foton','JAC'], yf:2005, yt:2026 },
+
+    { name:'Filtro de Aceite Premium', sku:'FLT-052', brand:'FilterTech', cat:'Filtros', vtype:'Universal', avail:'En stock', makes:null, yf:2008, yt:2026 },
+    { name:'Filtro de Aire', sku:'FLT-088', brand:'FilterTech', cat:'Filtros', vtype:'Universal', avail:'En stock', makes:null, yf:2008, yt:2026 },
+    { name:'Filtro de Cabina', sku:'FLT-099', brand:'FilterTech', cat:'Filtros', vtype:'Autos', avail:'Bajo pedido', makes:['Toyota','Chevrolet','Mazda','Kia'], yf:2012, yt:2026 },
+
+    { name:'Cera Cerámica en Spray', sku:'DET-410', brand:'CeraShield', cat:'Detailing', vtype:'Universal', avail:'En stock', makes:null, yf:2000, yt:2026 },
+    { name:'Shampoo pH Neutro 1L', sku:'DET-115', brand:'CeraShield', cat:'Detailing', vtype:'Universal', avail:'En stock', makes:null, yf:2000, yt:2026 },
+    { name:'Recubrimiento Cerámico 9H', sku:'DET-900', brand:'CeraShield', cat:'Detailing', vtype:'Universal', avail:'Bajo pedido', makes:null, yf:2000, yt:2026 },
+
+    { name:'Juego de Tapetes a Medida', sku:'ACC-330', brand:'Crow Select', cat:'Accesorios', vtype:'Autos', avail:'En stock', makes:['Toyota','Chevrolet','Renault','Mazda','Nissan','Kia','Ford'], yf:2010, yt:2026 },
+    { name:'Cargador / Mantenedor de Batería', sku:'ACC-451', brand:'PowerCell', cat:'Accesorios', vtype:'Universal', avail:'Bajo pedido', makes:null, yf:2000, yt:2026 }
+  ];
+
+  componentDidMount(){
+    this._onScroll = () => {
+      const s = window.scrollY > 24;
+      if (s !== this.state.scrolled) this.setState({ scrolled:s });
+    };
+    window.addEventListener('scroll', this._onScroll, { passive:true });
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('cat');
+      const cats = ['Autos','Camiones','Motos','Lubricantes','Baterías','Filtros','Detailing','Accesorios'];
+      if (cat && cats.indexOf(cat) !== -1) this.setState({ category:cat });
+    } catch(e) {}
+  }
+  componentWillUnmount(){ window.removeEventListener('scroll', this._onScroll); }
+
+  waLink(text){ return 'https://wa.me/573001234567?text=' + encodeURIComponent(text); }
+
+  openBlank(){ this.setState({ modalOpen:true, detalle:'' }); }
+  openQuote(p){ this.setState({ modalOpen:true, detalle:'Producto: ' + p.name + ' (SKU ' + p.sku + ', ' + p.brand + ')' }); }
+  closeModal(){ this.setState({ modalOpen:false }); }
+  clearFilters(){ this.setState({ query:'', category:'Todas', vtype:'Todos', vBrand:'Todas', year:'Todos', partBrand:'Todas' }); }
+
+  submitQuote(e){
+    e.preventDefault();
+    const fd = new FormData(this.formRef.current);
+    const texto = 'Hola Crow Repuestos, soy ' + (fd.get('nombre')||'') + '. Vehiculo: ' + (fd.get('vehiculo')||'') + '. Necesito: ' + (this.state.detalle||fd.get('detalle')||'');
+    window.open(this.waLink(texto), '_blank');
+    this.setState({ modalOpen:false });
+  }
+
+  matchFilters(p, ignore){
+    const s = this.state;
+    if (ignore !== 'q' && s.query){
+      const q = s.query.toLowerCase();
+      const hay = (p.name + ' ' + p.sku + ' ' + p.brand + ' ' + p.cat).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    if (ignore !== 'category' && s.category !== 'Todas' && p.cat !== s.category) return false;
+    if (ignore !== 'vtype' && s.vtype !== 'Todos' && p.vtype !== 'Universal' && p.vtype !== s.vtype) return false;
+    if (ignore !== 'vBrand' && s.vBrand !== 'Todas' && p.makes && p.makes.indexOf(s.vBrand) === -1) return false;
+    if (ignore !== 'year' && s.year !== 'Todos'){ const y = parseInt(s.year,10); if (!(p.yf <= y && y <= p.yt)) return false; }
+    if (ignore !== 'partBrand' && s.partBrand !== 'Todas' && p.brand !== s.partBrand) return false;
+    return true;
+  }
+
+  renderVals(){
+    const wa = this.waLink('Hola Crow Repuestos, quiero consultar disponibilidad de un repuesto.');
+    const s = this.state;
+
+    const vehicleBrands = [];
+    this.CATALOG.forEach(p => { if (p.makes) p.makes.forEach(m => { if (vehicleBrands.indexOf(m) === -1) vehicleBrands.push(m); }); });
+    vehicleBrands.sort();
+    const partBrands = [];
+    this.CATALOG.forEach(p => { if (partBrands.indexOf(p.brand) === -1) partBrands.push(p.brand); });
+    partBrands.sort();
+    const years = [];
+    for (let y = 2026; y >= 2008; y--) years.push(String(y));
+
+    // category items with counts (count respects other filters, ignoring category)
+    const cats = ['Todas','Autos','Camiones','Motos','Lubricantes','Baterías','Filtros','Detailing','Accesorios'];
+    const catBtn = (active) => "width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;height:38px;padding:0 11px;border:none;border-radius:2px;text-align:left;cursor:pointer;font:600 13.5px/1 'IBM Plex Sans',sans-serif;transition:.14s;" + (active ? "background:#0A1622;color:#fff;" : "background:transparent;color:#3A4654;");
+    const catCount = (active) => "font:500 11px/1 'IBM Plex Mono',monospace;" + (active ? "color:#7FB0FF;" : "color:#9AA6B3;");
+    const categoryItems = cats.map(label => {
+      const active = s.category === label;
+      const count = label === 'Todas' ? this.CATALOG.filter(p => this.matchFilters(p,'category')).length : this.CATALOG.filter(p => p.cat === label && this.matchFilters(p,'category')).length;
+      return { label, count, active, onClick: () => this.setState({ category:label }), style: catBtn(active), countStyle: catCount(active) };
+    });
+
+    const vtypes = ['Todos','Autos','Camiones','Motos','Utilitarios'];
+    const vtBtn = (active) => "padding:9px 14px;border-radius:2px;cursor:pointer;font:600 12.5px/1 'IBM Plex Sans',sans-serif;transition:.14s;" + (active ? "background:#0066FF;color:#fff;border:1px solid #0066FF;" : "background:#fff;color:#3A4654;border:1px solid #DDE3E9;");
+    const vtypeItems = vtypes.map(label => ({ label, onClick: () => this.setState({ vtype:label }), style: vtBtn(s.vtype === label) }));
+
+    const filtered = this.CATALOG.filter(p => this.matchFilters(p));
+    const products = filtered.map(p => ({
+      name:p.name, sku:p.sku, brand:p.brand, cat:p.cat, avail:p.avail,
+      availStyle: p.avail === 'En stock'
+        ? "display:inline-flex;align-items:center;gap:6px;padding:5px 9px;background:#fff;border:1px solid #D8EFE0;font:600 10px/1 'IBM Plex Mono',monospace;color:#117a3a;letter-spacing:.04em"
+        : "display:inline-flex;align-items:center;gap:6px;padding:5px 9px;background:#fff;border:1px solid #F0E2C7;font:600 10px/1 'IBM Plex Mono',monospace;color:#9A6B12;letter-spacing:.04em",
+      waHref: this.waLink('Hola, me interesa: ' + p.name + ' (SKU ' + p.sku + '). ¿Disponibilidad y precio?'),
+      onQuote: () => this.openQuote(p)
+    }));
+
+    const activeBits = [];
+    if (s.category !== 'Todas') activeBits.push(s.category);
+    if (s.vtype !== 'Todos') activeBits.push(s.vtype);
+    if (s.vBrand !== 'Todas') activeBits.push(s.vBrand);
+    if (s.year !== 'Todos') activeBits.push(s.year);
+    if (s.partBrand !== 'Todas') activeBits.push(s.partBrand);
+    if (s.query) activeBits.push('“' + s.query + '”');
+    const activeLabel = activeBits.length ? activeBits.join(' · ') : 'Todos los productos';
+
+    return {
+      wa,
+      navShadow: s.scrolled ? '0 8px 30px rgba(10,22,34,.10)' : 'none',
+      query:s.query, vBrand:s.vBrand, year:s.year, partBrand:s.partBrand, detalle:s.detalle,
+      vehicleBrands, partBrands, years, categoryItems, vtypeItems,
+      products, count: filtered.length, isEmpty: filtered.length === 0, activeLabel,
+      onSearch: (e) => this.setState({ query:e.target.value }),
+      onVBrand: (e) => this.setState({ vBrand:e.target.value }),
+      onYear: (e) => this.setState({ year:e.target.value }),
+      onPartBrand: (e) => this.setState({ partBrand:e.target.value }),
+      onDetalle: (e) => this.setState({ detalle:e.target.value }),
+      clearFilters: () => this.clearFilters(),
+      openBlank: () => this.openBlank(),
+      closeModal: () => this.closeModal(),
+      submitQuote: (e) => this.submitQuote(e),
+      stop: (e) => e.stopPropagation(),
+      modalOpen: s.modalOpen, formRef: this.formRef
+    };
+  }
+}
+</script>
+</body>
+</html>

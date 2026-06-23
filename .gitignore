@@ -1,0 +1,51 @@
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# ─── Backend ──────────────────────────────────────────────────────────────────
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+backend/.venv/
+backend/venv/
+backend/.env
+backend/*.db
+backend/*.sqlite3
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+docker-compose.override.yml
+
+# ─── Base de datos / volúmenes ────────────────────────────────────────────────
+postgres-data/
+pgdata/
+*.sql.bak
+*.dump
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ─── Misc ─────────────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+.cache/
+tmp/
