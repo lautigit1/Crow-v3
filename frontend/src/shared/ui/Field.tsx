@@ -2,78 +2,79 @@ import type * as React from "react";
 import { forwardRef, type CSSProperties, type ReactNode } from "react";
 import { color, font, radius } from "@/shared/config/theme";
 
-const labelStyle: CSSProperties = {
-  fontFamily: font.mono,
-  fontSize: 11,
-  fontWeight: 600,
-  letterSpacing: ".06em",
-  color: color.textFaint,
-  textTransform: "uppercase",
-};
-
-const controlBase: CSSProperties = {
-  height: 46,
-  padding: "0 14px",
-  border: "1px solid " + color.border,
-  borderRadius: radius.sm,
-  fontFamily: font.body,
-  fontSize: 15,
-  color: color.text,
-  background: "#fff",
-  outline: "none",
-  width: "100%",
-  transition: "border-color .15s, box-shadow .15s",
-};
-
-const focusRing = { borderColor: color.primary, boxShadow: `0 0 0 3px ${color.primarySoft}` };
-
 export function Field({ label, children, hint }: { label?: string; children: ReactNode; hint?: string }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      {label && <span style={labelStyle}>{label}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {label && (
+        <span style={{
+          fontFamily: font.mono,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: ".14em",
+          color: color.ink700,
+          textTransform: "uppercase",
+        }}>
+          {label}
+        </span>
+      )}
       {children}
-      {hint && <span style={{ fontFamily: font.body, fontSize: 12, color: color.textFaint }}>{hint}</span>}
-    </label>
+      {hint && (
+        <span style={{ fontFamily: font.body, fontSize: 11.5, color: color.textFaint, marginTop: -2 }}>
+          {hint}
+        </span>
+      )}
+    </div>
   );
 }
 
-// Loosely typed on purpose: these wrappers forward arbitrary DOM props
-// (value, onChange, placeholder, type, etc.) to the underlying control.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type InputProps = { style?: CSSProperties } & Record<string, any>;
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(({ style, ...rest }, ref) => {
-  const onFocus = rest.onFocus as ((e: React.FocusEvent<HTMLInputElement>) => void) | undefined;
-  const onBlur = rest.onBlur as ((e: React.FocusEvent<HTMLInputElement>) => void) | undefined;
-  return (
-    <input
-      ref={ref}
-      {...rest}
-      style={{ ...controlBase, ...style }}
-      onFocus={(e) => {
-        Object.assign(e.currentTarget.style, focusRing);
-        onFocus?.(e);
-      }}
-      onBlur={(e) => {
-        e.currentTarget.style.borderColor = color.border;
-        e.currentTarget.style.boxShadow = "none";
-        onBlur?.(e);
-      }}
-    />
-  );
-});
+const base: CSSProperties = {
+  height: 40,
+  padding: "0 12px",
+  border: `1.5px solid ${color.border}`,
+  borderRadius: radius.sm,
+  fontFamily: font.body,
+  fontSize: 14,
+  color: color.ink900,
+  background: color.surface,
+  outline: "none",
+  width: "100%",
+  transition: "border-color .15s, box-shadow .15s, background .15s",
+  boxSizing: "border-box" as const,
+};
+
+const focus: CSSProperties = {
+  borderColor: color.primary,
+  background: "#fff",
+  boxShadow: `0 0 0 3px rgba(0,87,217,.1)`,
+};
+
+const blur: CSSProperties = {
+  borderColor: color.border,
+  background: color.surface,
+  boxShadow: "none",
+};
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(({ style, onFocus, onBlur, ...rest }, ref) => (
+  <input
+    ref={ref}
+    {...rest}
+    style={{ ...base, ...style }}
+    onFocus={(e) => { Object.assign(e.currentTarget.style, focus); (onFocus as ((e: React.FocusEvent<HTMLInputElement>) => void) | undefined)?.(e); }}
+    onBlur={(e)  => { Object.assign(e.currentTarget.style, blur);  (onBlur  as ((e: React.FocusEvent<HTMLInputElement>) => void) | undefined)?.(e); }}
+  />
+));
 Input.displayName = "Input";
 
 export function Textarea({ style, ...rest }: InputProps) {
   return (
     <textarea
       {...rest}
-      style={{ ...controlBase, height: "auto", padding: "12px 14px", lineHeight: 1.5, resize: "vertical", ...style }}
-      onFocus={(e) => Object.assign(e.currentTarget.style, focusRing)}
-      onBlur={(e) => {
-        e.currentTarget.style.borderColor = color.border;
-        e.currentTarget.style.boxShadow = "none";
-      }}
+      style={{ ...base, height: "auto", padding: "10px 12px", lineHeight: 1.55, resize: "vertical", ...style }}
+      onFocus={(e) => Object.assign(e.currentTarget.style, focus)}
+      onBlur={(e)  => Object.assign(e.currentTarget.style, blur)}
     />
   );
 }
@@ -81,12 +82,21 @@ export function Textarea({ style, ...rest }: InputProps) {
 export function Select({ style, children, ...rest }: InputProps & { children: ReactNode }) {
   return (
     <div style={{ position: "relative" }}>
-      <select {...rest} style={{ ...controlBase, paddingRight: 34, cursor: "pointer", ...style }}>
+      <select
+        {...rest}
+        style={{ ...base, paddingRight: 32, cursor: "pointer", appearance: "none", WebkitAppearance: "none", ...style }}
+        onFocus={(e) => Object.assign(e.currentTarget.style, focus)}
+        onBlur={(e)  => Object.assign(e.currentTarget.style, blur)}
+      >
         {children}
       </select>
-      <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: color.textFaint, fontSize: 11 }}>
-        ▾
-      </span>
+      <svg
+        width={12} height={12} viewBox="0 0 24 24" fill="none"
+        stroke={color.textFaint} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
     </div>
   );
 }

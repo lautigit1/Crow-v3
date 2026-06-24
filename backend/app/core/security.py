@@ -73,15 +73,58 @@ def create_refresh_token(subject: str | int) -> str:
     return jwt.encode(payload, _REFRESH_SECRET, algorithm=settings.ALGORITHM)
 
 
-def decode_refresh_token(token: str) -> str:
+def decode_refresh_token(token: str) -> tuple[str, str]:
     """
     Validates and decodes a refresh token.
-    Returns the subject (user id as string) or raises JWTError.
+    Returns (subject, jti) or raises JWTError.
+    The JTI should be blocklisted after rotation to prevent replay attacks.
     """
     payload = jwt.decode(token, _REFRESH_SECRET, algorithms=[settings.ALGORITHM])
     if payload.get("type") != "refresh":
         raise JWTError("Invalid token type")
     sub = payload.get("sub")
-    if sub is None:
-        raise JWTError("Missing subject")
-    return sub
+    jti = payload.get("jti")
+    if sub is None or jti is None:
+        raise JWTError("Malformed token")
+    return sub, jti
+
+
+# ---------------------------------------------------------------------------
+# Password reset token  (one-time use, 60 min by default)
+# ---------------------------------------------------------------------------
+
+_RESET_SECRET = settings.SECRET_KEY + ":reset"
+
+
+def create_reset_token(user_id: int) -> tuple[str, str]:
+    """
+    Issues a signed password-reset JWT.
+    Returns (token, jti) — caller must blocklist the JTI after use to prevent
+    replay attacks.
+    """
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
+    jti = str(uuid.uuid4())
+    payload = {
+        "sub": str(user_id),
+        "type": "reset",
+        "jti": jti,
+        "iat": now,
+        "exp": expire,
+    }
+    return jwt.encode(payload, _RESET_SECRET, algorithm=settings.ALGORITHM), jti
+
+
+def decode_reset_token(token: str) -> tuple[int, str]:
+    """
+    Validates a reset token.
+    Returns (user_id, jti) or raises JWTError.
+    """
+    payload = jwt.decode(token, _RESET_SECRET, algorithms=[settings.ALGORITHM])
+    if payload.get("type") != "reset":
+        raise JWTError("Invalid token type")
+    sub = payload.get("sub")
+    jti = payload.get("jti")
+    if sub is None or jti is None:
+        raise JWTError("Malformed token")
+    return int(sub), jti

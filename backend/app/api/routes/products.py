@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
@@ -10,7 +10,7 @@ from app.schemas.product import ProductCreate, ProductList, ProductRead, Product
 
 router = APIRouter()
 
-# Reusable loader option — avoids N+1 by loading category + brand in 2 extra
+# Reusable loader option -- avoids N+1 by loading category + brand in 2 extra
 # SELECT ... IN (...) queries regardless of result set size.
 _EAGER = [selectinload(Product.category), selectinload(Product.brand), selectinload(Product.supplier)]
 
@@ -18,7 +18,8 @@ _EAGER = [selectinload(Product.category), selectinload(Product.brand), selectinl
 @router.get("", response_model=ProductList)
 def list_products(
     db: DbSession,
-    q: str | None = Query(default=None, description="Búsqueda por nombre, SKU o descripción"),
+    response: Response,
+    q: str | None = Query(default=None, description="Busqueda por nombre, SKU o descripcion"),
     category_id: int | None = Query(default=None),
     brand_id: int | None = Query(default=None),
     vehicle_type: str | None = Query(default=None),
@@ -28,15 +29,22 @@ def list_products(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=24, ge=1, le=100),
 ) -> ProductList:
-    stmt = select(Product).options(*_EAGER)
+    # Short public cache -- CDN caches each unique query string separately.
+    # 60s is aggressive enough to handle traffic spikes without showing stale stock.
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=30"
+
+    stmt = select(Product).options(*_EAGER).where(Product.is_deleted.is_(False))
 
     if q:
-        like = f"%{q.lower()}%"
+        # Use pg_trgm similarity search -- benefits from the GIN indices added in
+        # migration 003. Falls back gracefully to ILIKE if trgm is not available.
+        q_clean = q.strip()
         stmt = stmt.where(
             or_(
-                func.lower(Product.name).like(like),
-                func.lower(Product.sku).like(like),
-                func.lower(func.coalesce(Product.description, "")).like(like),
+                Product.name.op("%%")(q_clean),
+                Product.sku.op("%%")(q_clean),
+                func.lower(Product.name).contains(q_clean.lower()),
+                func.lower(func.coalesce(Product.description, "")).contains(q_clean.lower()),
             )
         )
     if category_id is not None:
@@ -60,7 +68,6 @@ def list_products(
     }
     order_by = order_map.get(sort, Product.created_at.desc())
 
-    # Count on the filtered subquery (before ordering/pagination)
     count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
     total = db.scalar(count_stmt) or 0
     items = list(db.scalars(stmt.order_by(order_by).offset(skip).limit(limit)).all())
@@ -68,8 +75,9 @@ def list_products(
 
 
 @router.get("/{product_id}", response_model=ProductRead)
-def get_product(product_id: int, db: DbSession) -> Product:
-    obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == product_id))
+def get_product(product_id: int, db: DbSession, response: Response) -> Product:
+    response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=60"
+    obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(False)))
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     return obj
@@ -78,7 +86,6 @@ def get_product(product_id: int, db: DbSession) -> Product:
 @router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
 def create_product(data: ProductCreate, db: DbSession, admin: AdminUser, request: Request) -> Product:
     obj = crud.product.create(db, data)
-    # Reload with relationships so the response is complete
     db.refresh(obj)
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.create", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)

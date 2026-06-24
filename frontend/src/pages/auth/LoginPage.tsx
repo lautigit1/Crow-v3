@@ -133,7 +133,7 @@ export function LoginPage() {
             <label style={{ fontFamily: font.body, fontSize: 13.5, fontWeight: 600, color: color.ink800 }}>
               Contraseña
             </label>
-            <Link to="/contacto" style={{ fontFamily: font.body, fontSize: 12.5, color: color.primary, textDecoration: "none" }}>
+            <Link to="/forgot-password" style={{ fontFamily: font.body, fontSize: 12.5, color: color.primary, textDecoration: "none" }}>
               ¿Olvidaste tu contraseña?
             </Link>
           </div>

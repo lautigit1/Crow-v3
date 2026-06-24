@@ -122,7 +122,7 @@ export function Footer() {
               fontFamily: font.body, fontSize: 14, lineHeight: 1.75,
               color: MUTED, margin: "0 0 10px",
             }}>
-              Distribuidora de repuestos automotrices en Mendoza. Atención personalizada, respuesta en menos de una hora.
+              Repuestos y lubricantes para tu vehículo. Atención directa desde Mendoza, sin bots ni intermediarios.
             </p>
 
             {/* Location pill */}
@@ -158,19 +158,7 @@ export function Footer() {
                 <FLink to="/catalogo">Catálogo</FLink>
                 <FLink to="/marcas">Marcas</FLink>
                 <FLink to="/contacto">Contacto</FLink>
-                <FLink to="/contacto">Preguntas frecuentes</FLink>
-              </div>
-            </div>
-
-            {/* Legal — middle */}
-            <div>
-              <ColTitle>Legal</ColTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                <FLink to="/legal/privacidad">Política de privacidad</FLink>
-                <FLink to="/legal/terminos">Términos y condiciones</FLink>
-                <FLink to="/legal/cookies">Política de cookies</FLink>
-                <FLink to="/legal/licencias">Licencias</FLink>
-                <FLink to="/legal/accesibilidad">Accesibilidad</FLink>
+                <FLink to="/faq">Preguntas frecuentes</FLink>
               </div>
             </div>
 

@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
 from app.core import audit
 from app.core.config import settings
 from app.core.deps import AdminUser, CurrentUser, DbSession, get_current_user
+from app.core.email import build_quote_notification, send_email
 from app.core.ratelimit import LoginRateLimiter
 from app.models.quote import Quote
 from app.models.user import User
@@ -26,7 +27,7 @@ _quote_limiter = LoginRateLimiter(
 # ---------------------------------------------------------------------------
 
 @router.post("", response_model=QuoteRead, status_code=status.HTTP_201_CREATED)
-def create_quote(data: QuoteCreate, db: DbSession, request: Request) -> Quote:
+def create_quote(data: QuoteCreate, db: DbSession, request: Request, background_tasks: BackgroundTasks) -> Quote:
     """Public endpoint — anyone can request a quote. Rate-limited by IP."""
     ip = audit.client_ip(request)
     locked_for = _quote_limiter.check(ip, data.customer_email or "anonymous")
@@ -40,7 +41,7 @@ def create_quote(data: QuoteCreate, db: DbSession, request: Request) -> Quote:
     db.add(quote)
     db.flush()
     db.refresh(quote)
-    _quote_limiter.register_failure(ip, data.customer_email or "anonymous")  # counts as a hit
+    _quote_limiter.register_failure(ip, data.customer_email or "anonymous")
     audit.record(
         db,
         action="quote.create_public",
@@ -48,6 +49,19 @@ def create_quote(data: QuoteCreate, db: DbSession, request: Request) -> Quote:
         entity="quote",
         entity_id=quote.id,
         request=request,
+    )
+
+    # Notify admin — runs after response is sent, never blocks the client
+    background_tasks.add_task(
+        send_email,
+        **build_quote_notification(
+            quote_id=quote.id,
+            customer_name=data.customer_name,
+            customer_email=data.customer_email,
+            customer_phone=data.customer_phone,
+            vehicle=data.vehicle,
+            message=data.message,
+        ),
     )
     return quote
 

@@ -18,7 +18,7 @@ const STEPS = [
     note: "En menos de una hora",
   },
   {
-    tag: "Receptión",
+    tag: "Retiro",
     title: "Lo retirás o te lo llevamos",
     desc: "Local en Mendoza ciudad o envío a domicilio el mismo día. Vos elegís el horario.",
     note: "Lun–Sáb · 8 a 18 hs",
@@ -63,10 +63,10 @@ export function HowItWorks() {
 
             <h2 style={{
               fontFamily: font.display,
-              fontSize: 38,
-              fontWeight: 900,
+              fontSize: 32,
+              fontWeight: 800,
               lineHeight: 1.1,
-              letterSpacing: "-.025em",
+              letterSpacing: "-.03em",
               color: "#fff",
               margin: "16px 0 24px",
             }}>

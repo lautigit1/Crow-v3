@@ -8,7 +8,7 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.schemas.quote import QuoteCreate
 
-category = CRUDBase[Category, CategoryCreate, CategoryUpdate](Category)
-brand = CRUDBase[Brand, BrandCreate, BrandUpdate](Brand)
-product = CRUDBase[Product, ProductCreate, ProductUpdate](Product)
-quote = CRUDBase[Quote, QuoteCreate, QuoteCreate](Quote)
+category = CRUDBase[Category, CategoryCreate, CategoryUpdate](Category, soft_delete=True)
+brand    = CRUDBase[Brand, BrandCreate, BrandUpdate](Brand, soft_delete=True)
+product  = CRUDBase[Product, ProductCreate, ProductUpdate](Product, soft_delete=True)
+quote    = CRUDBase[Quote, QuoteCreate, QuoteCreate](Quote)

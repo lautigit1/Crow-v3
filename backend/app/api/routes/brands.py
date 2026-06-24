@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
@@ -20,11 +20,13 @@ router = APIRouter()
 @router.get("", response_model=BrandList)
 def list_brands(
     db: DbSession,
+    response: Response,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> BrandList:
-    total = db.scalar(select(func.count()).select_from(Brand)) or 0
-    items = list(db.scalars(select(Brand).order_by(Brand.name).offset(skip).limit(limit)).all())
+    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=60"
+    total = db.scalar(select(func.count()).select_from(Brand).where(Brand.is_deleted.is_(False))) or 0
+    items = list(db.scalars(select(Brand).where(Brand.is_deleted.is_(False)).order_by(Brand.name).offset(skip).limit(limit)).all())
     return BrandList(items=items, total=total)
 
 

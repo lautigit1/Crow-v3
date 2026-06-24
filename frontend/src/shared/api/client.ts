@@ -1,82 +1,66 @@
 import axios from "axios";
 
-const ACCESS_KEY  = "crow.token";
-const REFRESH_KEY = "crow.refresh";
-const ISSUED_KEY  = "crow.issued_at"; // ms timestamp of last token issue
-
-// How often to silently refresh (ms). As long as the user acts within this
-// window the session keeps rolling. Must be < ACCESS_TOKEN_EXPIRE_MINUTES.
-const SLIDE_INTERVAL_MS = 10 * 60 * 1000; // 10 min
-
-export const tokenStore = {
-  get:          ()             => localStorage.getItem(ACCESS_KEY),
-  set:          (t: string)   => {
-    localStorage.setItem(ACCESS_KEY, t);
-    localStorage.setItem(ISSUED_KEY, String(Date.now()));
-  },
-  getRefresh:   ()             => localStorage.getItem(REFRESH_KEY),
-  setRefresh:   (t: string)   => localStorage.setItem(REFRESH_KEY, t),
-  getIssuedAt:  ()             => Number(localStorage.getItem(ISSUED_KEY) ?? "0"),
-  clear: () => {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(ISSUED_KEY);
-  },
-};
-
-/** Shared axios instance. Base URL is "/api" (Vite proxies to FastAPI in dev). */
-export const api = axios.create({ baseURL: "/api" });
-
-// Prevents concurrent refresh calls from stacking.
-let refreshPromise: Promise<void> | null = null;
-
-async function silentRefresh(): Promise<void> {
-  const refreshToken = tokenStore.getRefresh();
-  if (!refreshToken) return;
-
-  const { data } = await axios.post<{ access_token: string; refresh_token: string }>(
-    "/api/auth/refresh",
-    null,
-    { headers: { Authorization: `Bearer ${refreshToken}` } }
-  );
-
-  tokenStore.set(data.access_token);
-  tokenStore.setRefresh(data.refresh_token);
-}
-
-// ── Request interceptor ────────────────────────────────────────────────────────
-// On every outgoing request:
-//   1. If a refresh is already in flight, wait for it.
-//   2. Otherwise, if the token is older than SLIDE_INTERVAL_MS and a refresh
-//      token exists, kick off a silent refresh and wait for it.
-//   3. Attach the (possibly renewed) access token as Bearer.
-api.interceptors.request.use(async (config) => {
-  // Skip the refresh endpoint itself to avoid recursion.
-  if (config.url?.includes("/auth/refresh")) return config;
-
-  const needsSlide =
-    tokenStore.getRefresh() &&
-    Date.now() - tokenStore.getIssuedAt() > SLIDE_INTERVAL_MS;
-
-  if (needsSlide) {
-    if (!refreshPromise) {
-      refreshPromise = silentRefresh().finally(() => { refreshPromise = null; });
-    }
-    try { await refreshPromise; } catch { tokenStore.clear(); }
-  }
-
-  const token = tokenStore.get();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+/**
+ * Shared axios instance.
+ * withCredentials: true → the browser sends the HttpOnly auth cookies automatically.
+ * Tokens never touch localStorage — JavaScript cannot read or write them.
+ */
+export const api = axios.create({
+  baseURL: "/api",
+  withCredentials: true,
 });
 
-// ── Response interceptor ───────────────────────────────────────────────────────
-// On 401, clear stale tokens so the app returns to a logged-out state.
+// Prevents concurrent refresh calls from stacking.
+let isRefreshing = false;
+let refreshSubscribers: Array<(ok: boolean) => void> = [];
+
+function notifySubscribers(ok: boolean) {
+  refreshSubscribers.forEach((cb) => cb(ok));
+  refreshSubscribers = [];
+}
+
+// ── Response interceptor ───────────────────────────────────────────────────
+// On 401, attempt a silent token refresh once, then retry the original request.
+// If the refresh also fails the user is effectively logged out — AuthProvider
+// will detect this on the next /me call and clear the React state.
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    if (error?.response?.status === 401) tokenStore.clear();
-    return Promise.reject(error);
+  async (error) => {
+    const original = error.config as typeof error.config & { _retry?: boolean };
+
+    // Don't intercept: non-401, already-retried requests, or auth endpoints
+    if (
+      error?.response?.status !== 401 ||
+      original._retry ||
+      original.url?.includes("/auth/")
+    ) {
+      return Promise.reject(error);
+    }
+
+    original._retry = true;
+
+    if (isRefreshing) {
+      // Queue this request until the in-flight refresh completes
+      return new Promise((resolve, reject) => {
+        refreshSubscribers.push((ok) => {
+          if (ok) resolve(api(original));
+          else reject(error);
+        });
+      });
+    }
+
+    isRefreshing = true;
+    try {
+      // The refresh_token cookie is scoped to this path — the browser sends it automatically
+      await axios.post("/api/auth/refresh", null, { withCredentials: true });
+      isRefreshing = false;
+      notifySubscribers(true);
+      return api(original);
+    } catch {
+      isRefreshing = false;
+      notifySubscribers(false);
+      return Promise.reject(error);
+    }
   }
 );
 

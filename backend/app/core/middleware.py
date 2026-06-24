@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.core.config import settings
 from app.core.logging_config import get_logger
 
 logger = get_logger("crow.http")
@@ -21,24 +22,37 @@ logger = get_logger("crow.http")
 # ---------------------------------------------------------------------------
 # Security headers
 # ---------------------------------------------------------------------------
-SECURITY_HEADERS = {
+_BASE_SECURITY_HEADERS: dict[str, str] = {
+    # Prevent MIME-type sniffing
     "X-Content-Type-Options": "nosniff",
+    # Disallow framing (clickjacking)
     "X-Frame-Options": "DENY",
+    # Don't leak full referrer to cross-origin destinations
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    # Disable legacy XSS auditor (causes more harm than good in modern browsers)
     "X-XSS-Protection": "0",
-    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
-    # APIs don't serve HTML, but this is a safety net for accidental HTML responses.
+    # Restrict browser feature access
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=()",
+    # Strict CSP for a pure JSON API: no scripts, no resources, no framing
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
-    # Uncomment once TLS is confirmed in production:
-    # "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    # Prevent cross-origin resource leaks
+    "Cross-Origin-Resource-Policy": "same-origin",
+    # Isolate browsing context (required for high-resolution timers, SharedArrayBuffer)
+    "Cross-Origin-Opener-Policy": "same-origin",
 }
+
+# HSTS: only sent over HTTPS in production.
+# 1-year max-age with includeSubDomains; preload flag opts into browser preload lists.
+_HSTS_HEADER = "max-age=31536000; includeSubDomains; preload"
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
-        for header, value in SECURITY_HEADERS.items():
+        for header, value in _BASE_SECURITY_HEADERS.items():
             response.headers.setdefault(header, value)
+        if settings.is_production:
+            response.headers.setdefault("Strict-Transport-Security", _HSTS_HEADER)
         return response
 
 

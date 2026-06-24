@@ -325,17 +325,30 @@ export function AdminUsersPage() {
       </Drawer>
 
       {/* Edit modal */}
-      <Modal open={editing !== null} onClose={() => setEditing(null)} eyebrow="EDITAR" title="Usuario" width={480}>
-        <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: `1px solid ${color.border}` }}>
+      <Modal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        eyebrow="EDITAR"
+        title="Usuario"
+        width={480}
+        footer={
+          <>
+            {error && <div style={{ fontFamily: font.body, fontSize: 12.5, color: color.danger, flex: 1 }}>{error}</div>}
+            <Button type="submit" form="user-form" fullWidth disabled={saving}>{saving ? "Guardando…" : "Guardar cambios"}</Button>
+          </>
+        }
+      >
+        <form id="user-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* User identity card */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 14, background: "#fff", border: `1px solid ${color.border}`, borderRadius: 10 }}>
             {editing && <Avatar name={editing.full_name} size={44} />}
             <div>
-              <div style={{ fontFamily: font.body, fontSize: 14, fontWeight: 600, color: color.ink900 }}>{editing?.full_name}</div>
-              <div style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{editing?.email}</div>
+              <div style={{ fontFamily: font.body, fontSize: 14, fontWeight: 700, color: color.ink900 }}>{editing?.full_name}</div>
+              <div style={{ fontFamily: font.mono, fontSize: 11.5, color: color.textFaint }}>{editing?.email}</div>
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Nombre completo">
               <Input required value={form.full_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ full_name: e.target.value })} />
             </Field>
@@ -350,24 +363,10 @@ export function AdminUsersPage() {
             </Select>
           </Field>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontFamily: font.body, fontSize: 14, color: color.ink800 }}>
-            <input
-              type="checkbox" checked={form.is_active}
-              onChange={(e) => set({ is_active: e.target.checked })}
-              style={{ width: 16, height: 16, accentColor: color.primary }}
-            />
+          <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontFamily: font.body, fontSize: 13.5, color: color.ink800 }}>
+            <input type="checkbox" checked={form.is_active} onChange={(e) => set({ is_active: e.target.checked })} style={{ width: 15, height: 15, accentColor: color.primary }} />
             Cuenta activa
           </label>
-
-          {error && (
-            <div style={{ fontFamily: font.body, fontSize: 13, color: color.danger, padding: "10px 14px", background: color.dangerSoft, borderRadius: radius.md }}>
-              {error}
-            </div>
-          )}
-
-          <Button type="submit" fullWidth disabled={saving}>
-            {saving ? "Guardando…" : "Guardar cambios"}
-          </Button>
         </form>
       </Modal>
     </div>

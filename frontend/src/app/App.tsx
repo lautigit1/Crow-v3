@@ -10,6 +10,8 @@ import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
+import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 
 import { AccountLayout } from "@/pages/account/AccountLayout";
 import { ProfilePage } from "@/pages/account/ProfilePage";
@@ -30,6 +32,7 @@ import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
 import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
 import { AdminSuppliersPage } from "@/pages/admin/AdminSuppliersPage";
+import { FaqPage } from "@/pages/faq/FaqPage";
 import { PrivacidadPage } from "@/pages/legal/PrivacidadPage";
 import { TerminosPage } from "@/pages/legal/TerminosPage";
 import { CookiesPage } from "@/pages/legal/CookiesPage";
@@ -45,6 +48,7 @@ export function App() {
         <Route path="/catalogo" element={<CatalogPage />} />
         <Route path="/marcas" element={<BrandsPage />} />
         <Route path="/contacto" element={<ContactPage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/legal/privacidad" element={<PrivacidadPage />} />
         <Route path="/legal/terminos" element={<TerminosPage />} />
         <Route path="/legal/cookies" element={<CookiesPage />} />
@@ -85,6 +89,8 @@ export function App() {
           </GuestOnly>
         }
       />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Admin (ADMIN role only) */}
       <Route

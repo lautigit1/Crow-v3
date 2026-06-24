@@ -1,100 +1,218 @@
 import { Button } from "@/shared/ui";
 import { contact, waLink } from "@/shared/config/contact";
-import { color, font, radius } from "@/shared/config/theme";
+import { color, font } from "@/shared/config/theme";
 import { Container } from "@/shared/ui";
+import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 
-function PhoneIcon() {
-  return <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.42 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.09 6.09l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z" /></svg>;
-}
-function MailIcon() {
-  return <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>;
-}
-function ClockIcon() {
-  return <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
-}
+const WA_MSG = "Hola Crow Repuestos, quiero consultar disponibilidad de un repuesto.";
 
 export function CtaFinal({ onQuote }: { onQuote: () => void }) {
+  const { isMobile } = useBreakpoint();
+
   return (
-    <section style={{ background: color.ink900, position: "relative", overflow: "hidden", padding: "88px 0" }}>
-      {/* Glows */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(760px 380px at 82% 120%, rgba(0,87,217,.22), transparent 60%), radial-gradient(400px 300px at 10% -10%, rgba(0,47,130,.15), transparent 60%)" }} />
+    <section style={{
+      background: color.ink900,
+      position: "relative",
+      overflow: "hidden",
+      padding: isMobile ? "72px 0 60px" : "104px 0 88px",
+    }}>
+      {/* Glow */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        backgroundImage:
+          "radial-gradient(700px 500px at 50% 110%, rgba(0,87,217,.2), transparent 60%)",
+      }} />
+
+      {/* Top border accent */}
+      <div style={{
+        position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+        width: 120, height: 1,
+        background: `linear-gradient(90deg, transparent, ${color.primary}, transparent)`,
+      }} />
 
       <Container style={{ position: "relative" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr .8fr", gap: 56, alignItems: "center" }}>
+        <div style={{ textAlign: "center", maxWidth: 680, margin: "0 auto" }}>
 
-          {/* Left — copy */}
-          <div>
-            <div style={{ fontFamily: font.mono, fontSize: 11, letterSpacing: ".14em", color: "#3A5A7A", marginBottom: 16 }}>
-              ¿TENÉS EL REPUESTO EN MENTE?
-            </div>
-            <h2 style={{ fontFamily: font.display, fontSize: 42, fontWeight: 900, lineHeight: 1.05, letterSpacing: "-.02em", color: "#fff", marginBottom: 18 }}>
-              Cotizá en<br />minutos.
-            </h2>
-            <p style={{ fontFamily: font.body, fontSize: 16, lineHeight: 1.65, color: "#4E6B82", maxWidth: 440, marginBottom: 36 }}>
-              Escribinos con tu vehículo y la pieza que buscás. Un asesor te responde con disponibilidad y precio real.
-            </p>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Button as="a" href={waLink("Hola Crow Repuestos, quiero consultar disponibilidad de un repuesto.")} target="_blank" rel="noreferrer" variant="whatsapp" size="lg">
-                Escribir por WhatsApp
-              </Button>
-              <Button onClick={onQuote} size="lg" variant="outline" style={{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,.2)" }}>
-                Formulario de cotización
-              </Button>
-            </div>
+          {/* Eyebrow */}
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 28,
+          }}>
+            <div style={{ width: 20, height: 1, background: "rgba(255,255,255,.2)" }} />
+            <span style={{
+              fontFamily: font.mono,
+              fontSize: 10.5,
+              fontWeight: 700,
+              letterSpacing: ".18em",
+              color: "rgba(255,255,255,.35)",
+              textTransform: "uppercase",
+            }}>
+              ¿Tenés el repuesto en mente?
+            </span>
+            <div style={{ width: 20, height: 1, background: "rgba(255,255,255,.2)" }} />
           </div>
 
-          {/* Right — contact card */}
-          <div style={{
-            background: "rgba(255,255,255,.04)",
-            border: "1px solid rgba(255,255,255,.08)",
-            borderRadius: 16,
-            overflow: "hidden",
+          {/* Headline */}
+          <h2 style={{
+            fontFamily: font.display,
+            fontSize: isMobile ? 36 : 62,
+            fontWeight: 800,
+            lineHeight: 1.05,
+            letterSpacing: "-.03em",
+            color: "#fff",
+            marginBottom: 24,
           }}>
-            <div style={{
-              padding: "16px 22px",
-              borderBottom: "1px solid rgba(255,255,255,.06)",
-              background: "rgba(0,87,217,.1)",
+            Cotizá
+            <br />
+            <span style={{
+              background: "linear-gradient(95deg, #7FB0FF 0%, #4A90E2 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              display: "inline-block",
+              paddingBottom: "0.1em",
             }}>
-              <span style={{ fontFamily: font.mono, fontSize: 10.5, letterSpacing: ".14em", color: color.primary }}>
-                CONTACTO DIRECTO
-              </span>
-            </div>
+              ahora.
+            </span>
+          </h2>
 
-            {[
-              { Icon: PhoneIcon, label: "Teléfono", value: contact.phoneDisplay, href: `tel:${contact.phone}` },
-              { Icon: MailIcon,  label: "Correo",   value: contact.email,        href: `mailto:${contact.email}` },
-              { Icon: ClockIcon, label: "Horario",  value: contact.hours,        href: undefined },
-            ].map(({ Icon, label, value, href }, i, arr) => (
-              <div key={label} style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "18px 22px",
-                borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,.05)" : "none",
-              }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                  background: "rgba(255,255,255,.06)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#5A8BB0",
-                }}>
-                  <Icon />
-                </div>
-                <div>
-                  <div style={{ fontFamily: font.mono, fontSize: 10, color: "#2A3F52", letterSpacing: ".08em", marginBottom: 3 }}>{label.toUpperCase()}</div>
-                  {href ? (
-                    <a href={href} style={{ fontFamily: font.body, fontSize: 14.5, fontWeight: 600, color: "#C4D4E0", textDecoration: "none" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-                      onMouseLeave={e => (e.currentTarget.style.color = "#C4D4E0")}
-                    >{value}</a>
-                  ) : (
-                    <span style={{ fontFamily: font.body, fontSize: 14.5, fontWeight: 600, color: "#C4D4E0" }}>{value}</span>
-                  )}
-                </div>
-              </div>
-            ))}
+          {/* Subtext */}
+          <p style={{
+            fontFamily: font.body,
+            fontSize: isMobile ? 15 : 17,
+            lineHeight: 1.65,
+            color: "rgba(255,255,255,.4)",
+            marginBottom: 40,
+          }}>
+            Escribinos con tu vehículo y la pieza que buscás.
+            <br />
+            Un asesor real te responde con precio y disponibilidad.
+          </p>
+
+          {/* CTAs */}
+          <div style={{
+            display: "flex",
+            gap: 12,
+            justifyContent: "center",
+            flexWrap: "wrap",
+            marginBottom: 56,
+          }}>
+            <Button
+              as="a"
+              href={waLink(WA_MSG)}
+              target="_blank"
+              rel="noreferrer"
+              variant="whatsapp"
+              size="lg"
+            >
+              Escribir por WhatsApp
+            </Button>
+            <Button
+              onClick={onQuote}
+              size="lg"
+              variant="outline"
+              style={{
+                background: "transparent",
+                color: "#fff",
+                borderColor: "rgba(255,255,255,.18)",
+              }}
+            >
+              Formulario de cotización
+            </Button>
+          </div>
+
+          {/* Divider */}
+          <div style={{
+            width: "100%",
+            height: 1,
+            background: "rgba(255,255,255,.06)",
+            marginBottom: 32,
+          }} />
+
+          {/* Contact row */}
+          <div style={{
+            display: "flex",
+            gap: isMobile ? 20 : 40,
+            justifyContent: "center",
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}>
+            <ContactItem
+              icon={<PhoneIcon />}
+              href={`tel:${contact.phoneTel}`}
+              label={contact.phoneDisplay}
+            />
+            <Dot />
+            <ContactItem
+              icon={<MailIcon />}
+              href={`mailto:${contact.email}`}
+              label={contact.email}
+            />
+            <Dot />
+            <ContactItem
+              icon={<ClockIcon />}
+              label={contact.hours}
+            />
           </div>
 
         </div>
       </Container>
     </section>
   );
+}
+
+function Dot() {
+  return (
+    <div style={{
+      width: 3, height: 3, borderRadius: "50%",
+      background: "rgba(255,255,255,.15)", flexShrink: 0,
+    }} />
+  );
+}
+
+function ContactItem({ icon, label, href }: { icon: React.ReactNode; label: string; href?: string }) {
+  const style: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    fontFamily: font.body,
+    fontSize: 13.5,
+    fontWeight: 500,
+    color: "rgba(255,255,255,.4)",
+    textDecoration: "none",
+    transition: "color .15s",
+  };
+
+  const content = (
+    <>
+      <span style={{ color: "rgba(255,255,255,.2)", display: "flex" }}>{icon}</span>
+      {label}
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        style={style}
+        onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,.75)")}
+        onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
+      >
+        {content}
+      </a>
+    );
+  }
+  return <span style={style}>{content}</span>;
+}
+
+function PhoneIcon() {
+  return <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.42 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.09 6.09l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z" /></svg>;
+}
+function MailIcon() {
+  return <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>;
+}
+function ClockIcon() {
+  return <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 }

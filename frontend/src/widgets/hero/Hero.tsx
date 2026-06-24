@@ -78,10 +78,10 @@ export function Hero({ onQuote }: { onQuote: () => void }) {
             <h1
               style={{
                 fontFamily: font.display,
-                fontSize: isMobile ? 38 : 60,
+                fontSize: isMobile ? 30 : 48,
                 fontWeight: 800,
-                lineHeight: 1.02,
-                letterSpacing: "-.025em",
+                lineHeight: 1.1,
+                letterSpacing: "-.03em",
                 color: "#fff",
                 marginBottom: 22,
               }}
@@ -96,6 +96,8 @@ export function Hero({ onQuote }: { onQuote: () => void }) {
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
+                  display: "inline-block",
+                  paddingBottom: "0.12em",
                 }}
               >
                 un solo lugar.

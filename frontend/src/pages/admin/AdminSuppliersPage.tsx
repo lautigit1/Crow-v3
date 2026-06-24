@@ -330,76 +330,42 @@ export function AdminSuppliersPage() {
         eyebrow={editing === "new" ? "NUEVO" : "EDITAR"}
         title="Proveedor"
         width={520}
+        footer={
+          <>
+            {error && <div style={{ fontFamily: font.body, fontSize: 12.5, color: color.danger, flex: 1 }}>{error}</div>}
+            <Button type="submit" form="supplier-form" fullWidth disabled={saving}>
+              {saving ? "Guardando…" : editing === "new" ? "Crear proveedor" : "Guardar cambios"}
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <form id="supplier-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Field label="Nombre del proveedor *">
-            <Input
-              required
-              value={form.name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })}
-              placeholder="Ej. Distribuidora del Sur S.A."
-            />
+            <Input required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} placeholder="Ej. Distribuidora del Sur S.A." />
           </Field>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Persona de contacto">
-              <Input
-                value={form.contact_name ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ contact_name: e.target.value })}
-                placeholder="Nombre y apellido"
-              />
+              <Input value={form.contact_name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ contact_name: e.target.value })} placeholder="Nombre y apellido" />
             </Field>
             <Field label="Ciudad">
-              <Input
-                value={form.city ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ city: e.target.value })}
-                placeholder="Ej. Mendoza"
-              />
+              <Input value={form.city ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ city: e.target.value })} placeholder="Ej. Mendoza" />
             </Field>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Teléfono">
-              <Input
-                type="tel"
-                value={form.phone ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ phone: e.target.value })}
-                placeholder="+54 261 …"
-              />
+              <Input type="tel" value={form.phone ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ phone: e.target.value })} placeholder="+54 261 …" />
             </Field>
             <Field label="Email">
-              <Input
-                type="email"
-                value={form.email ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ email: e.target.value })}
-                placeholder="ventas@proveedor.com"
-              />
+              <Input type="email" value={form.email ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ email: e.target.value })} placeholder="ventas@proveedor.com" />
             </Field>
           </div>
-
           <Field label="Notas internas">
-            <Textarea
-              rows={3}
-              value={form.notes ?? ""}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ notes: e.target.value })}
-              placeholder="Condiciones comerciales, tiempos de entrega, observaciones…"
-            />
+            <Textarea rows={3} value={form.notes ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ notes: e.target.value })} placeholder="Condiciones comerciales, tiempos de entrega, observaciones…" />
           </Field>
-
-          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontFamily: font.body, fontSize: 14, color: color.ink800 }}>
-            <input
-              type="checkbox"
-              checked={!!form.is_active}
-              onChange={(e) => set({ is_active: e.target.checked })}
-              style={{ width: 16, height: 16, accentColor: color.primary }}
-            />
+          <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontFamily: font.body, fontSize: 13.5, color: color.ink800 }}>
+            <input type="checkbox" checked={!!form.is_active} onChange={(e) => set({ is_active: e.target.checked })} style={{ width: 15, height: 15, accentColor: color.primary }} />
             Proveedor activo
           </label>
-
-          {error && <div style={{ fontFamily: font.body, fontSize: 13, color: color.danger }}>{error}</div>}
-          <Button type="submit" fullWidth disabled={saving}>
-            {saving ? "Guardando…" : editing === "new" ? "Crear proveedor" : "Guardar cambios"}
-          </Button>
         </form>
       </Modal>
     </div>

@@ -1,14 +1,13 @@
 import { Container } from "@/shared/ui";
 import { color, font } from "@/shared/config/theme";
 import { useInView } from "@/shared/lib/useInView";
-import { Icon, type IconName } from "@/shared/ui";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 
-const VALUES: { icon: IconName; title: string; desc: string }[] = [
-  { icon: "message",     title: "Atención personalizada", desc: "Un asesor real te responde. Sin bots, sin esperas interminables." },
-  { icon: "mapPin",      title: "Mendoza ciudad",         desc: "Entregamos el mismo día dentro de la capital mendocina." },
-  { icon: "clock",       title: "Respuesta en < 1 hora",  desc: "Lunes a sábado de 8 a 18 hs. Confirmamos precio y stock al instante." },
-  { icon: "shieldCheck", title: "Garantía incluida",      desc: "Todos nuestros repuestos tienen garantía de fábrica. Sin letra chica." },
+const ITEMS = [
+  { num: "01",  claim: "Sin bots.",       desc: "Un asesor real te responde siempre. Nunca una respuesta automática." },
+  { num: "02",  claim: "El mismo día.",   desc: "Entregamos en Mendoza ciudad. Vos elegís el horario." },
+  { num: "03",  claim: "En una hora.",    desc: "Confirmamos precio y stock al instante, lunes a sábado." },
+  { num: "04",  claim: "Con garantía.",   desc: "Todos los repuestos tienen garantía de fábrica. Sin letra chica." },
 ];
 
 export function StatsSection() {
@@ -22,69 +21,73 @@ export function StatsSection() {
         background: "#fff",
         borderTop: `1px solid ${color.border}`,
         borderBottom: `1px solid ${color.border}`,
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Top accent */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 2,
+        background: `linear-gradient(90deg, ${color.primary} 0%, rgba(0,87,217,0) 60%)`,
+      }} />
+
       <Container>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
-          }}
-        >
-          {VALUES.map((v, i) => {
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
+          gap: 0,
+        }}>
+          {ITEMS.map((item, i) => {
             const isLastRow = isMobile && i >= 2;
             const showRightBorder = isMobile ? i % 2 === 0 : i < 3;
             return (
               <div
-                key={v.title}
+                key={item.claim}
                 style={{
-                  padding: isMobile ? "32px 20px" : "44px 32px",
+                  padding: isMobile ? "36px 22px" : "52px 36px",
                   borderRight: showRightBorder ? `1px solid ${color.border}` : "none",
                   borderTop: isLastRow ? `1px solid ${color.border}` : "none",
                   opacity: inView ? 1 : 0,
-                  animation: inView ? `reveal .5s ${i * 0.08}s ease both` : "none",
+                  animation: inView ? `reveal .5s ${i * 0.09}s ease both` : "none",
                   display: "flex",
-                  alignItems: "flex-start",
-                  gap: 18,
+                  flexDirection: "column",
+                  gap: 0,
                 }}
               >
-                {/* Icon */}
-                <div
-                  style={{
-                    width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-                    background: color.primarySoft,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: color.primary,
-                    marginTop: 2,
-                  }}
-                >
-                  <Icon name={v.icon} size={20} strokeWidth={1.7} />
+                {/* Counter */}
+                <span style={{
+                  fontFamily: font.mono,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: ".18em",
+                  color: color.primary,
+                  marginBottom: 14,
+                  display: "block",
+                }}>
+                  {item.num} ——
+                </span>
+
+                {/* Claim */}
+                <div style={{
+                  fontFamily: font.display,
+                  fontSize: isMobile ? 22 : 26,
+                  fontWeight: 800,
+                  color: color.ink900,
+                  lineHeight: 1.1,
+                  letterSpacing: "-.02em",
+                  marginBottom: 14,
+                }}>
+                  {item.claim}
                 </div>
 
-                {/* Text */}
-                <div>
-                  <div
-                    style={{
-                      fontFamily: font.display,
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: color.ink900,
-                      lineHeight: 1.25,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {v.title}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: font.body,
-                      fontSize: 13,
-                      lineHeight: 1.6,
-                      color: color.textMuted,
-                    }}
-                  >
-                    {v.desc}
-                  </div>
+                {/* Desc */}
+                <div style={{
+                  fontFamily: font.body,
+                  fontSize: 13,
+                  lineHeight: 1.65,
+                  color: color.textMuted,
+                }}>
+                  {item.desc}
                 </div>
               </div>
             );

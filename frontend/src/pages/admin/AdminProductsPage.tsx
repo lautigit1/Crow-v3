@@ -261,59 +261,114 @@ export function AdminProductsPage() {
       </Drawer>
 
       {/* Create / edit modal */}
-      <Modal open={editing !== null} onClose={() => setEditing(null)} eyebrow={editing === "new" ? "NUEVO" : "EDITAR"} title="Producto" width={580}>
-        <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <Field label="Nombre"><Input required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} /></Field>
-            <Field label="SKU"><Input required value={form.sku} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ sku: e.target.value })} /></Field>
+      <Modal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        eyebrow={editing === "new" ? "NUEVO PRODUCTO" : "EDITAR PRODUCTO"}
+        title="Producto"
+        width={600}
+        footer={
+          <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+            {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}
+            <Button type="submit" form="product-form" disabled={saving} style={{ minWidth: 180 }}>
+              {saving ? "Guardando…" : "Guardar producto"}
+            </Button>
           </div>
-          <Field label="Descripción">
-            <Textarea rows={2} value={form.description ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ description: e.target.value })} />
-          </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-            <Field label="Precio (ARS)">
-              <Input type="number" min={0} value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ price: e.target.value ? Number(e.target.value) : null })} />
-            </Field>
-            <Field label="Stock">
-              <Input type="number" min={0} value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ stock: Number(e.target.value) })} />
-            </Field>
-            <Field label="Tipo vehículo">
-              <Select value={form.vehicle_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ vehicle_type: e.target.value })}>
+        }
+      >
+        <form id="product-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+          {/* Fila 1: Nombre + SKU */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 130px", gap: 10 }}>
+            <CompactField label="Nombre">
+              <Input required value={form.name} placeholder="Kit de frenos delanteros Gol G5" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} style={inp} />
+            </CompactField>
+            <CompactField label="SKU">
+              <Input required value={form.sku} placeholder="KIT-001" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ sku: e.target.value })} style={inp} />
+            </CompactField>
+          </div>
+
+          {/* Fila 2: Descripción */}
+          <CompactField label="Descripción">
+            <Textarea rows={2} value={form.description ?? ""} placeholder="Descripción breve del producto…" onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ description: e.target.value })} style={{ fontSize: 13, minHeight: 58 }} />
+          </CompactField>
+
+          <Divider label="Precio y stock" />
+
+          {/* Fila 3: Precio + Stock + Vehículo */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            <CompactField label="Precio (ARS)">
+              <Input type="number" min={0} placeholder="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ price: e.target.value ? Number(e.target.value) : null })} style={inp} />
+            </CompactField>
+            <CompactField label="Stock">
+              <Input type="number" min={0} value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ stock: Number(e.target.value) })} style={inp} />
+            </CompactField>
+            <CompactField label="Tipo vehículo">
+              <Select value={form.vehicle_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ vehicle_type: e.target.value })} style={inp}>
                 {VEHICLE_TYPES.filter((t) => t !== "Todos").map((t) => <option key={t} value={t}>{t}</option>)}
               </Select>
-            </Field>
+            </CompactField>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-            <Field label="Categoría">
-              <Select value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ category_id: e.target.value ? Number(e.target.value) : null })}>
+
+          <Divider label="Clasificación" />
+
+          {/* Fila 4: Categoría + Marca + Proveedor */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            <CompactField label="Categoría">
+              <Select value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ category_id: e.target.value ? Number(e.target.value) : null })} style={inp}>
                 <option value="">Sin categoría</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Select>
-            </Field>
-            <Field label="Marca">
-              <Select value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ brand_id: e.target.value ? Number(e.target.value) : null })}>
+            </CompactField>
+            <CompactField label="Marca">
+              <Select value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ brand_id: e.target.value ? Number(e.target.value) : null })} style={inp}>
                 <option value="">Sin marca</option>
                 {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </Select>
-            </Field>
-            <Field label="Proveedor">
-              <Select value={form.supplier_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ supplier_id: e.target.value ? Number(e.target.value) : null })}>
+            </CompactField>
+            <CompactField label="Proveedor">
+              <Select value={form.supplier_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ supplier_id: e.target.value ? Number(e.target.value) : null })} style={inp}>
                 <option value="">Sin proveedor</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </Select>
-            </Field>
+            </CompactField>
           </div>
-          <Field label="URL de imagen (opcional)">
-            <Input value={form.image_url ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ image_url: e.target.value })} placeholder="https://…" />
-          </Field>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontFamily: font.body, fontSize: 14, color: color.ink800 }}>
-            <input type="checkbox" checked={!!form.is_featured} onChange={(e) => set({ is_featured: e.target.checked })} style={{ width: 16, height: 16, accentColor: color.primary }} />
-            Producto destacado en la landing
-          </label>
-          {error && <div style={{ fontFamily: font.body, fontSize: 13, color: color.danger }}>{error}</div>}
-          <Button type="submit" fullWidth disabled={saving}>{saving ? "Guardando…" : "Guardar producto"}</Button>
+
+          {/* Fila 5: Imagen + Featured */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+            <CompactField label="URL de imagen (opcional)">
+              <Input value={form.image_url ?? ""} placeholder="https://…" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ image_url: e.target.value })} style={inp} />
+            </CompactField>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", paddingBottom: 9, whiteSpace: "nowrap" }}>
+              <input type="checkbox" checked={!!form.is_featured} onChange={(e) => set({ is_featured: e.target.checked })} style={{ width: 14, height: 14, accentColor: color.primary, cursor: "pointer" }} />
+              <span style={{ fontFamily: font.body, fontSize: 12.5, color: color.textMuted }}>Destacado</span>
+            </label>
+          </div>
+
         </form>
       </Modal>
+    </div>
+  );
+}
+
+// Input height override for compact modal
+const inp: React.CSSProperties = { height: 34, fontSize: 13 };
+
+function CompactField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <span style={{ fontFamily: font.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em", color: color.textFaint, textTransform: "uppercase" }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function Divider({ label }: { label: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
+      <div style={{ width: 3, height: 12, borderRadius: 2, background: color.primary, flexShrink: 0 }} />
+      <span style={{ fontFamily: font.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: ".14em", color: color.textFaint, textTransform: "uppercase" }}>{label}</span>
+      <div style={{ flex: 1, height: 1, background: color.border }} />
     </div>
   );
 }

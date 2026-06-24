@@ -11,10 +11,3 @@ export type User = {
   last_login_at: string | null;
   updated_at: string;
 };
-
-export type AuthToken = {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  user: User;
-};

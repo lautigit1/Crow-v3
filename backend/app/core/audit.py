@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import Request
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.models.audit import AuditLog
 from app.models.user import User
+
+_logger = logging.getLogger("crow.audit")
 
 
 def client_ip(request: Request) -> str | None:
@@ -26,21 +30,31 @@ def record(
     request: Request | None = None,
 ) -> None:
     """
-    Append an audit entry. No commit here — the Unit of Work boundary persists it
-    together with the action it describes (so an audit row never outlives a
-    rolled-back action).
+    Append an audit entry inside the current Unit of Work.
+
+    Uses a nested SAVEPOINT so that an audit failure (e.g. a constraint error or
+    a bug in the log model) never rolls back the main business operation.
+    The audit row is silently skipped and an error is logged instead.
     """
-    db.add(
-        AuditLog(
-            actor_id=actor.id if actor else None,
-            actor_email=actor_email or (actor.email if actor else None),
-            action=action,
-            entity=entity,
-            entity_id=str(entity_id) if entity_id is not None else None,
-            detail=detail,
-            ip_address=client_ip(request) if request else None,
-        )
+    entry = AuditLog(
+        actor_id=actor.id if actor else None,
+        actor_email=actor_email or (actor.email if actor else None),
+        action=action,
+        entity=entity,
+        entity_id=str(entity_id) if entity_id is not None else None,
+        detail=detail,
+        ip_address=client_ip(request) if request else None,
     )
+    # Nested transaction (SAVEPOINT) — rolls back only the audit row on failure,
+    # leaving the outer transaction intact.
+    try:
+        with db.begin_nested():
+            db.add(entry)
+    except Exception as exc:
+        _logger.error(
+            "Failed to write audit log — skipping (main transaction preserved)",
+            extra={"action": action, "error": str(exc)},
+        )
 
 
 def record_standalone(**kwargs) -> None:

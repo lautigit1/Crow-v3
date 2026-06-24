@@ -37,9 +37,9 @@ export const color = {
 } as const;
 
 export const font = {
-  display: "'Archivo', sans-serif",
-  body: "'Inter', system-ui, sans-serif",
-  mono: "'IBM Plex Mono', monospace",
+  display: "'Unbounded', sans-serif",
+  body: "'DM Sans', system-ui, sans-serif",
+  mono: "'Fira Mono', monospace",
 } as const;
 
 export const radius = {
