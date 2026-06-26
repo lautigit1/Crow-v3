@@ -28,7 +28,10 @@ logger = get_logger("crow.startup")
 
 
 def _wait_for_db(retries: int = 10, delay: float = 2.0) -> None:
+    import os
     import time
+    if os.getenv("TESTING"):
+        return  # skip DB check in test environment
     for attempt in range(1, retries + 1):
         if check_db_connection():
             logger.info("Database is reachable", extra={"attempt": attempt})
@@ -54,7 +57,10 @@ async def lifespan(app: FastAPI):
 
     _wait_for_db()
 
-    if not settings.is_production:
+    import os
+    if os.getenv("TESTING"):
+        pass  # tables already created by conftest fixture
+    elif not settings.is_production:
         Base.metadata.create_all(bind=engine)
         logger.info("DB tables ensured (create_all -- dev mode)")
     else:

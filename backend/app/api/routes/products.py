@@ -36,17 +36,22 @@ def list_products(
     stmt = select(Product).options(*_EAGER).where(Product.is_deleted.is_(False))
 
     if q:
-        # Use pg_trgm similarity search -- benefits from the GIN indices added in
-        # migration 003. Falls back gracefully to ILIKE if trgm is not available.
         q_clean = q.strip()
-        stmt = stmt.where(
-            or_(
-                Product.name.op("%%")(q_clean),
-                Product.sku.op("%%")(q_clean),
-                func.lower(Product.name).contains(q_clean.lower()),
-                func.lower(func.coalesce(Product.description, "")).contains(q_clean.lower()),
-            )
-        )
+        like_filters = [
+            func.lower(Product.name).contains(q_clean.lower()),
+            func.lower(Product.sku).contains(q_clean.lower()),
+            func.lower(func.coalesce(Product.description, "")).contains(q_clean.lower()),
+        ]
+        # pg_trgm similarity -- Postgres only (GIN index from migration 003)
+        try:
+            is_pg = db.get_bind().dialect.name == "postgresql"
+        except Exception:
+            is_pg = False
+        if is_pg:
+            trgm_filters = [Product.name.op("%%")(q_clean), Product.sku.op("%%")(q_clean)]
+            stmt = stmt.where(or_(*trgm_filters, *like_filters))
+        else:
+            stmt = stmt.where(or_(*like_filters))
     if category_id is not None:
         stmt = stmt.where(Product.category_id == category_id)
     if brand_id is not None:
