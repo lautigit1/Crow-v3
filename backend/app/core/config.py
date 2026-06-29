@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     SEED_USER_EMAIL: str = "cliente@crowrepuestos.com"
     SEED_USER_PASSWORD: str = "cliente1234"
 
+    # ── Redis ─────────────────────────────────────────────────────────────────
+    REDIS_URL: str = ""
+    # Connection URL for Redis. Leave empty to use in-memory fallback stores.
+    # Example: "redis://localhost:6379/0"  or  "redis://:password@redis:6379/0"
+
     # ── Security / Proxy ─────────────────────────────────────────────────────
     TRUSTED_PROXIES: str = ""
     # Comma-separated IPs of trusted reverse proxies (e.g. nginx container).

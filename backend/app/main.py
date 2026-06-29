@@ -67,6 +67,13 @@ async def lifespan(app: FastAPI):
 
     _wait_for_db()
 
+    # Optional Redis — non-fatal if unavailable
+    if settings.REDIS_URL:
+        from app.core.redis_client import init_redis
+        init_redis(settings.REDIS_URL)
+    else:
+        logger.info("REDIS_URL no configurada — usando stores en memoria")
+
     import os
     if os.getenv("TESTING"):
         pass  # tables already created by conftest fixture
@@ -80,6 +87,8 @@ async def lifespan(app: FastAPI):
 
     logger.info("Shutting down -- disposing DB connection pool")
     engine.dispose()
+    from app.core.redis_client import close_redis
+    close_redis()
 
 
 app = FastAPI(
@@ -115,10 +124,13 @@ app.include_router(seo_router)
 @app.get("/api/health", tags=["ops"], include_in_schema=False)
 def health() -> dict:
     from fastapi.responses import JSONResponse
+    from app.core.redis_client import redis_is_up
     db_ok = check_db_connection()
+    redis_ok = redis_is_up()
     payload = {
         "status": "ok" if db_ok else "degraded",
         "db": "up" if db_ok else "down",
+        "redis": "up" if redis_ok else ("disabled" if not settings.REDIS_URL else "down"),
         "version": "1.3.0",
         "environment": settings.ENVIRONMENT,
     }

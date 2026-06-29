@@ -13,11 +13,42 @@ from app.schemas.dashboard import Analytics, DashboardStats, NamedCount, StockSu
 router = APIRouter()
 
 LOW_STOCK_THRESHOLD = 5
+_CACHE_TTL = 60  # seconds
 
+# ── Redis cache helpers ────────────────────────────────────────────────────────
+
+def _cache_get(key: str) -> str | None:
+    from app.core.redis_client import get_redis
+    r = get_redis()
+    if r is None:
+        return None
+    try:
+        return r.get(f"crow:cache:{key}")
+    except Exception:
+        return None
+
+
+def _cache_set(key: str, value: str, ttl: int = _CACHE_TTL) -> None:
+    from app.core.redis_client import get_redis
+    r = get_redis()
+    if r is None:
+        return
+    try:
+        r.setex(f"crow:cache:{key}", ttl, value)
+    except Exception:
+        pass
+
+
+# ── Routes ─────────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=DashboardStats)
 def get_dashboard(db: DbSession, _: AdminUser, response: Response) -> DashboardStats:
     response.headers["Cache-Control"] = "private, max-age=60, stale-while-revalidate=30"
+
+    cached = _cache_get("dashboard")
+    if cached:
+        return DashboardStats.model_validate_json(cached)
+
     _active = Product.is_deleted.is_(False)
     total_products = db.scalar(select(func.count()).select_from(Product).where(_active)) or 0
     out_of_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock <= 0)) or 0
@@ -31,7 +62,7 @@ def get_dashboard(db: DbSession, _: AdminUser, response: Response) -> DashboardS
     active_suppliers = db.scalar(select(func.count()).select_from(Supplier).where(Supplier.is_active.is_(True))) or 0
     recent_quotes = list(db.scalars(select(Quote).order_by(Quote.created_at.desc()).limit(8)).all())
 
-    return DashboardStats(
+    result = DashboardStats(
         total_products=total_products,
         out_of_stock=out_of_stock,
         pending_quotes=pending_quotes,
@@ -42,14 +73,20 @@ def get_dashboard(db: DbSession, _: AdminUser, response: Response) -> DashboardS
         active_suppliers=active_suppliers,
         recent_quotes=recent_quotes,
     )
+    _cache_set("dashboard", result.model_dump_json())
+    return result
 
 
 @router.get("/analytics", response_model=Analytics)
 def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
     response.headers["Cache-Control"] = "private, max-age=60, stale-while-revalidate=30"
+
+    cached = _cache_get("analytics")
+    if cached:
+        return Analytics.model_validate_json(cached)
+
     _active = Product.is_deleted.is_(False)
 
-    # Products grouped by category (solo activos)
     cat_rows = db.execute(
         select(Category.name, func.count(Product.id))
         .join(Product, (Product.category_id == Category.id) & _active, isouter=True)
@@ -58,7 +95,6 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
     ).all()
     products_by_category = [NamedCount(label=name, value=count) for name, count in cat_rows]
 
-    # Products grouped by supplier (solo activos)
     sup_rows = db.execute(
         select(Supplier.name, func.count(Product.id))
         .join(Product, (Product.supplier_id == Supplier.id) & _active, isouter=True)
@@ -68,11 +104,9 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
     ).all()
     products_by_supplier = [NamedCount(label=name, value=count) for name, count in sup_rows]
 
-    # Quotes grouped by status
     status_rows = db.execute(select(Quote.status, func.count(Quote.id)).group_by(Quote.status)).all()
     quotes_by_status = [NamedCount(label=st.value, value=count) for st, count in status_rows]
 
-    # Products grouped by vehicle type (solo activos)
     veh_rows = db.execute(
         select(Product.vehicle_type, func.count(Product.id))
         .where(_active)
@@ -81,18 +115,16 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
     ).all()
     products_by_vehicle = [NamedCount(label=vt, value=count) for vt, count in veh_rows]
 
-    # Stock buckets (solo activos)
     out_of_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock <= 0)) or 0
     low_stock = db.scalar(
         select(func.count()).select_from(Product).where(_active, Product.stock > 0, Product.stock <= LOW_STOCK_THRESHOLD)
     ) or 0
     in_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock > LOW_STOCK_THRESHOLD)) or 0
-
     inventory_value = db.scalar(
         select(func.coalesce(func.sum(Product.price * Product.stock), 0)).select_from(Product).where(_active)
     ) or 0
 
-    return Analytics(
+    result = Analytics(
         products_by_category=products_by_category,
         products_by_supplier=products_by_supplier,
         quotes_by_status=quotes_by_status,
@@ -100,3 +132,5 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
         stock=StockSummary(in_stock=in_stock, low_stock=low_stock, out_of_stock=out_of_stock),
         inventory_value=float(inventory_value),
     )
+    _cache_set("analytics", result.model_dump_json())
+    return result
