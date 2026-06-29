@@ -19,6 +19,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     globals: true,
+    typecheck: {
+      tsconfig: "./tsconfig.test.json",
+    },
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
