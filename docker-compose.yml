@@ -30,13 +30,16 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg2://crow:crow_dev_password@db:5432/crow_repuestos
-      SECRET_KEY: change-me-in-production-please
-      ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+      SECRET_KEY: ${SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       BACKEND_CORS_ORIGINS: "http://localhost:8080,http://localhost:5173"
-      SEED_ADMIN_EMAIL: admin@crowrepuestos.com
-      SEED_ADMIN_PASSWORD: admin1234
-      SEED_USER_EMAIL: cliente@crowrepuestos.com
-      SEED_USER_PASSWORD: cliente1234
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@crowrepuestos.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_USER_EMAIL: ${SEED_USER_EMAIL:-cliente@crowrepuestos.com}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-cliente1234}
+      # IP del container nginx en la red Docker interna (para X-Forwarded-For seguro).
+      # Obtener con: docker inspect crow_web | grep IPAddress
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     ports:
       - "8000:8000" # expuesto para ver Swagger en /docs (el front usa el proxy de nginx)
 

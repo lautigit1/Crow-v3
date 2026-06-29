@@ -58,6 +58,8 @@ class ProductRead(ProductBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    is_deleted: bool
+    deleted_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     category: CategoryRead | None = None

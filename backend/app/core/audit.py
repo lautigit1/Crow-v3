@@ -3,6 +3,7 @@ import logging
 from fastapi import Request
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.audit import AuditLog
 from app.models.user import User
@@ -11,11 +12,21 @@ _logger = logging.getLogger("crow.audit")
 
 
 def client_ip(request: Request) -> str | None:
-    """Best-effort client IP, honouring a reverse proxy's X-Forwarded-For."""
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else None
+    """
+    Returns the real client IP.
+
+    Only trusts X-Forwarded-For when the direct peer (request.client.host)
+    is in settings.TRUSTED_PROXIES — prevents IP spoofing via forged headers.
+
+    In local dev (TRUSTED_PROXIES is empty), falls back to request.client.host
+    directly so rate limiting still works without any extra configuration.
+    """
+    peer = request.client.host if request.client else None
+    if peer and peer in settings.trusted_proxy_set:
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            return fwd.split(",")[0].strip()
+    return peer
 
 
 def record(

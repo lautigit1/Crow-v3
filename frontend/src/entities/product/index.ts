@@ -14,6 +14,8 @@ export type Product = {
   image_url: string | null;
   vehicle_type: string;
   is_featured: boolean;
+  is_deleted: boolean;
+  deleted_at: string | null;
   category_id: number | null;
   brand_id: number | null;
   supplier_id: number | null;
@@ -58,8 +60,11 @@ export type ProductQuery = {
 export const productApi = {
   list: (params: ProductQuery = {}) =>
     api.get<ProductList>("/products", { params }).then((r) => r.data),
+  listDeleted: (params: { skip?: number; limit?: number } = {}) =>
+    api.get<ProductList>("/products/deleted", { params }).then((r) => r.data),
   get: (id: number) => api.get<Product>(`/products/${id}`).then((r) => r.data),
   create: (data: ProductInput) => api.post<Product>("/products", data).then((r) => r.data),
   update: (id: number, data: Partial<ProductInput>) => api.patch<Product>(`/products/${id}`, data).then((r) => r.data),
   remove: (id: number) => api.delete(`/products/${id}`).then(() => undefined),
+  restore: (id: number) => api.patch<Product>(`/products/${id}/restore`).then((r) => r.data),
 };

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from sqlalchemy import func, select
 
 from app.core.deps import AdminUser, DbSession
@@ -16,9 +16,11 @@ LOW_STOCK_THRESHOLD = 5
 
 
 @router.get("", response_model=DashboardStats)
-def get_dashboard(db: DbSession, _: AdminUser) -> DashboardStats:
-    total_products = db.scalar(select(func.count()).select_from(Product)) or 0
-    out_of_stock = db.scalar(select(func.count()).select_from(Product).where(Product.stock <= 0)) or 0
+def get_dashboard(db: DbSession, _: AdminUser, response: Response) -> DashboardStats:
+    response.headers["Cache-Control"] = "private, max-age=60, stale-while-revalidate=30"
+    _active = Product.is_deleted.is_(False)
+    total_products = db.scalar(select(func.count()).select_from(Product).where(_active)) or 0
+    out_of_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock <= 0)) or 0
     pending_quotes = db.scalar(
         select(func.count()).select_from(Quote).where(Quote.status.in_([QuoteStatus.NUEVA, QuoteStatus.EN_REVISION]))
     ) or 0
@@ -43,20 +45,23 @@ def get_dashboard(db: DbSession, _: AdminUser) -> DashboardStats:
 
 
 @router.get("/analytics", response_model=Analytics)
-def get_analytics(db: DbSession, _: AdminUser) -> Analytics:
-    # Products grouped by category
+def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
+    response.headers["Cache-Control"] = "private, max-age=60, stale-while-revalidate=30"
+    _active = Product.is_deleted.is_(False)
+
+    # Products grouped by category (solo activos)
     cat_rows = db.execute(
         select(Category.name, func.count(Product.id))
-        .join(Product, Product.category_id == Category.id, isouter=True)
+        .join(Product, (Product.category_id == Category.id) & _active, isouter=True)
         .group_by(Category.name)
         .order_by(func.count(Product.id).desc())
     ).all()
     products_by_category = [NamedCount(label=name, value=count) for name, count in cat_rows]
 
-    # Products grouped by supplier
+    # Products grouped by supplier (solo activos)
     sup_rows = db.execute(
         select(Supplier.name, func.count(Product.id))
-        .join(Product, Product.supplier_id == Supplier.id, isouter=True)
+        .join(Product, (Product.supplier_id == Supplier.id) & _active, isouter=True)
         .group_by(Supplier.name)
         .order_by(func.count(Product.id).desc())
         .limit(10)
@@ -67,21 +72,24 @@ def get_analytics(db: DbSession, _: AdminUser) -> Analytics:
     status_rows = db.execute(select(Quote.status, func.count(Quote.id)).group_by(Quote.status)).all()
     quotes_by_status = [NamedCount(label=st.value, value=count) for st, count in status_rows]
 
-    # Products grouped by vehicle type
+    # Products grouped by vehicle type (solo activos)
     veh_rows = db.execute(
-        select(Product.vehicle_type, func.count(Product.id)).group_by(Product.vehicle_type).order_by(func.count(Product.id).desc())
+        select(Product.vehicle_type, func.count(Product.id))
+        .where(_active)
+        .group_by(Product.vehicle_type)
+        .order_by(func.count(Product.id).desc())
     ).all()
     products_by_vehicle = [NamedCount(label=vt, value=count) for vt, count in veh_rows]
 
-    # Stock buckets
-    out_of_stock = db.scalar(select(func.count()).select_from(Product).where(Product.stock <= 0)) or 0
+    # Stock buckets (solo activos)
+    out_of_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock <= 0)) or 0
     low_stock = db.scalar(
-        select(func.count()).select_from(Product).where(Product.stock > 0, Product.stock <= LOW_STOCK_THRESHOLD)
+        select(func.count()).select_from(Product).where(_active, Product.stock > 0, Product.stock <= LOW_STOCK_THRESHOLD)
     ) or 0
-    in_stock = db.scalar(select(func.count()).select_from(Product).where(Product.stock > LOW_STOCK_THRESHOLD)) or 0
+    in_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock > LOW_STOCK_THRESHOLD)) or 0
 
     inventory_value = db.scalar(
-        select(func.coalesce(func.sum(Product.price * Product.stock), 0)).select_from(Product)
+        select(func.coalesce(func.sum(Product.price * Product.stock), 0)).select_from(Product).where(_active)
     ) or 0
 
     return Analytics(

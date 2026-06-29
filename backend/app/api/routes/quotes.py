@@ -70,10 +70,17 @@ def create_quote(data: QuoteCreate, db: DbSession, request: Request, background_
 # Authenticated user endpoints
 # ---------------------------------------------------------------------------
 
-@router.get("/me", response_model=list[QuoteRead])
-def my_quotes(current_user: CurrentUser, db: DbSession) -> list[Quote]:
-    stmt = select(Quote).where(Quote.user_id == current_user.id).order_by(Quote.created_at.desc())
-    return list(db.scalars(stmt).all())
+@router.get("/me", response_model=QuoteList)
+def my_quotes(
+    current_user: CurrentUser,
+    db: DbSession,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> QuoteList:
+    base = select(Quote).where(Quote.user_id == current_user.id)
+    total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
+    items = list(db.scalars(base.order_by(Quote.created_at.desc()).offset(skip).limit(limit)).all())
+    return QuoteList(items=items, total=total)
 
 
 @router.post("/me", response_model=QuoteRead, status_code=status.HTTP_201_CREATED)

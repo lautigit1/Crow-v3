@@ -1,6 +1,7 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
-import { Button, DataTable, Modal, Input, CenteredSpinner, Icon, type Column } from "@/shared/ui";
+import { Button, DataTable, Modal, Input, CenteredSpinner, Icon, ConfirmModal, type Column } from "@/shared/ui";
+import { useConfirm } from "@/shared/hooks/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { brandApi, type Brand, type BrandInput } from "@/entities/brand";
 import { apiError } from "@/shared/api/client";
@@ -17,6 +18,7 @@ export function AdminBrandsPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const { confirmProps, askConfirm } = useConfirm();
 
   const load = () => brandApi.list().then(setItems).catch(() => setItems([]));
   useEffect(() => void load(), []);
@@ -47,7 +49,13 @@ export function AdminBrandsPage() {
   };
 
   const remove = async (b: Brand) => {
-    if (!confirm(`¿Eliminar la marca "${b.name}"?`)) return;
+    const ok = await askConfirm({
+      title: "¿Eliminar marca?",
+      message: `¿Eliminar la marca "${b.name}"? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
     await brandApi.remove(b.id);
     await load();
   };
@@ -108,6 +116,8 @@ export function AdminBrandsPage() {
       {items === null ? <CenteredSpinner /> : (
         <DataTable columns={columns} rows={items} getKey={(b) => b.id} empty="No hay marcas registradas." />
       )}
+
+      <ConfirmModal {...confirmProps} />
 
       <Modal
         open={editing !== null}

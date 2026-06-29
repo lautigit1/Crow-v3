@@ -12,8 +12,21 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Proxy API calls to the FastAPI backend during development.
       "/api": "http://localhost:8000",
+    },
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./vitest.setup.ts"],
+    globals: true,
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/main.tsx", "src/**/*.d.ts"],
     },
   },
 });

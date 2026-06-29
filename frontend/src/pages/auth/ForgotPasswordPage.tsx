@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AuthShell } from "./AuthShell";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { color, font, radius } from "@/shared/config/theme";
-import { apiClient, apiError } from "@/shared/api/client";
+import { api as apiClient, apiError } from "@/shared/api/client";
 
 function PremiumInput({ type = "text", value, onChange, placeholder, required }: {
   type?: string; value: string;

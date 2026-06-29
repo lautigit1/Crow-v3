@@ -26,14 +26,14 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg2://crow:crow_dev_password@db:5432/crow_repuestos
-      SECRET_KEY: change-me-in-production-please
+      SECRET_KEY: ${SECRET_KEY}
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       REFRESH_TOKEN_EXPIRE_MINUTES: "60"
       BACKEND_CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
-      SEED_ADMIN_EMAIL: admin@crowrepuestos.com
-      SEED_ADMIN_PASSWORD: admin1234
-      SEED_USER_EMAIL: cliente@crowrepuestos.com
-      SEED_USER_PASSWORD: cliente1234
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@crowrepuestos.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_USER_EMAIL: ${SEED_USER_EMAIL:-cliente@crowrepuestos.com}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-cliente1234}
     ports:
       - "8000:8000"
     volumes:

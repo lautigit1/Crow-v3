@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
@@ -79,6 +81,25 @@ def list_products(
     return ProductList(items=items, total=total)
 
 
+@router.get("/deleted", response_model=ProductList)
+def list_deleted_products(
+    db: DbSession,
+    _: AdminUser,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=24, ge=1, le=100),
+) -> ProductList:
+    """Lista productos eliminados (soft delete). Solo admin."""
+    stmt = (
+        select(Product)
+        .options(*_EAGER)
+        .where(Product.is_deleted.is_(True))
+        .order_by(Product.deleted_at.desc().nullslast())
+    )
+    total = db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
+    items = list(db.scalars(stmt.offset(skip).limit(limit)).all())
+    return ProductList(items=items, total=total)
+
+
 @router.get("/{product_id}", response_model=ProductRead)
 def get_product(product_id: int, db: DbSession, response: Response) -> Product:
     response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=60"
@@ -113,5 +134,25 @@ def delete_product(product_id: int, db: DbSession, admin: AdminUser, request: Re
     obj = crud.product.get(db, product_id)
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+    obj.deleted_at = datetime.now(timezone.utc)
     audit.record(db, action="product.delete", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
     crud.product.delete(db, obj)
+
+
+@router.patch("/{product_id}/restore", response_model=ProductRead)
+def restore_product(product_id: int, db: DbSession, admin: AdminUser, request: Request) -> Product:
+    """Restaura un producto eliminado (soft delete). Solo admin."""
+    obj = db.scalar(
+        select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(True))
+    )
+    if not obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Producto no encontrado o no está eliminado",
+        )
+    obj.is_deleted = False
+    obj.deleted_at = None
+    db.flush()
+    db.refresh(obj)
+    audit.record(db, action="product.restore", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    return obj

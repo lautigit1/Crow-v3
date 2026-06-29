@@ -1,5 +1,4 @@
-import type { CSSProperties, ElementType, ReactNode } from "react";
-import { Hoverable } from "@/shared/lib/Hoverable";
+import { createElement, type CSSProperties, type ElementType, type ReactNode } from "react";
 import { color, font, radius } from "@/shared/config/theme";
 
 type Variant = "primary" | "outline" | "ghost" | "dark" | "whatsapp" | "danger";
@@ -45,6 +44,7 @@ type ButtonProps = {
   as?: ElementType;
   fullWidth?: boolean;
   style?: CSSProperties;
+  className?: string;
   [key: string]: unknown;
 };
 
@@ -55,33 +55,39 @@ export function Button({
   as = "button",
   fullWidth,
   style,
+  className = "",
   ...rest
 }: ButtonProps) {
   const v = variants[variant];
-  return (
-    <Hoverable
-      as={as}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 9,
-        borderRadius: radius.sm,
-        fontFamily: font.body,
-        fontWeight: 600,
-        letterSpacing: ".01em",
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-        transition: "background .16s, border-color .16s, color .16s",
-        width: fullWidth ? "100%" : undefined,
-        ...sizes[size],
-        ...v.base,
-        ...style,
-      }}
-      hoverStyle={v.hover}
-      {...rest}
-    >
-      {children}
-    </Hoverable>
+  
+  const mergedStyle: CSSProperties & Record<string, string | number | undefined> = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    borderRadius: radius.sm,
+    fontFamily: font.body,
+    fontWeight: 600,
+    letterSpacing: ".01em",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    width: fullWidth ? "100%" : undefined,
+    ...sizes[size],
+    ...v.base,
+    ...style,
+    // Set custom CSS variables for CSS-native hover styles without triggering React renders
+    "--hover-bg": (v.hover.background || v.base.background) as string,
+    "--hover-border": (v.hover.borderColor || v.hover.border || v.base.border || "").toString().replace("1px solid ", "") as string,
+    "--hover-color": (v.hover.color || v.base.color) as string,
+  };
+
+  return createElement(
+    as,
+    {
+      style: mergedStyle,
+      className: `hoverable ${className}`.trim(),
+      ...rest,
+    },
+    children
   );
 }

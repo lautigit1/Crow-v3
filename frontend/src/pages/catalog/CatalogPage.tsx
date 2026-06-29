@@ -33,7 +33,6 @@ function SkeletonCard() {
         <div style={{ height: 20, width: "35%", background: color.surface, borderRadius: 4, marginTop: 4 }} />
         <div style={{ height: 36, background: color.surface, borderRadius: radius.md, marginTop: 4 }} />
       </div>
-      <style>{`@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }`}</style>
     </div>
   );
 }

@@ -14,3 +14,4 @@ export { Pagination } from "./Pagination";
 export { Drawer } from "./Drawer";
 export { Icon, type IconName } from "./Icon";
 export { ProductImage, BrandMark } from "./ProductImage";
+export { ConfirmModal } from "./ConfirmModal";

@@ -42,8 +42,18 @@ def _wait_for_db(retries: int = 10, delay: float = 2.0) -> None:
     raise RuntimeError(f"Database unreachable after {retries} attempts -- aborting startup.")
 
 
+_INSECURE_SECRET = "change-me-in-production-please"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.SECRET_KEY == _INSECURE_SECRET:
+        raise RuntimeError(
+            "SECRET_KEY no está configurada. "
+            "Seteá la variable de entorno SECRET_KEY antes de iniciar. "
+            "Podés generar una clave segura con: openssl rand -hex 32"
+        )
+
     configure_logging(level="DEBUG" if not settings.is_production else "INFO")
     logger.info(
         "Starting Crow Repuestos API",

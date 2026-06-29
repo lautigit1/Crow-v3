@@ -107,7 +107,6 @@ def register(data: RegisterRequest, db: DbSession, request: Request, response: R
     db.add(user)
     db.flush()
     db.refresh(user)
-    _register_limiter.register_failure(ip, ip or "anon")
     audit.record(db, action="user.register", actor=user, entity="user", entity_id=user.id, request=request)
     return _auth_response(user, response)
 

@@ -74,7 +74,10 @@ class TestUserQuotes:
         user_client.post(f"{BASE}/me", json=_QUOTE_PAYLOAD)
         r = user_client.get(f"{BASE}/me")
         assert r.status_code == 200
-        assert len(r.json()) == 1
+        data = r.json()
+        assert "items" in data and "total" in data
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
 
     def test_user_sees_only_own_quotes(self, user_client, user, admin, db):
         # Insert admin quote directly in DB (avoids cookie-jar conflict with shared client)
@@ -84,7 +87,7 @@ class TestUserQuotes:
         user_client.post(f"{BASE}/me", json=_QUOTE_PAYLOAD)
         r = user_client.get(f"{BASE}/me")
         assert r.status_code == 200
-        quotes = r.json()
+        quotes = r.json()["items"]
         assert len(quotes) >= 1
         assert all(q["user_id"] == user.id for q in quotes)
 

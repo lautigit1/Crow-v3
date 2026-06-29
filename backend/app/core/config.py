@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     SEED_USER_EMAIL: str = "cliente@crowrepuestos.com"
     SEED_USER_PASSWORD: str = "cliente1234"
 
+    # ── Security / Proxy ─────────────────────────────────────────────────────
+    TRUSTED_PROXIES: str = ""
+    # Comma-separated IPs of trusted reverse proxies (e.g. nginx container).
+    # Example: "172.18.0.3,10.0.0.1"
+    # Leave empty in local dev — X-Forwarded-For is ignored when list is empty.
+
     # ── Rate limiting ─────────────────────────────────────────────────────────
     QUOTE_RATE_LIMIT: int = 5       # max public quote submissions per window
     QUOTE_RATE_WINDOW: int = 3600   # window in seconds (1 hour)
@@ -54,6 +60,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.BACKEND_CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def trusted_proxy_set(self) -> frozenset[str]:
+        return frozenset(ip.strip() for ip in self.TRUSTED_PROXIES.split(",") if ip.strip())
 
     @property
     def is_production(self) -> bool:

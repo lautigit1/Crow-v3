@@ -2,8 +2,9 @@ import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   Button, DataTable, Modal, Drawer, Field, Input, Textarea, Select,
-  Badge, CenteredSpinner, Icon, Pagination, type Column, type SortState,
+  Badge, CenteredSpinner, Icon, Pagination, ConfirmModal, type Column, type SortState,
 } from "@/shared/ui";
+import { useConfirm } from "@/shared/hooks/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { supplierApi, type Supplier, type SupplierInput } from "@/entities/supplier";
 import { apiError } from "@/shared/api/client";
@@ -37,6 +38,7 @@ export function AdminSuppliersPage() {
   const [saving, setSaving] = useState(false);
 
   const [detail, setDetail] = useState<Supplier | null>(null);
+  const { confirmProps, askConfirm } = useConfirm();
 
   const reload = () => {
     setItems(null);
@@ -105,7 +107,13 @@ export function AdminSuppliersPage() {
   };
 
   const remove = async (s: Supplier) => {
-    if (!confirm(`¿Eliminar proveedor "${s.name}"? Los productos vinculados quedarán sin proveedor.`)) return;
+    const ok = await askConfirm({
+      title: "¿Eliminar proveedor?",
+      message: `¿Eliminar "${s.name}"? Los productos vinculados quedarán sin proveedor asignado.`,
+      confirmLabel: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
     await supplierApi.remove(s.id);
     setDetail(null);
     await reload();
@@ -368,6 +376,8 @@ export function AdminSuppliersPage() {
           </label>
         </form>
       </Modal>
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

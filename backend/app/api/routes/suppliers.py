@@ -13,10 +13,7 @@ router = APIRouter()
 
 def _to_read(s: Supplier, db: DbSession) -> SupplierRead:
     count = db.scalar(select(func.count()).select_from(Product).where(Product.supplier_id == s.id)) or 0
-    return SupplierRead(
-        **{c.name: getattr(s, c.name) for c in s.__table__.columns},
-        product_count=count,
-    )
+    return SupplierRead.model_validate(s, update={"product_count": count})
 
 
 @router.get("", response_model=SupplierList)
@@ -54,10 +51,7 @@ def list_suppliers(
         counts = {sid: cnt for sid, cnt in rows}
 
     items = [
-        SupplierRead(
-            **{c.name: getattr(s, c.name) for c in s.__table__.columns},
-            product_count=counts.get(s.id, 0),
-        )
+        SupplierRead.model_validate(s, update={"product_count": counts.get(s.id, 0)})
         for s in suppliers
     ]
     return SupplierList(items=items, total=total)

@@ -19,6 +19,7 @@ class Product(Base):
     vehicle_type: Mapped[str] = mapped_column(String(40), default="Universal")
     is_featured: Mapped[bool] = mapped_column(default=False)
     is_deleted: Mapped[bool] = mapped_column(default=False, index=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
 
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     brand_id: Mapped[int | None] = mapped_column(ForeignKey("brands.id", ondelete="SET NULL"), nullable=True)

@@ -2,8 +2,9 @@ import type * as React from "react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Button, DataTable, Modal, Drawer, Field, Input, Select,
-  Badge, CenteredSpinner, Icon, type Column,
+  Badge, CenteredSpinner, Icon, ConfirmModal, type Column,
 } from "@/shared/ui";
+import { useConfirm } from "@/shared/hooks/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { userApi, type User, type Role } from "@/entities/user";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -46,6 +47,7 @@ export function AdminUsersPage() {
   const [form, setForm] = useState<EditForm>({ full_name: "", phone: "", role: "USER", is_active: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const { confirmProps, askConfirm } = useConfirm();
 
   const load = () => userApi.list().then(setItems).catch(() => setItems([]));
   useEffect(() => { void load(); }, []);
@@ -103,7 +105,13 @@ export function AdminUsersPage() {
   };
 
   const remove = async (u: User) => {
-    if (!confirm(`¿Eliminar permanentemente a "${u.full_name}"?\nEsta acción no se puede deshacer.`)) return;
+    const ok = await askConfirm({
+      title: "¿Eliminar usuario?",
+      message: `¿Eliminar permanentemente a "${u.full_name}"? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
     await userApi.remove(u.id);
     setDetail(null);
     await load();
@@ -369,6 +377,8 @@ export function AdminUsersPage() {
           </label>
         </form>
       </Modal>
+
+      <ConfirmModal {...confirmProps} />
     </div>
   );
 }

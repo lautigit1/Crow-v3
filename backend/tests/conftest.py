@@ -21,6 +21,7 @@ from app.main import app
 from app.models.brand import Brand
 from app.models.category import Category
 from app.models.product import Product
+from app.models.supplier import Supplier
 from app.models.user import User, UserRole
 
 # ---------------------------------------------------------------------------
@@ -186,3 +187,11 @@ def deleted_product(db: Session) -> Product:
     db.add(p)
     db.flush()
     return p
+
+
+@pytest.fixture()
+def supplier(db: Session) -> Supplier:
+    s = Supplier(name="Distribuidora ABC", is_active=True)
+    db.add(s)
+    db.flush()
+    return s

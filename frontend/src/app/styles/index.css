@@ -113,3 +113,34 @@ select {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* High-performance hover/focus/active state using CSS custom variables to bypass JS state triggers */
+.hoverable {
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.hoverable:hover {
+  background: var(--hover-bg) !important;
+  border-color: var(--hover-border) !important;
+  color: var(--hover-color) !important;
+  transform: var(--hover-transform) !important;
+  box-shadow: var(--hover-shadow) !important;
+}
+
+.hoverable:focus-visible {
+  outline: 2px solid var(--primary, #0057d9);
+  outline-offset: 2px;
+  background: var(--focus-bg) !important;
+  border-color: var(--focus-border) !important;
+  color: var(--focus-color) !important;
+}
+
+.hoverable:active {
+  transform: var(--active-transform) !important;
+}
+

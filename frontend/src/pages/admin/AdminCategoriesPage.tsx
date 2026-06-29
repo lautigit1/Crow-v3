@@ -1,6 +1,7 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
-import { Button, DataTable, Modal, Input, Textarea, CenteredSpinner, Icon, type Column } from "@/shared/ui";
+import { Button, DataTable, Modal, Input, Textarea, CenteredSpinner, Icon, ConfirmModal, type Column } from "@/shared/ui";
+import { useConfirm } from "@/shared/hooks/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { categoryApi, type Category, type CategoryInput } from "@/entities/category";
 import { apiError } from "@/shared/api/client";
@@ -17,6 +18,7 @@ export function AdminCategoriesPage() {
   const [form, setForm] = useState<CategoryInput>(empty);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const { confirmProps, askConfirm } = useConfirm();
 
   const load = () => categoryApi.list().then(setItems).catch(() => setItems([]));
   useEffect(() => void load(), []);
@@ -46,7 +48,13 @@ export function AdminCategoriesPage() {
   };
 
   const remove = async (c: Category) => {
-    if (!confirm(`¿Eliminar la categoría "${c.name}"?`)) return;
+    const ok = await askConfirm({
+      title: "¿Eliminar categoría?",
+      message: `¿Eliminar la categoría "${c.name}"? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      danger: true,
+    });
+    if (!ok) return;
     await categoryApi.remove(c.id);
     await load();
   };
@@ -99,6 +107,8 @@ export function AdminCategoriesPage() {
       {items === null ? <CenteredSpinner /> : (
         <DataTable columns={columns} rows={items} getKey={(c) => c.id} empty="No hay categorías." />
       )}
+
+      <ConfirmModal {...confirmProps} />
 
       <Modal
         open={editing !== null}

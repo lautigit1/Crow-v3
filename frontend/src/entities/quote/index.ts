@@ -33,7 +33,8 @@ export const quoteApi = {
   create: (data: QuoteInput) => api.post<Quote>("/quotes", data).then((r) => r.data),
   /** Quote linked to the logged-in user. */
   createMine: (data: QuoteInput) => api.post<Quote>("/quotes/me", data).then((r) => r.data),
-  mine: () => api.get<Quote[]>("/quotes/me").then((r) => r.data),
+  mine: (params?: { skip?: number; limit?: number }) =>
+    api.get<QuoteList>("/quotes/me", { params }).then((r) => r.data),
   listAll: () => api.get<QuoteList>("/quotes").then((r) => r.data.items),
   setStatus: (id: number, status: QuoteStatus) =>
     api.patch<Quote>(`/quotes/${id}/status`, { status }).then((r) => r.data),
