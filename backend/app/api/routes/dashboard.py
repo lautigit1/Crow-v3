@@ -100,37 +100,4 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
         .join(Product, (Product.supplier_id == Supplier.id) & _active, isouter=True)
         .group_by(Supplier.name)
         .order_by(func.count(Product.id).desc())
-        .limit(10)
-    ).all()
-    products_by_supplier = [NamedCount(label=name, value=count) for name, count in sup_rows]
-
-    status_rows = db.execute(select(Quote.status, func.count(Quote.id)).group_by(Quote.status)).all()
-    quotes_by_status = [NamedCount(label=st.value, value=count) for st, count in status_rows]
-
-    veh_rows = db.execute(
-        select(Product.vehicle_type, func.count(Product.id))
-        .where(_active)
-        .group_by(Product.vehicle_type)
-        .order_by(func.count(Product.id).desc())
-    ).all()
-    products_by_vehicle = [NamedCount(label=vt, value=count) for vt, count in veh_rows]
-
-    out_of_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock <= 0)) or 0
-    low_stock = db.scalar(
-        select(func.count()).select_from(Product).where(_active, Product.stock > 0, Product.stock <= LOW_STOCK_THRESHOLD)
-    ) or 0
-    in_stock = db.scalar(select(func.count()).select_from(Product).where(_active, Product.stock > LOW_STOCK_THRESHOLD)) or 0
-    inventory_value = db.scalar(
-        select(func.coalesce(func.sum(Product.price * Product.stock), 0)).select_from(Product).where(_active)
-    ) or 0
-
-    result = Analytics(
-        products_by_category=products_by_category,
-        products_by_supplier=products_by_supplier,
-        quotes_by_status=quotes_by_status,
-        products_by_vehicle=products_by_vehicle,
-        stock=StockSummary(in_stock=in_stock, low_stock=low_stock, out_of_stock=out_of_stock),
-        inventory_value=float(inventory_value),
-    )
-    _cache_set("analytics", result.model_dump_json())
-    return result
+    

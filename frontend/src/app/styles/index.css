@@ -137,10 +137,4 @@ select {
   outline-offset: 2px;
   background: var(--focus-bg) !important;
   border-color: var(--focus-border) !important;
-  color: var(--focus-color) !important;
-}
-
-.hoverable:active {
-  transform: var(--active-transform) !important;
-}
-
+  color: v

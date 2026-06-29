@@ -48,23 +48,4 @@ services:
       BACKEND_CORS_ORIGINS: "http://localhost:8080,http://localhost:5173"
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@crowrepuestos.com}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
-      SEED_USER_EMAIL: ${SEED_USER_EMAIL:-cliente@crowrepuestos.com}
-      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-cliente1234}
-      # IP del container nginx en la red Docker interna (para X-Forwarded-For seguro).
-      # Obtener con: docker inspect crow_web | grep IPAddress
-      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
-      REDIS_URL: redis://crow_redis:6379/0
-    ports:
-      - "8000:8000" # expuesto para ver Swagger en /docs (el front usa el proxy de nginx)
-
-  web:
-    build: ./frontend
-    container_name: crow_web
-    restart: unless-stopped
-    depends_on:
-      - api
-    ports:
-      - "8080:80"
-
-volumes:
-  crow_pgdata:
+ 

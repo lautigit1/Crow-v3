@@ -67,19 +67,4 @@ class TokenBlocklist:
     def size(self) -> int:
         """Number of blocked tokens in the in-memory store (monitoring only)."""
         with self._lock:
-            return len(self._entries)
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _sweep_unlocked(self) -> None:
-        """Evict expired entries. Must be called while holding self._lock."""
-        now = time.time()
-        expired = [jti for jti, exp in self._entries.items() if exp < now]
-        for jti in expired:
-            del self._entries[jti]
-
-
-# Singleton — imported by deps.py and auth routes
-token_blocklist = TokenBlocklist()
+            return len(sel

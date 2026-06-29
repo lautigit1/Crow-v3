@@ -1,16 +1,11 @@
-import { Link } from "react-router-dom";
-import { EmptyState, Button } from "@/shared/ui";
-import { color, font } from "@/shared/config/theme";
+import { useEffect, useState, useCallback } from "react";
+import { CenteredSpinner, EmptyState, Button } from "@/shared/ui";
+import { orderApi, ORDER_STATUS_COLOR, type Order, type OrderCreate } from "@/entities/order";
+import { productApi, type Product } from "@/entities/product";
+import { color, font, radius } from "@/shared/config/theme";
 
-export function MyOrdersPage() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <h1 style={{ fontFamily: font.display, fontSize: 26, fontWeight: 800, color: color.ink900 }}>Mis pedidos</h1>
-      <EmptyState
-        title="Aún no tenés pedidos"
-        message="Cuando concretes una compra, tus pedidos y su seguimiento aparecerán acá."
-        action={<Button as={Link} to="/catalogo">Explorar catálogo</Button>}
-      />
-    </div>
-  );
-}
+// ---------------------------------------------------------------------------
+// Status badge
+// ---------------------------------------------------------------------------
+function StatusBadge({ status }: { status: Order["status"] }) {
+  const bg = ORDER_STATUS_COLOR[status] ?? "#6b728

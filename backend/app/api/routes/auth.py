@@ -247,3 +247,4 @@ def reset_password(data: ResetPasswordRequest, db: DbSession, request: Request) 
     user.hashed_password = hash_password(data.new_password)
     db.add(user)
     audit.record(db, action="password.reset_completed", actor=user, entity="user", entity_id=user.id, request=request)
+                                                         

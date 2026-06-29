@@ -184,14 +184,4 @@ def deleted_product(db: Session) -> Product:
         stock=5,
         is_deleted=True,
     )
-    db.add(p)
-    db.flush()
-    return p
-
-
-@pytest.fixture()
-def supplier(db: Session) -> Supplier:
-    s = Supplier(name="Distribuidora ABC", is_active=True)
-    db.add(s)
-    db.flush()
-    return s
+ 

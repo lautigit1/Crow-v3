@@ -1,39 +1,39 @@
 import { useCallback, useEffect, useState } from "react";
-
-const KEY = "crow.favorites";
-
-function read(): number[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
+import { favoriteApi } from "@/entities/favorite";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 /**
- * Favorites are stored locally (per browser). The list is kept in sync across
- * components via a custom window event.
+ * Favorites backed by the API when the user is logged in.
+ * Falls back to an empty state (no-op toggles) when not authenticated.
  */
 export function useFavorites() {
-  const [ids, setIds] = useState<number[]>(read);
+  const { user } = useAuth();
+  const [ids, setIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchFavorites = useCallback(async () => {
+    if (!user) {
+      setIds([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await favoriteApi.list();
+      setIds(data.product_ids);
+    } catch {
+      setIds([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    const sync = () => setIds(read());
-    window.addEventListener("crow:favorites", sync);
-    return () => window.removeEventListener("crow:favorites", sync);
-  }, []);
+    fetchFavorites();
+  }, [fetchFavorites]);
 
-  const persist = (next: number[]) => {
-    localStorage.setItem(KEY, JSON.stringify(next));
-    window.dispatchEvent(new Event("crow:favorites"));
-  };
-
-  const toggle = useCallback((id: number) => {
-    const current = read();
-    persist(current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
-  }, []);
-
-  const isFavorite = useCallback((id: number) => ids.includes(id), [ids]);
-
-  return { ids, toggle, isFavorite };
-}
+  const toggle = useCallback(
+    async (id: number) => {
+      if (!user) return;
+      const isFav = ids.includes(id);
+      // Optimistic update
+      setIds((prev) => (isFav ? prev.filter((x) => x !== id) : [...prev, id]

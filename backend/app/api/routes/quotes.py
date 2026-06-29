@@ -129,14 +129,3 @@ def update_quote_status(
     quote.status = data.status
     db.add(quote)
     db.flush()
-    db.refresh(quote)
-    audit.record(
-        db,
-        action="quote.status_update",
-        actor=admin,
-        entity="quote",
-        entity_id=quote.id,
-        detail=data.status.value,
-        request=request,
-    )
-    return quote
