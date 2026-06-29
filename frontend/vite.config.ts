@@ -17,4 +17,19 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["./vitest.
+    setupFiles: ["./vitest.setup.ts"],
+    globals: true,
+    typecheck: {
+      tsconfig: "./tsconfig.test.json",
+    },
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/main.tsx", "src/**/*.d.ts"],
+    },
+  },
+});

@@ -423,4 +423,7 @@ function DrawerDetail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".06em", color: color.textFaint, textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontFamily: font.body, fontSize: 13, color: color.ink900 }}>{val
+      <div style={{ fontFamily: font.body, fontSize: 13, color: color.ink900 }}>{value}</div>
+    </div>
+  );
+}

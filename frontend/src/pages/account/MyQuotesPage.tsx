@@ -61,4 +61,32 @@ export function MyQuotesPage() {
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {quotes.map((qt) => (
-              <Card k
+              <Card key={qt.id} pad={18}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>#{qt.id}</span>
+                      <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{formatDate(qt.created_at)}</span>
+                    </div>
+                    <p style={{ fontFamily: font.body, fontSize: 14.5, color: color.ink800, lineHeight: 1.5 }}>{qt.message}</p>
+                    {qt.vehicle && <div style={{ fontFamily: font.body, fontSize: 13, color: color.textMuted, marginTop: 6 }}>Vehículo: {qt.vehicle}</div>}
+                  </div>
+                  <StatusBadge status={qt.status} />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {hasMore && (
+            <div style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? <Spinner size={14} /> : null}
+                {loadingMore ? "Cargando…" : `Cargar más (${total - quotes.length} restantes)`}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

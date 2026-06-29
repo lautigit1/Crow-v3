@@ -59,4 +59,64 @@ export function App() {
         {/* Legal y FAQ — lazy */}
         <Route path="/faq" element={<Suspense fallback={<CenteredSpinner />}><FaqPage /></Suspense>} />
         <Route path="/legal/privacidad" element={<Suspense fallback={<CenteredSpinner />}><PrivacidadPage /></Suspense>} />
-        <Route path="/legal/terminos" element={<Suspense fallback={<CenteredSpinn
+        <Route path="/legal/terminos" element={<Suspense fallback={<CenteredSpinner />}><TerminosPage /></Suspense>} />
+        <Route path="/legal/cookies" element={<Suspense fallback={<CenteredSpinner />}><CookiesPage /></Suspense>} />
+        <Route path="/legal/licencias" element={<Suspense fallback={<CenteredSpinner />}><LicenciasPage /></Suspense>} />
+        <Route path="/legal/accesibilidad" element={<Suspense fallback={<CenteredSpinner />}><AccesibilidadPage /></Suspense>} />
+
+        {/* Client account area — lazy */}
+        <Route
+          path="/cuenta"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<CenteredSpinner />}>
+                <AccountLayout />
+              </Suspense>
+            </RequireAuth>
+          }
+        >
+          <Route index element={<ProfilePage />} />
+          <Route path="cotizaciones" element={<MyQuotesPage />} />
+          <Route path="pedidos" element={<MyOrdersPage />} />
+          <Route path="favoritos" element={<FavoritesPage />} />
+          <Route path="configuracion" element={<AccountSettingsPage />} />
+        </Route>
+      </Route>
+
+      {/* Auth (guest only, full-screen) */}
+      <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
+      <Route path="/registro" element={<GuestOnly><RegisterPage /></GuestOnly>} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      {/* Admin (ADMIN role only) — lazy + ErrorBoundary propio */}
+      <Route
+        path="/admin"
+        element={
+          <RequireAdmin>
+            <ErrorBoundary section="el panel de administración">
+              <Suspense fallback={<CenteredSpinner />}>
+                <AdminLayout />
+              </Suspense>
+            </ErrorBoundary>
+          </RequireAdmin>
+        }
+      >
+        <Route index element={<Suspense fallback={<CenteredSpinner />}><DashboardPage /></Suspense>} />
+        <Route path="productos" element={<Suspense fallback={<CenteredSpinner />}><AdminProductsPage /></Suspense>} />
+        <Route path="inventario" element={<Suspense fallback={<CenteredSpinner />}><AdminInventoryPage /></Suspense>} />
+        <Route path="categorias" element={<Suspense fallback={<CenteredSpinner />}><AdminCategoriesPage /></Suspense>} />
+        <Route path="marcas" element={<Suspense fallback={<CenteredSpinner />}><AdminBrandsPage /></Suspense>} />
+        <Route path="cotizaciones" element={<Suspense fallback={<CenteredSpinner />}><AdminQuotesPage /></Suspense>} />
+        <Route path="proveedores" element={<Suspense fallback={<CenteredSpinner />}><AdminSuppliersPage /></Suspense>} />
+        <Route path="usuarios" element={<Suspense fallback={<CenteredSpinner />}><AdminUsersPage /></Suspense>} />
+        <Route path="reportes" element={<Suspense fallback={<CenteredSpinner />}><AdminReportsPage /></Suspense>} />
+        <Route path="auditoria" element={<Suspense fallback={<CenteredSpinner />}><AdminAuditPage /></Suspense>} />
+        <Route path="configuracion" element={<Suspense fallback={<CenteredSpinner />}><AdminSettingsPage /></Suspense>} />
+      </Route>
+
+      <Route path="/404" element={<NotFoundPage />} />
+      <Route path="*" element={<Navigate to="/404" replace />} />
+    </Routes>
+  );
+}

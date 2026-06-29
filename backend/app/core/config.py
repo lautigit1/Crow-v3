@@ -52,4 +52,32 @@ class Settings(BaseSettings):
     QUOTE_RATE_LIMIT: int = 5       # max public quote submissions per window
     QUOTE_RATE_WINDOW: int = 3600   # window in seconds (1 hour)
 
-    # ── Email / SMTP ───────────────────────────────────────────────�
+    # ── Email / SMTP ──────────────────────────────────────────────────────────
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""            # e.g. ventas@crowrepuestos.com.ar
+    SMTP_PASSWORD: str = ""        # app password (Gmail) or SMTP password
+    SMTP_FROM: str = "Crow Repuestos <noreply@crowrepuestos.com.ar>"
+    ADMIN_EMAIL: str = "ventas@crowrepuestos.com.ar"
+    FRONTEND_URL: str = "http://localhost:5173"   # override in production
+    RESET_TOKEN_EXPIRE_MINUTES: int = 60
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.BACKEND_CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def trusted_proxy_set(self) -> frozenset[str]:
+        return frozenset(ip.strip() for ip in self.TRUSTED_PROXIES.split(",") if ip.strip())
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

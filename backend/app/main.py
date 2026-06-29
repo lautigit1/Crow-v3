@@ -113,4 +113,27 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Request-ID"],
 )
 
-register_e
+register_exception_handlers(app)
+
+# Routers
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+# SEO endpoints at root (no /api prefix) so crawlers find them at canonical URLs
+app.include_router(seo_router)
+
+
+@app.get("/api/health", tags=["ops"], include_in_schema=False)
+def health() -> dict:
+    from fastapi.responses import JSONResponse
+    from app.core.redis_client import redis_is_up
+    db_ok = check_db_connection()
+    redis_ok = redis_is_up()
+    payload = {
+        "status": "ok" if db_ok else "degraded",
+        "db": "up" if db_ok else "down",
+        "redis": "up" if redis_ok else ("disabled" if not settings.REDIS_URL else "down"),
+        "version": "1.3.0",
+        "environment": settings.ENVIRONMENT,
+    }
+    if not db_ok:
+        return JSONResponse(status_code=503, content=payload)
+    return payload

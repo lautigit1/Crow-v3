@@ -37,4 +37,5 @@ export const quoteApi = {
     api.get<QuoteList>("/quotes/me", { params }).then((r) => r.data),
   listAll: () => api.get<QuoteList>("/quotes").then((r) => r.data.items),
   setStatus: (id: number, status: QuoteStatus) =>
-    api.patch<Quote>(
+    api.patch<Quote>(`/quotes/${id}/status`, { status }).then((r) => r.data),
+};

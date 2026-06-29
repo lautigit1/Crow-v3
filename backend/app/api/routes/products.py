@@ -124,4 +124,35 @@ def update_product(product_id: int, data: ProductUpdate, db: DbSession, admin: A
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     obj = crud.product.update(db, obj, data)
-    ob
+    obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
+    audit.record(db, action="product.update", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    return obj
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_product(product_id: int, db: DbSession, admin: AdminUser, request: Request) -> None:
+    obj = crud.product.get(db, product_id)
+    if not obj:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+    obj.deleted_at = datetime.now(timezone.utc)
+    audit.record(db, action="product.delete", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    crud.product.delete(db, obj)
+
+
+@router.patch("/{product_id}/restore", response_model=ProductRead)
+def restore_product(product_id: int, db: DbSession, admin: AdminUser, request: Request) -> Product:
+    """Restaura un producto eliminado (soft delete). Solo admin."""
+    obj = db.scalar(
+        select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(True))
+    )
+    if not obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Producto no encontrado o no está eliminado",
+        )
+    obj.is_deleted = False
+    obj.deleted_at = None
+    db.flush()
+    db.refresh(obj)
+    audit.record(db, action="product.restore", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    return obj

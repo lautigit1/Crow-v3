@@ -258,4 +258,24 @@ export function Icon({
   style,
 }: {
   name: IconName;
-  si
+  size?: number;
+  strokeWidth?: number;
+  style?: CSSProperties;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "block", flex: "none", ...style }}
+      aria-hidden="true"
+    >
+      {P[name]}
+    </svg>
+  );
+}

@@ -30,4 +30,6 @@ class Product(Base):
     supplier: Mapped["Supplier | None"] = relationship(back_populates="products")  # noqa: F821
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[dat
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

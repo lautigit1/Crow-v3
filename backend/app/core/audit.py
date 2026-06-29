@@ -68,4 +68,17 @@ def record(
         )
 
 
-def record_standalone(**kwargs) -> No
+def record_standalone(**kwargs) -> None:
+    """
+    Persist an audit entry in its own committed transaction. Used for events
+    that end in an HTTP error (e.g. failed logins), where the request's Unit of
+    Work will roll back and would otherwise discard the entry.
+    """
+    db = SessionLocal()
+    try:
+        record(db, **kwargs)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()

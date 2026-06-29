@@ -36,4 +36,22 @@ export function useFavorites() {
       if (!user) return;
       const isFav = ids.includes(id);
       // Optimistic update
-      setIds((prev) => (isFav ? prev.filter((x) => x !== id) : [...prev, id]
+      setIds((prev) => (isFav ? prev.filter((x) => x !== id) : [...prev, id]));
+      try {
+        if (isFav) {
+          await favoriteApi.remove(id);
+        } else {
+          await favoriteApi.add(id);
+        }
+      } catch {
+        // Revert on error
+        setIds((prev) => (isFav ? [...prev, id] : prev.filter((x) => x !== id)));
+      }
+    },
+    [user, ids],
+  );
+
+  const isFavorite = useCallback((id: number) => ids.includes(id), [ids]);
+
+  return { ids, toggle, isFavorite, loading, refresh: fetchFavorites };
+}

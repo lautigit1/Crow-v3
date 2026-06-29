@@ -55,14 +55,14 @@ class TestChangePassword:
     def test_change_password_success(self, user_client):
         r = user_client.post(
             f"{BASE}/me/password",
-            json={"current_password": "Password1!", "new_password": "NewPass2@"},
+            json={"current_password": "Password1!", "new_password": "NewPassword2@"},
         )
         assert r.status_code == 204
 
     def test_wrong_current_password(self, user_client):
         r = user_client.post(
             f"{BASE}/me/password",
-            json={"current_password": "wrong", "new_password": "NewPass2@"},
+            json={"current_password": "wrong", "new_password": "NewPassword2@"},
         )
         assert r.status_code == 400
 
@@ -76,7 +76,7 @@ class TestChangePassword:
     def test_requires_auth(self, client):
         r = client.post(
             f"{BASE}/me/password",
-            json={"current_password": "Password1!", "new_password": "NewPass2@"},
+            json={"current_password": "Password1!", "new_password": "NewPassword2@"},
         )
         assert r.status_code == 401
 

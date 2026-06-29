@@ -35,4 +35,9 @@ services:
       SEED_USER_EMAIL: ${SEED_USER_EMAIL:-cliente@crowrepuestos.com}
       SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-cliente1234}
     ports:
-      - "8000:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+
+volumes:
+  crow_pgdata:

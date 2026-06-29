@@ -56,4 +56,62 @@ class LoginRateLimiter:
             if until and until > now:
                 return round(until - now)
             if until:
-                self.
+                self._locked.pop(key, None)
+        return None
+
+    def register_failure(self, ip: str | None, email: str) -> None:
+        """Record a failed attempt. Triggers lockout when max_attempts is reached."""
+        key = self._key(ip, email)
+        from app.core.redis_client import get_redis
+
+        r = get_redis()
+        if r is not None:
+            try:
+                cnt_key = f"{_CNT_PREFIX}{key}"
+                lock_key = f"{_LOCK_PREFIX}{key}"
+                count = r.incr(cnt_key)
+                if count == 1:
+                    # First hit — start the window TTL
+                    r.expire(cnt_key, self.window)
+                if count >= self.max_attempts:
+                    r.setex(lock_key, self.lockout, "1")
+                    r.delete(cnt_key)
+                return
+            except Exception:
+                pass  # fall through
+
+        now = time.time()
+        with self._lock:
+            hits = [t for t in self._hits[key] if now - t < self.window]
+            hits.append(now)
+            self._hits[key] = hits
+            if len(hits) >= self.max_attempts:
+                self._locked[key] = now + self.lockout
+                self._hits[key] = []
+
+    def reset(self, ip: str | None, email: str) -> None:
+        """Clear all rate-limit state for this key (e.g. after successful login)."""
+        key = self._key(ip, email)
+        from app.core.redis_client import get_redis
+
+        r = get_redis()
+        if r is not None:
+            try:
+                r.delete(f"{_CNT_PREFIX}{key}", f"{_LOCK_PREFIX}{key}")
+                return
+            except Exception:
+                pass  # fall through
+
+        with self._lock:
+            self._hits.pop(key, None)
+            self._locked.pop(key, None)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _key(self, ip: str | None, email: str) -> str:
+        return f"{ip or 'unknown'}:{email.lower()}"
+
+
+login_limiter = LoginRateLimiter()

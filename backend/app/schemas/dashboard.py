@@ -31,5 +31,5 @@ class Analytics(BaseModel):
     products_by_supplier: list[NamedCount]
     quotes_by_status: list[NamedCount]
     products_by_vehicle: list[NamedCount]
-    stock: StockSummary
+    stock_summary: StockSummary
     inventory_value: float
