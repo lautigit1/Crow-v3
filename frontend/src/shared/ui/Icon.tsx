@@ -37,7 +37,9 @@ export type IconName =
   | "trendingUp"
   | "wrench"
   | "bell"
-  | "box";
+  | "box"
+  | "image"
+  | "refresh";
 
 const P: Record<IconName, ReactNode> = {
   dashboard: (
@@ -231,6 +233,20 @@ const P: Record<IconName, ReactNode> = {
       <line x1="3.27" y1="6.96" x2="12" y2="12.01" />
       <line x1="20.73" y1="6.96" x2="12" y2="12.01" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </>
+  ),
+  refresh: (
+    <>
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
     </>
   ),
 };

@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
 import {
-  Button, DataTable, Modal, Drawer, Field, Input, Textarea, Select, Badge, CenteredSpinner, Icon, Pagination,
+  Button, DataTable, Modal, Drawer, Input, Textarea, Select, Badge, CenteredSpinner, Icon, Pagination,
   ProductImage, ConfirmModal, type Column, type SortState,
 } from "@/shared/ui";
 import { useConfirm } from "@/shared/hooks/useConfirm";

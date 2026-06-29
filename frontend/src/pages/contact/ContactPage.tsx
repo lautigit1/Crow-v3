@@ -37,7 +37,7 @@ export function ContactPage() {
                 ["Teléfono", contact.phoneDisplay],
                 ["Correo", contact.email],
                 ["Horario", contact.hours],
-                ["Ubicación", contact.address],
+                ["Ubicación", contact.city],
               ].map(([label, value], i, arr) => (
                 <div key={label}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthShell } from "./AuthShell";
-import { Field, Button } from "@/shared/ui";
+import { Field } from "@/shared/ui";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { apiError } from "@/shared/api/client";
 import { color, font, radius } from "@/shared/config/theme";

@@ -2,7 +2,7 @@ import type * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useSearchParams } from "react-router-dom";
-import { Container, Field, Select, EmptyState, Button, Icon } from "@/shared/ui";
+import { Container, Select, EmptyState, Button, Icon } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
 import { ProductCard } from "@/entities/product/ProductCard";
 import { productApi, type Product } from "@/entities/product";

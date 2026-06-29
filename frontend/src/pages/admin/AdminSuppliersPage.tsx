@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
 import {
-  Button, DataTable, Modal, Drawer, Field, Input, Textarea, Select,
+  Button, DataTable, Modal, Drawer, Field, Input, Textarea,
   Badge, CenteredSpinner, Icon, Pagination, ConfirmModal, type Column, type SortState,
 } from "@/shared/ui";
 import { useConfirm } from "@/shared/hooks/useConfirm";
@@ -59,8 +59,8 @@ export function AdminSuppliersPage() {
   const sortedItems = (() => {
     if (!items || !sort) return items ?? [];
     return [...items].sort((a, b) => {
-      let va = (a as never)[sort.key] ?? "";
-      let vb = (b as never)[sort.key] ?? "";
+      let va = (a as Record<string, unknown>)[sort.key] ?? "";
+      let vb = (b as Record<string, unknown>)[sort.key] ?? "";
       if (typeof va === "string") va = va.toLowerCase();
       if (typeof vb === "string") vb = vb.toLowerCase();
       const cmp = va < vb ? -1 : va > vb ? 1 : 0;

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { color, font, radius } from "@/shared/config/theme";
+import { color, font } from "@/shared/config/theme";
 
 type ModalProps = {
   open: boolean;

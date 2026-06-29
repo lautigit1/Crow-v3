@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Container, Logo } from "@/shared/ui";
 import { Hoverable } from "@/shared/lib/Hoverable";
 import { contact, waLink } from "@/shared/config/contact";
-import { color, font, radius } from "@/shared/config/theme";
+import { font, radius } from "@/shared/config/theme";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 
 // ─── Tokens ────────────────────────────────────────────────────────────────────
@@ -72,13 +72,6 @@ function SocialBtn({ href, label, children }: { href: string; label: string; chi
     </Hoverable>
   );
 }
-
-const NAV = [
-  { label: "Inicio", to: "/" },
-  { label: "Catálogo", to: "/catalogo" },
-  { label: "Marcas", to: "/marcas" },
-  { label: "Contacto", to: "/contacto" },
-];
 
 export function Footer() {
   const { isMobile } = useBreakpoint();
