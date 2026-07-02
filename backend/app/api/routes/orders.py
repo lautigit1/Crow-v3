@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
 from app.core.deps import AdminUser, CurrentUser, DbSession
-from app.models.order import Order, OrderItem
+from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Product
 from app.schemas.order import OrderCreate, OrderList, OrderRead, OrderStatusUpdate
 
@@ -72,6 +72,23 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession)
             )
         )
 
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@router.patch("/me/{order_id}/cancel", response_model=OrderRead)
+def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession) -> Order:
+    """Cancela un pedido propio si está en estado Pendiente."""
+    order = _get_order_or_404(order_id, db)
+    if order.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    if order.status != OrderStatus.PENDIENTE:
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se pueden cancelar pedidos Pendientes",
+        )
+    order.status = OrderStatus.CANCELADO
     db.commit()
     db.refresh(order)
     return order

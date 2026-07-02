@@ -80,13 +80,13 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
+              rows.map((row, idx) => (
                 <tr
                   key={getKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  style={{ borderBottom: `1px solid ${color.border}`, cursor: onRowClick ? "pointer" : "default", transition: "background .12s" }}
-                  onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = color.surface)}
-                  onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}
+                  style={{ borderBottom: `1px solid ${color.border}`, cursor: onRowClick ? "pointer" : "default", transition: "background .12s", background: idx % 2 === 1 ? "#FAFBFD" : "#fff" }}
+                  onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = color.primarySoft)}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = idx % 2 === 1 ? "#FAFBFD" : "#fff"; }}
                 >
                   {columns.map((c, i) => (
                     <td key={i} style={{ padding: "13px 16px", textAlign: c.align ?? "left", fontFamily: font.body, fontSize: 14, color: color.ink800, verticalAlign: "middle" }}>

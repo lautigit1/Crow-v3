@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -225,7 +226,6 @@ def forgot_password(
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 def reset_password(data: ResetPasswordRequest, db: DbSession, request: Request) -> None:
     """Validates the reset token, updates the password, and blocklists the JTI."""
-    import time as _time
     invalid_exc = HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="El enlace es invalido o ya expiro.",
@@ -237,7 +237,7 @@ def reset_password(data: ResetPasswordRequest, db: DbSession, request: Request) 
 
     if token_blocklist.is_blocked(jti):
         raise invalid_exc
-    token_blocklist.block(jti, expires_at=_time.time() + 7200)
+    token_blocklist.block(jti, expires_at=time.time() + 7200)
 
     user = db.get(User, user_id)
     if not user or not user.is_active:

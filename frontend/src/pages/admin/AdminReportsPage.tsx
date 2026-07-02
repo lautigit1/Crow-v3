@@ -20,16 +20,16 @@ export function AdminReportsPage() {
   if (error) return <AdminHeader title="Reportes" icon="reports" subtitle="No se pudieron cargar las métricas." />;
   if (!data) return <CenteredSpinner label="Calculando métricas…" />;
 
-  const stockTotal = data.stock.in_stock + data.stock.low_stock + data.stock.out_of_stock;
+  const stockTotal = data.stock_summary.in_stock + data.stock_summary.low_stock + data.stock_summary.out_of_stock;
 
   return (
     <div>
       <AdminHeader title="Reportes" icon="reports" subtitle="Métricas de catálogo, inventario y demanda." />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
-        <StatCard icon="box" label="Productos en stock" value={data.stock.in_stock} tone="success" />
-        <StatCard icon="alert" label="Stock bajo" value={data.stock.low_stock} tone="warning" />
-        <StatCard icon="alert" label="Sin stock" value={data.stock.out_of_stock} tone="danger" />
+        <StatCard icon="box" label="Productos en stock" value={data.stock_summary.in_stock} tone="success" />
+        <StatCard icon="alert" label="Stock bajo" value={data.stock_summary.low_stock} tone="warning" />
+        <StatCard icon="alert" label="Sin stock" value={data.stock_summary.out_of_stock} tone="danger" />
         <StatCard icon="trendingUp" label="Valor inventario" value={formatPrice(data.inventory_value)} tone="primary" />
       </div>
 
@@ -48,9 +48,9 @@ export function AdminReportsPage() {
         <Panel title="Distribución de stock" icon="inventory">
           <DonutChart
             data={[
-              { label: "En stock", value: data.stock.in_stock },
-              { label: "Bajo", value: data.stock.low_stock },
-              { label: "Sin stock", value: data.stock.out_of_stock },
+              { label: "En stock", value: data.stock_summary.in_stock },
+              { label: "Bajo", value: data.stock_summary.low_stock },
+              { label: "Sin stock", value: data.stock_summary.out_of_stock },
             ]}
           />
           <div style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint, marginTop: 14 }}>{stockTotal} productos evaluados</div>

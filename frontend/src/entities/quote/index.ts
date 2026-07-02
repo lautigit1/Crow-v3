@@ -15,6 +15,7 @@ export type Quote = {
   user_id: number | null;
   product_id: number | null;
   created_at: string;
+  admin_reply: string | null;
 };
 
 export type QuoteInput = {

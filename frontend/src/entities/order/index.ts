@@ -58,6 +58,8 @@ export const orderApi = {
     api.get<Order>(`/orders/me/${id}`).then((r) => r.data),
   create: (data: OrderCreate) =>
     api.post<Order>("/orders", data).then((r) => r.data),
+  cancelMine: (id: number) =>
+    api.patch<Order>(`/orders/me/${id}/cancel`).then((r) => r.data),
   // Admin
   listAll: (params?: { skip?: number; limit?: number; user_id?: number }) =>
     api.get<OrderList>("/orders", { params }).then((r) => r.data),

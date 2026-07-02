@@ -30,6 +30,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 # Access token  (short-lived, 30 min by default)
 # ---------------------------------------------------------------------------
 
+_ISS = "crow-repuestos"
+_AUD = "crow-api"
+
+
 def create_access_token(subject: str | int, role: str) -> str:
     """
     Issues a signed JWT carrying the user id (sub), role, and a unique jti.
@@ -38,6 +42,8 @@ def create_access_token(subject: str | int, role: str) -> str:
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
+        "iss": _ISS,
+        "aud": _AUD,
         "sub": str(subject),
         "role": role,
         "type": "access",
@@ -64,6 +70,8 @@ def create_refresh_token(subject: str | int) -> str:
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
     payload = {
+        "iss": _ISS,
+        "aud": _AUD,
         "sub": str(subject),
         "type": "refresh",
         "jti": str(uuid.uuid4()),
@@ -79,7 +87,7 @@ def decode_refresh_token(token: str) -> tuple[str, str]:
     Returns (subject, jti) or raises JWTError.
     The JTI should be blocklisted after rotation to prevent replay attacks.
     """
-    payload = jwt.decode(token, _REFRESH_SECRET, algorithms=[settings.ALGORITHM])
+    payload = jwt.decode(token, _REFRESH_SECRET, algorithms=[settings.ALGORITHM], audience=_AUD)
     if payload.get("type") != "refresh":
         raise JWTError("Invalid token type")
     sub = payload.get("sub")
@@ -120,7 +128,7 @@ def decode_reset_token(token: str) -> tuple[int, str]:
     Validates a reset token.
     Returns (user_id, jti) or raises JWTError.
     """
-    payload = jwt.decode(token, _RESET_SECRET, algorithms=[settings.ALGORITHM])
+    payload = jwt.decode(token, _RESET_SECRET, algorithms=[settings.ALGORITHM], audience=_AUD)
     if payload.get("type") != "reset":
         raise JWTError("Invalid token type")
     sub = payload.get("sub")

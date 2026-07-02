@@ -20,7 +20,7 @@ export type Analytics = {
   products_by_supplier: NamedCount[];
   quotes_by_status: NamedCount[];
   products_by_vehicle: NamedCount[];
-  stock: { in_stock: number; low_stock: number; out_of_stock: number };
+  stock_summary: { in_stock: number; low_stock: number; out_of_stock: number };
   inventory_value: number;
 };
 

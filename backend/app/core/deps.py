@@ -26,7 +26,7 @@ def get_current_user(
     if not access_token:
         raise _CREDENTIALS_EXC
     try:
-        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], audience="crow-api")
 
         # Reject refresh tokens or any non-access token
         if payload.get("type") != "access":

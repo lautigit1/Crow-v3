@@ -259,9 +259,9 @@ export function DashboardPage() {
         </Panel>
         <Panel title="Estado del stock" icon="inventory" iconColor="#059669">
           <DonutChart data={[
-            { label: "En stock", value: analytics.stock.in_stock },
-            { label: "Stock bajo", value: analytics.stock.low_stock },
-            { label: "Sin stock", value: analytics.stock.out_of_stock },
+            { label: "En stock", value: analytics.stock_summary.in_stock },
+            { label: "Stock bajo", value: analytics.stock_summary.low_stock },
+            { label: "Sin stock", value: analytics.stock_summary.out_of_stock },
           ]} />
         </Panel>
       </div>

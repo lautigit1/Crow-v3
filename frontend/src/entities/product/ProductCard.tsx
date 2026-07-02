@@ -51,9 +51,16 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
         />
 
         {/* Stock badge */}
-        <span style={{ position: "absolute", top: 10, right: 10 }}>
-          <Badge tone={inStock ? "success" : "warning"}>
-            {inStock ? "En stock" : "Bajo pedido"}
+        <span style={{ position: "absolute", top: 10, right: 10, display: "flex", alignItems: "center", gap: 5 }}>
+          {inStock && product.stock <= 2 && (
+            <span style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#ef4444", flexShrink: 0,
+              animation: "stockPulse 1.4s ease-in-out infinite",
+            }} />
+          )}
+          <Badge tone={!inStock ? "warning" : product.stock <= 2 ? "danger" : "success"}>
+            {!inStock ? "Bajo pedido" : product.stock <= 2 ? `Últimas ${product.stock}` : "En stock"}
           </Badge>
         </span>
 

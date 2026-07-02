@@ -43,6 +43,7 @@ export function Drawer({
           boxShadow: "-24px 0 80px rgba(0,0,0,.28)",
           display: "flex",
           flexDirection: "column",
+          animation: "slideInRight .22s cubic-bezier(.25,.46,.45,.94) both",
         }}
       >
         {/* Header */}
