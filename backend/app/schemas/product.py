@@ -37,7 +37,9 @@ class ProductBase(BaseModel):
 
 
 class ProductCreate(ProductBase):
-    pass
+    # Costo/margen -- opcionales, uso interno de admin (ver nota en el modelo).
+    cost_price: Decimal | None = Field(default=None, ge=0)
+    margin_pct: Decimal | None = Field(default=None, ge=0)
 
 
 class ProductUpdate(BaseModel):
@@ -45,6 +47,8 @@ class ProductUpdate(BaseModel):
     sku: str | None = Field(default=None, min_length=1, max_length=_SKU_MAX)
     description: str | None = Field(default=None, max_length=_DESC_MAX)
     price: Decimal | None = Field(default=None, ge=0)
+    cost_price: Decimal | None = Field(default=None, ge=0)
+    margin_pct: Decimal | None = Field(default=None, ge=0)
     stock: int | None = Field(default=None, ge=0)
     image_url: str | None = Field(default=None, max_length=_URL_MAX)
     vehicle_type: str | None = Field(default=None, max_length=_VEH_MAX)
@@ -65,6 +69,12 @@ class ProductRead(ProductBase):
     category: CategoryRead | None = None
     brand: BrandRead | None = None
     supplier: _SupplierMin | None = None
+    # Presentes en el schema para que el mismo modelo sirva de respuesta
+    # pública y admin -- el valor real solo se completa para admins
+    # logueados (ver `_serialize_product` en routes/products.py). Para
+    # cualquier otro caller quedan en None sin importar lo que haya en DB.
+    cost_price: Decimal | None = None
+    margin_pct: Decimal | None = None
 
 
 class ProductList(BaseModel):

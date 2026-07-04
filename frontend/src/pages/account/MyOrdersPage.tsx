@@ -113,6 +113,18 @@ function OrderDetailBody({ order }: { order: Order }) {
         </span>
       </div>
 
+      {/* Método de pago */}
+      {order.payment_method && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase" }}>
+            Pago
+          </span>
+          <span style={{ fontFamily: font.body, fontSize: 13, fontWeight: 700, color: color.ink800 }}>
+            {order.payment_method}
+          </span>
+        </div>
+      )}
+
       {/* User notes */}
       {order.notes && (
         <div style={{ background: "#fff", border: `1px solid ${color.border}`, borderRadius: radius.sm, padding: "12px 16px" }}>

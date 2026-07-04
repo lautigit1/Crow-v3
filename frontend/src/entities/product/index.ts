@@ -10,6 +10,11 @@ export type Product = {
   sku: string;
   description: string | null;
   price: number | null;
+  // Solo vienen con valor real cuando el que pide es un admin logueado --
+  // para cualquier otro caller el backend los devuelve en null aunque
+  // haya datos cargados (ver backend/app/api/routes/products.py).
+  cost_price?: number | null;
+  margin_pct?: number | null;
   stock: number;
   image_url: string | null;
   vehicle_type: string;
@@ -33,6 +38,8 @@ export type ProductInput = {
   sku: string;
   description?: string | null;
   price?: number | null;
+  cost_price?: number | null;
+  margin_pct?: number | null;
   stock?: number;
   image_url?: string | null;
   vehicle_type?: string;

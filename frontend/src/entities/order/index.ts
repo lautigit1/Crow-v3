@@ -26,6 +26,29 @@ export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   Cancelado: "#ef4444",
 };
 
+export type PaymentMethod =
+  | "Transferencia"
+  | "Mercado Pago"
+  | "Tarjeta"
+  | "Retiro en local (efectivo)";
+
+export const PAYMENT_METHODS: PaymentMethod[] = [
+  "Transferencia",
+  "Mercado Pago",
+  "Tarjeta",
+  "Retiro en local (efectivo)",
+];
+
+// Mercado Pago todavía no está configurado como pasarela real -- por ahora
+// es una opción más que el cliente elige, el cobro se coordina igual que
+// transferencia/efectivo (ver nota en backend/app/models/order.py).
+export const PAYMENT_METHOD_HINT: Record<PaymentMethod, string> = {
+  Transferencia: "Te pasamos el CBU/alias para transferir.",
+  "Mercado Pago": "Te enviamos el link de pago por WhatsApp.",
+  Tarjeta: "Coordinamos el cobro con tarjeta al confirmar.",
+  "Retiro en local (efectivo)": "Pagás en efectivo al retirar el pedido.",
+};
+
 export type OrderItem = {
   id: number;
   product_id: number | null;
@@ -41,6 +64,7 @@ export type Order = {
   status: OrderStatus;
   notes: string | null;
   admin_notes: string | null;
+  payment_method: PaymentMethod | null;
   items: OrderItem[];
   created_at: string;
   updated_at: string;
@@ -49,7 +73,11 @@ export type Order = {
 export type OrderList = { items: Order[]; total: number };
 
 export type OrderItemInput = { product_id: number; quantity: number };
-export type OrderCreate = { notes?: string | null; items: OrderItemInput[] };
+export type OrderCreate = {
+  notes?: string | null;
+  payment_method?: PaymentMethod | null;
+  items: OrderItemInput[];
+};
 
 export const orderApi = {
   mine: (params?: { skip?: number; limit?: number }) =>

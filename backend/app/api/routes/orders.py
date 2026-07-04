@@ -50,7 +50,7 @@ def my_order_detail(order_id: int, current_user: CurrentUser, db: DbSession) -> 
 @router.post("", response_model=OrderRead, status_code=status.HTTP_201_CREATED)
 def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession) -> Order:
     """Crea un nuevo pedido con los ítems indicados."""
-    order = Order(user_id=current_user.id, notes=payload.notes)
+    order = Order(user_id=current_user.id, notes=payload.notes, payment_method=payload.payment_method)
     db.add(order)
     db.flush()  # Obtener order.id antes de agregar items
 

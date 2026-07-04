@@ -5,9 +5,10 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.core import audit
-from app.core.deps import AdminUser, DbSession
+from app.core.deps import AdminUser, DbSession, OptionalAdmin
 from app.crud import crud
 from app.models.product import Product
+from app.models.user import User
 from app.schemas.product import ProductCreate, ProductList, ProductRead, ProductUpdate
 
 router = APIRouter()
@@ -17,10 +18,21 @@ router = APIRouter()
 _EAGER = [selectinload(Product.category), selectinload(Product.brand), selectinload(Product.supplier)]
 
 
+def _serialize_product(product: Product, admin: User | None) -> ProductRead:
+    """Serializa un producto ocultando costo/margen a cualquiera que no
+    sea un admin logueado -- sin importar lo que haya en la base."""
+    data = ProductRead.model_validate(product)
+    if admin is None:
+        data.cost_price = None
+        data.margin_pct = None
+    return data
+
+
 @router.get("", response_model=ProductList)
 def list_products(
     db: DbSession,
     response: Response,
+    admin: OptionalAdmin,
     q: str | None = Query(default=None, description="Busqueda por nombre, SKU o descripcion"),
     category_id: int | None = Query(default=None),
     brand_id: int | None = Query(default=None),
@@ -78,13 +90,13 @@ def list_products(
     count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
     total = db.scalar(count_stmt) or 0
     items = list(db.scalars(stmt.order_by(order_by).offset(skip).limit(limit)).all())
-    return ProductList(items=items, total=total)
+    return ProductList(items=[_serialize_product(p, admin) for p in items], total=total)
 
 
 @router.get("/deleted", response_model=ProductList)
 def list_deleted_products(
     db: DbSession,
-    _: AdminUser,
+    admin: AdminUser,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=24, ge=1, le=100),
 ) -> ProductList:
@@ -97,36 +109,36 @@ def list_deleted_products(
     )
     total = db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
     items = list(db.scalars(stmt.offset(skip).limit(limit)).all())
-    return ProductList(items=items, total=total)
+    return ProductList(items=[_serialize_product(p, admin) for p in items], total=total)
 
 
 @router.get("/{product_id}", response_model=ProductRead)
-def get_product(product_id: int, db: DbSession, response: Response) -> Product:
+def get_product(product_id: int, db: DbSession, response: Response, admin: OptionalAdmin) -> ProductRead:
     response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=60"
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(False)))
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    return obj
+    return _serialize_product(obj, admin)
 
 
 @router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
-def create_product(data: ProductCreate, db: DbSession, admin: AdminUser, request: Request) -> Product:
+def create_product(data: ProductCreate, db: DbSession, admin: AdminUser, request: Request) -> ProductRead:
     obj = crud.product.create(db, data)
     db.refresh(obj)
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.create", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
-    return obj
+    return _serialize_product(obj, admin)
 
 
 @router.patch("/{product_id}", response_model=ProductRead)
-def update_product(product_id: int, data: ProductUpdate, db: DbSession, admin: AdminUser, request: Request) -> Product:
+def update_product(product_id: int, data: ProductUpdate, db: DbSession, admin: AdminUser, request: Request) -> ProductRead:
     obj = crud.product.get(db, product_id)
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     obj = crud.product.update(db, obj, data)
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.update", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
-    return obj
+    return _serialize_product(obj, admin)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -140,7 +152,7 @@ def delete_product(product_id: int, db: DbSession, admin: AdminUser, request: Re
 
 
 @router.patch("/{product_id}/restore", response_model=ProductRead)
-def restore_product(product_id: int, db: DbSession, admin: AdminUser, request: Request) -> Product:
+def restore_product(product_id: int, db: DbSession, admin: AdminUser, request: Request) -> ProductRead:
     """Restaura un producto eliminado (soft delete). Solo admin."""
     obj = db.scalar(
         select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(True))
@@ -155,4 +167,4 @@ def restore_product(product_id: int, db: DbSession, admin: AdminUser, request: R
     db.flush()
     db.refresh(obj)
     audit.record(db, action="product.restore", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
-    return obj
+    return _serialize_product(obj, admin)

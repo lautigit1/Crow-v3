@@ -1,7 +1,8 @@
 import { useState, type FormEvent, type CSSProperties } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { Container, Logo, Icon } from "@/shared/ui";
 import { AccountMenu } from "@/features/auth/AccountMenu";
+import { useCart } from "@/app/providers/CartProvider";
 import { useScrolled } from "@/shared/lib/useScrolled";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 import { color, font, radius, shadow } from "@/shared/config/theme";
@@ -89,6 +90,38 @@ function SearchBar({ onSearch: onSearchCb }: { onSearch?: () => void }) {
         </span>
       )}
     </form>
+  );
+}
+
+// ── Cart button ───────────────────────────────────────────────────────────────
+function CartButton({ onClick }: { onClick?: () => void }) {
+  const { count } = useCart();
+  return (
+    <Link
+      to="/carrito"
+      onClick={onClick}
+      aria-label="Ver carrito"
+      style={{
+        position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+        width: 38, height: 38, borderRadius: radius.md,
+        border: `1px solid ${color.border}`, color: color.ink700,
+        textDecoration: "none", flexShrink: 0,
+      }}
+    >
+      <Icon name="cart" size={18} />
+      {count > 0 && (
+        <span style={{
+          position: "absolute", top: -6, right: -6,
+          minWidth: 17, height: 17, padding: "0 3px",
+          borderRadius: "50%", background: color.primary, color: "#fff",
+          fontFamily: font.mono, fontSize: 10, fontWeight: 700,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "2px solid #fff",
+        }}>
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </Link>
   );
 }
 
@@ -225,6 +258,9 @@ export function Navbar() {
             /* ── Mobile ── */
             <>
               <div style={{ flex: 1 }} />
+              <div style={{ marginRight: 8 }}>
+                <CartButton />
+              </div>
               <button
                 onClick={() => setMenuOpen(true)}
                 style={{
@@ -250,6 +286,9 @@ export function Navbar() {
               <div style={{ width: 1, height: 22, background: color.border, margin: "0 10px", flexShrink: 0 }} />
               <SearchBar />
               <div style={{ marginLeft: 10, flexShrink: 0 }}>
+                <CartButton />
+              </div>
+              <div style={{ marginLeft: 8, flexShrink: 0 }}>
                 <AccountMenu />
               </div>
             </>

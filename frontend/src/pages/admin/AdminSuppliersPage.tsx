@@ -337,7 +337,7 @@ export function AdminSuppliersPage() {
         onClose={() => setEditing(null)}
         eyebrow={editing === "new" ? "NUEVO" : "EDITAR"}
         title="Proveedor"
-        width={520}
+        width={640}
         footer={
           <>
             {error && <div style={{ fontFamily: font.body, fontSize: 12.5, color: color.danger, flex: 1 }}>{error}</div>}

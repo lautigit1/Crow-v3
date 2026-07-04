@@ -66,6 +66,27 @@ def require_admin(current_user: CurrentUser) -> User:
 AdminUser = Annotated[User, Depends(require_admin)]
 
 
+def get_optional_admin(
+    db: DbSession,
+    access_token: Annotated[str | None, Cookie()] = None,
+) -> User | None:
+    """Como get_current_user, pero nunca lanza -- devuelve None si no hay
+    sesión, el token es inválido, o el usuario no es admin. Se usa en
+    endpoints públicos que quieren enriquecer la respuesta solo para
+    admins logueados (ej. exponer costo/margen de productos) sin exigir
+    autenticación al resto de los visitantes."""
+    if not access_token:
+        return None
+    try:
+        user = get_current_user(db, access_token)
+    except HTTPException:
+        return None
+    return user if user.role == UserRole.ADMIN else None
+
+
+OptionalAdmin = Annotated[User | None, Depends(get_optional_admin)]
+
+
 # ---------------------------------------------------------------------------
 # Refresh-token dependency  (used only by POST /auth/refresh)
 # ---------------------------------------------------------------------------

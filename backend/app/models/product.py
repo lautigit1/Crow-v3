@@ -14,6 +14,11 @@ class Product(Base):
     sku: Mapped[str] = mapped_column(String(40), unique=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     price: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    # Costo y margen -- solo para uso interno/admin, nunca se exponen a
+    # público. `price` sigue siendo la única fuente de verdad para la venta;
+    # estos dos campos son una ayuda para calcularlo, no se derivan solos.
+    cost_price: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    margin_pct: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
     stock: Mapped[int] = mapped_column(Integer, default=0)
     image_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     vehicle_type: Mapped[str] = mapped_column(String(40), default="Universal")

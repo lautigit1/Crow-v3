@@ -16,12 +16,25 @@ class OrderStatus(str, enum.Enum):
     CANCELADO = "Cancelado"
 
 
+class PaymentMethod(str, enum.Enum):
+    TRANSFERENCIA = "Transferencia"
+    MERCADO_PAGO = "Mercado Pago"
+    TARJETA = "Tarjeta"
+    EFECTIVO_LOCAL = "Retiro en local (efectivo)"
+
+
 class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDIENTE, nullable=False)
+    # Nullable a propósito -- pedidos creados por otros caminos (ej. el modal
+    # de "Nuevo pedido" en Mis Pedidos) no siempre indican un método de pago.
+    # Mercado Pago todavía no está configurado como pasarela real: por ahora
+    # es solo una opción más que el cliente elige, el cobro se coordina igual
+    # que transferencia/efectivo.
+    payment_method: Mapped[PaymentMethod | None] = mapped_column(Enum(PaymentMethod), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

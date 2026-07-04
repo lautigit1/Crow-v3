@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/app/providers/AuthProvider";
+import { CartProvider } from "@/app/providers/CartProvider";
 import { ErrorBoundary } from "@/app/providers/ErrorBoundary";
 import { App } from "@/app/App";
 // Self-hosted fonts — bundled with the app, no Google Fonts dependency at runtime
@@ -21,7 +22,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <CartProvider>
+            <App />
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

@@ -8,6 +8,8 @@ import { CenteredSpinner } from "@/shared/ui";
 // ─── Eager: páginas públicas críticas (parte del bundle inicial) ──────────────
 import { HomePage } from "@/pages/home/HomePage";
 import { CatalogPage } from "@/pages/catalog/CatalogPage";
+import { ProductDetailPage } from "@/pages/product/ProductDetailPage";
+import { CartPage } from "@/pages/cart/CartPage";
 import { BrandsPage } from "@/pages/brands/BrandsPage";
 import { ContactPage } from "@/pages/contact/ContactPage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
@@ -23,6 +25,7 @@ const MyQuotesPage        = lazy(() => import("@/pages/account/MyQuotesPage").th
 const MyOrdersPage        = lazy(() => import("@/pages/account/MyOrdersPage").then((m) => ({ default: m.MyOrdersPage })));
 const FavoritesPage       = lazy(() => import("@/pages/account/FavoritesPage").then((m) => ({ default: m.FavoritesPage })));
 const AccountSettingsPage = lazy(() => import("@/pages/account/AccountSettingsPage").then((m) => ({ default: m.AccountSettingsPage })));
+const CheckoutPage        = lazy(() => import("@/pages/checkout/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
 
 // ─── Lazy: panel admin (carga al navegar a /admin) ───────────────────────────
 const AdminLayout         = lazy(() => import("@/pages/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
@@ -53,6 +56,18 @@ export function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/catalogo" element={<CatalogPage />} />
+        <Route path="/producto/:id" element={<ProductDetailPage />} />
+        <Route path="/carrito" element={<CartPage />} />
+        <Route
+          path="/checkout"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<CenteredSpinner />}>
+                <CheckoutPage />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
         <Route path="/marcas" element={<BrandsPage />} />
         <Route path="/contacto" element={<ContactPage />} />
 

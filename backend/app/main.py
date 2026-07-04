@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app import models  # noqa: F401 -- registers models on Base before migrations
 from app.api import api_router
@@ -54,6 +55,13 @@ async def lifespan(app: FastAPI):
             "Podés generar una clave segura con: openssl rand -hex 32"
         )
 
+    if settings.is_production and settings.has_insecure_cors:
+        raise RuntimeError(
+            "BACKEND_CORS_ORIGINS contiene localhost/127.0.0.1 con ENVIRONMENT=production. "
+            "Seteá la variable de entorno BACKEND_CORS_ORIGINS con el dominio real "
+            "antes de iniciar (ej: https://crowrepuestos.com)."
+        )
+
     configure_logging(level="DEBUG" if not settings.is_production else "INFO")
     logger.info(
         "Starting Crow Repuestos API",
@@ -80,6 +88,17 @@ async def lifespan(app: FastAPI):
     elif not settings.is_production:
         Base.metadata.create_all(bind=engine)
         logger.info("DB tables ensured (create_all -- dev mode)")
+        # create_all() solo conoce tablas/columnas declaradas en los modelos --
+        # no crea extensiones de Postgres. pg_trgm (migracion 003) vive solo
+        # en Alembic, asi que en una base nueva en modo dev nunca se instala
+        # a menos que la aseguremos aca tambien. Idempotente y no-fatal.
+        if engine.dialect.name == "postgresql":
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+                logger.info("pg_trgm extension ensured (dev mode)")
+            except Exception as exc:
+                logger.warning(f"No se pudo asegurar la extension pg_trgm: {exc}")
     else:
         logger.info("Production mode -- expecting Alembic migrations to have run")
 

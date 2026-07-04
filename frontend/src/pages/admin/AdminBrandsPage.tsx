@@ -124,7 +124,7 @@ export function AdminBrandsPage() {
         onClose={() => setEditing(null)}
         eyebrow={editing === "new" ? "NUEVA MARCA" : "EDITAR MARCA"}
         title="Marca"
-        width={440}
+        width={560}
         footer={
           <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
             {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}

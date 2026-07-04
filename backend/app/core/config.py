@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     QUOTE_RATE_LIMIT: int = 5       # max public quote submissions per window
     QUOTE_RATE_WINDOW: int = 3600   # window in seconds (1 hour)
 
+    # ── Media uploads (Cloudinary) ───────────────────────────────────────────
+    # Dejar vacío para deshabilitar el upload de imágenes (el form admin cae
+    # al campo de URL manual). Conseguí las credenciales en cloudinary.com.
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
+
     # ── Email / SMTP ──────────────────────────────────────────────────────────
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
@@ -67,12 +74,26 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.BACKEND_CORS_ORIGINS.split(",") if o.strip()]
 
     @property
+    def has_insecure_cors(self) -> bool:
+        """True if any configured CORS origin still points to localhost/127.0.0.1.
+
+        Used to fail fast on startup when ENVIRONMENT=production but nobody
+        overrode BACKEND_CORS_ORIGINS from its development default.
+        """
+        markers = ("localhost", "127.0.0.1")
+        return any(marker in origin for origin in self.cors_origins for marker in markers)
+
+    @property
     def trusted_proxy_set(self) -> frozenset[str]:
         return frozenset(ip.strip() for ip in self.TRUSTED_PROXIES.split(",") if ip.strip())
 
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT == "production"
+
+    @property
+    def cloudinary_configured(self) -> bool:
+        return bool(self.CLOUDINARY_CLOUD_NAME and self.CLOUDINARY_API_KEY and self.CLOUDINARY_API_SECRET)
 
 
 @lru_cache

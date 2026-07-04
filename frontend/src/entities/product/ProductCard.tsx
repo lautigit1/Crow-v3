@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Badge, Icon, ProductImage } from "@/shared/ui";
 import { formatPrice } from "@/shared/lib/format";
 import { useFavorites } from "@/shared/lib/useFavorites";
@@ -23,6 +24,7 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
   const [waHov, setWaHov] = useState(false);
 
   const waMsg = `Hola Crow! Me interesa este producto: ${product.name} (SKU: ${product.sku}). ¿Tienen disponibilidad?`;
+  const detailUrl = `/producto/${product.id}`;
 
   return (
     <div
@@ -42,13 +44,15 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
     >
       {/* Image */}
       <div style={{ position: "relative" }}>
-        <ProductImage
-          name={product.name}
-          sku={product.sku}
-          category={product.category?.name}
-          imageUrl={product.image_url}
-          ratio={1.5}
-        />
+        <Link to={detailUrl} style={{ display: "block" }}>
+          <ProductImage
+            name={product.name}
+            sku={product.sku}
+            category={product.category?.name}
+            imageUrl={product.image_url}
+            ratio={1.5}
+          />
+        </Link>
 
         {/* Stock badge */}
         <span style={{ position: "absolute", top: 10, right: 10, display: "flex", alignItems: "center", gap: 5 }}>
@@ -59,8 +63,8 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
               animation: "stockPulse 1.4s ease-in-out infinite",
             }} />
           )}
-          <Badge tone={!inStock ? "warning" : product.stock <= 2 ? "danger" : "success"}>
-            {!inStock ? "Bajo pedido" : product.stock <= 2 ? `Últimas ${product.stock}` : "En stock"}
+          <Badge tone={!inStock ? "danger" : product.stock <= 2 ? "danger" : "success"}>
+            {!inStock ? "Sin stock" : product.stock <= 2 ? `Últimas ${product.stock}` : "En stock"}
           </Badge>
         </span>
 
@@ -85,7 +89,13 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
       </div>
 
       {/* Content */}
-      <div style={{ padding: "14px 14px 0", flex: 1, display: "flex", flexDirection: "column" }}>
+      <Link
+        to={detailUrl}
+        style={{
+          padding: "14px 14px 0", flex: 1, display: "flex", flexDirection: "column",
+          textDecoration: "none", color: "inherit",
+        }}
+      >
         {/* Meta row */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
           {product.category?.name && (
@@ -129,7 +139,7 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
         }}>
           {formatPrice(product.price)}
         </div>
-      </div>
+      </Link>
 
       {/* Actions */}
       <div style={{

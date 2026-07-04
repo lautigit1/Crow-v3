@@ -10,6 +10,7 @@ import { productApi, type Product, type ProductInput, type ProductSort } from "@
 import { categoryApi, type Category } from "@/entities/category";
 import { brandApi, type Brand } from "@/entities/brand";
 import { supplierApi, type Supplier } from "@/entities/supplier";
+import { uploadApi } from "@/entities/upload/api";
 import { apiError } from "@/shared/api/client";
 import { formatPrice, formatDateTime } from "@/shared/lib/format";
 import { VEHICLE_TYPES } from "@/shared/config/categories";
@@ -18,9 +19,11 @@ import { color, font } from "@/shared/config/theme";
 const PAGE = 10;
 
 const empty: ProductInput = {
-  name: "", sku: "", description: "", price: null, stock: 0, image_url: "",
+  name: "", sku: "", description: "", price: null, cost_price: null, margin_pct: null, stock: 0, image_url: "",
   vehicle_type: "Universal", is_featured: false, category_id: null, brand_id: null, supplier_id: null,
 };
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function toSort(s: SortState | undefined): ProductSort {
   if (!s) return "recent";
@@ -53,6 +56,7 @@ export function AdminProductsPage() {
   const [form, setForm] = useState<ProductInput>(empty);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // drawer (detail)
   const [detail, setDetail] = useState<Product | null>(null);
@@ -107,7 +111,8 @@ export function AdminProductsPage() {
   const openNew = () => { setForm(empty); setEditing("new"); setError(""); };
   const openEdit = (p: Product) => {
     setForm({
-      name: p.name, sku: p.sku, description: p.description ?? "", price: p.price, stock: p.stock,
+      name: p.name, sku: p.sku, description: p.description ?? "", price: p.price,
+      cost_price: p.cost_price ?? null, margin_pct: p.margin_pct ?? null, stock: p.stock,
       image_url: p.image_url ?? "", vehicle_type: p.vehicle_type, is_featured: p.is_featured,
       category_id: p.category_id, brand_id: p.brand_id, supplier_id: p.supplier_id,
     });
@@ -152,6 +157,55 @@ export function AdminProductsPage() {
   };
 
   const set = (patch: Partial<ProductInput>) => setForm((f) => ({ ...f, ...patch }));
+
+  // Costo / margen / precio -- cualquiera de los tres que se edite recalcula
+  // el que falta (si hay costo cargado). Editar precio a mano sigue andando,
+  // solo actualiza el margen para que quede consistente con lo que se ve.
+  const setCostPrice = (v: number | null) =>
+    setForm((f) => {
+      const next = { ...f, cost_price: v };
+      if (v != null && v > 0 && f.margin_pct != null) next.price = round2(v * (1 + f.margin_pct / 100));
+      return next;
+    });
+
+  const setMarginPct = (v: number | null) =>
+    setForm((f) => {
+      const next = { ...f, margin_pct: v };
+      if (f.cost_price != null && f.cost_price > 0 && v != null) next.price = round2(f.cost_price * (1 + v / 100));
+      return next;
+    });
+
+  const setPriceManual = (v: number | null) =>
+    setForm((f) => {
+      const next = { ...f, price: v };
+      if (f.cost_price != null && f.cost_price > 0 && v != null) {
+        next.margin_pct = round2(((v - f.cost_price) / f.cost_price) * 100);
+      }
+      return next;
+    });
+
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+  async function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError("La imagen no puede superar los 5 MB.");
+      e.target.value = "";
+      return;
+    }
+    setUploading(true);
+    setError("");
+    try {
+      const url = await uploadApi.uploadProductImage(file);
+      set({ image_url: url });
+    } catch {
+      setError("No se pudo subir la imagen. Probá de nuevo o pegá una URL manualmente.");
+    } finally {
+      setUploading(false);
+      e.target.value = ""; // permite volver a elegir el mismo archivo
+    }
+  }
 
   const productNameCell = (p: Product) => (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -347,6 +401,13 @@ export function AdminProductsPage() {
             </div>
             <div style={{ fontFamily: font.display, fontSize: 26, fontWeight: 900, color: color.primary }}>{formatPrice(detail.price)}</div>
             {detail.description && <p style={{ fontFamily: font.body, fontSize: 14, lineHeight: 1.6, color: color.textMuted }}>{detail.description}</p>}
+            {detail.cost_price != null && (
+              <div style={{ display: "flex", gap: 20, background: color.surface, borderRadius: 8, padding: "10px 14px" }}>
+                <Detail label="Costo" value={formatPrice(detail.cost_price)} />
+                <Detail label="Margen" value={detail.margin_pct != null ? `${detail.margin_pct}%` : "—"} />
+                <Detail label="Ganancia" value={formatPrice((detail.price ?? 0) - detail.cost_price)} />
+              </div>
+            )}
             <div style={{ borderTop: `1px solid ${color.border}`, paddingTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Detail label="Categoría" value={detail.category?.name ?? "—"} />
               <Detail label="Marca" value={detail.brand?.name ?? "—"} />
@@ -365,7 +426,7 @@ export function AdminProductsPage() {
         onClose={() => setEditing(null)}
         eyebrow={editing === "new" ? "NUEVO PRODUCTO" : "EDITAR PRODUCTO"}
         title="Producto"
-        width={600}
+        width={760}
         footer={
           <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
             {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}
@@ -394,11 +455,26 @@ export function AdminProductsPage() {
 
           <Divider label="Precio y stock" />
 
-          {/* Fila 3: Precio + Stock + Vehículo */}
+          {/* Fila 3: Costo + Margen + Precio de venta */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <CompactField label="Precio (ARS)">
-              <Input type="number" min={0} placeholder="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ price: e.target.value ? Number(e.target.value) : null })} style={inp} />
+            <CompactField label="Precio de costo (ARS)">
+              <Input type="number" min={0} placeholder="0" value={form.cost_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCostPrice(e.target.value ? Number(e.target.value) : null)} style={inp} />
             </CompactField>
+            <CompactField label="Margen (%)">
+              <Input type="number" min={0} step="0.1" placeholder="0" value={form.margin_pct ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMarginPct(e.target.value ? Number(e.target.value) : null)} style={inp} />
+            </CompactField>
+            <CompactField label="Precio de venta (ARS)">
+              <Input type="number" min={0} placeholder="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceManual(e.target.value ? Number(e.target.value) : null)} style={inp} />
+            </CompactField>
+          </div>
+          {form.cost_price != null && form.cost_price > 0 && form.margin_pct != null && (
+            <p style={{ fontFamily: font.body, fontSize: 11.5, color: color.textFaint, margin: "-4px 0 0" }}>
+              Se calcula solo con costo y margen -- también podés escribir el precio de venta directo y el margen se ajusta solo.
+            </p>
+          )}
+
+          {/* Fila 3b: Stock + Vehículo */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <CompactField label="Stock">
               <Input type="number" min={0} value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ stock: Number(e.target.value) })} style={inp} />
             </CompactField>
@@ -433,16 +509,39 @@ export function AdminProductsPage() {
             </CompactField>
           </div>
 
-          {/* Fila 5: Imagen + Featured */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+          {/* Fila 5: Imagen */}
+          <div style={{ display: "grid", gridTemplateColumns: "56px 1fr auto", gap: 10, alignItems: "end" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", border: `1px solid ${color.border}` }}>
+              <ProductImage name={form.name || "Producto"} imageUrl={form.image_url} ratio={1} />
+            </div>
             <CompactField label="URL de imagen (opcional)">
               <Input value={form.image_url ?? ""} placeholder="https://…" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ image_url: e.target.value })} style={inp} />
             </CompactField>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", paddingBottom: 9, whiteSpace: "nowrap" }}>
-              <input type="checkbox" checked={!!form.is_featured} onChange={(e) => set({ is_featured: e.target.checked })} style={{ width: 14, height: 14, accentColor: color.primary, cursor: "pointer" }} />
-              <span style={{ fontFamily: font.body, fontSize: 12.5, color: color.textMuted }}>Destacado</span>
-            </label>
+            <div>
+              <input
+                id="product-image-file"
+                type="file"
+                accept="image/*"
+                onChange={handleImageFile}
+                style={{ display: "none" }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => document.getElementById("product-image-file")?.click()}
+              >
+                <Icon name="image" size={14} /> {uploading ? "Subiendo…" : "Subir imagen"}
+              </Button>
+            </div>
           </div>
+
+          {/* Fila 6: Featured */}
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer" }}>
+            <input type="checkbox" checked={!!form.is_featured} onChange={(e) => set({ is_featured: e.target.checked })} style={{ width: 14, height: 14, accentColor: color.primary, cursor: "pointer" }} />
+            <span style={{ fontFamily: font.body, fontSize: 12.5, color: color.textMuted }}>Destacado</span>
+          </label>
 
         </form>
       </Modal>

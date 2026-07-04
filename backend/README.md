@@ -10,7 +10,13 @@ API REST para Crow Repuestos: autenticación con JWT, control de acceso por role
 - **Docker / docker-compose**
 - Auth: OAuth2 password flow + JWT (python-jose), hashing con bcrypt (passlib)
 
-## Levantar con Docker (recomendado)
+## Levantar con Docker (desarrollo local)
+
+> Este `docker-compose.yml` es solo para desarrollo local del backend en
+> aislamiento (Postgres + API, sin frontend/nginx/Redis). **No usar en
+> producción.** El stack de producción es el `docker-compose.yml` de la raíz
+> del repo, que no monta código fuente y levanta el stack completo
+> (Postgres + Redis + API + nginx/frontend).
 
 ```bash
 cd backend

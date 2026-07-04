@@ -338,7 +338,7 @@ export function AdminUsersPage() {
         onClose={() => setEditing(null)}
         eyebrow="EDITAR"
         title="Usuario"
-        width={480}
+        width={600}
         footer={
           <>
             {error && <div style={{ fontFamily: font.body, fontSize: 12.5, color: color.danger, flex: 1 }}>{error}</div>}

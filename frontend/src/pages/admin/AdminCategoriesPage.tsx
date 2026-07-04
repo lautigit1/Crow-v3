@@ -115,7 +115,7 @@ export function AdminCategoriesPage() {
         onClose={() => setEditing(null)}
         eyebrow={editing === "new" ? "NUEVA CATEGORÍA" : "EDITAR CATEGORÍA"}
         title="Categoría"
-        width={440}
+        width={560}
         footer={
           <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
             {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}

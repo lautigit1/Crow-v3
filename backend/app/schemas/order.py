@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 
-from app.models.order import OrderStatus
+from app.models.order import OrderStatus, PaymentMethod
 
 
 class OrderItemCreate(BaseModel):
@@ -19,6 +19,7 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     notes: str | None = None
+    payment_method: PaymentMethod | None = None
     items: list[OrderItemCreate]
 
     @field_validator("items")
@@ -46,6 +47,7 @@ class OrderRead(BaseModel):
     status: OrderStatus
     notes: str | None
     admin_notes: str | None
+    payment_method: PaymentMethod | None
     items: list[OrderItemRead]
     created_at: datetime
     updated_at: datetime
