@@ -43,9 +43,16 @@ def list_products(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=24, ge=1, le=100),
 ) -> ProductList:
-    # Short public cache -- CDN caches each unique query string separately.
-    # 60s is aggressive enough to handle traffic spikes without showing stale stock.
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=30"
+    # Short public cache -- CDN/browser caches each unique query string
+    # separately. 60s es agresivo pero razonable para tráfico anónimo del
+    # catálogo. Para el panel de admin esto rompe la consistencia: crear/
+    # editar un producto y volver a buscar con el mismo query string (ej.
+    # el propio filtro por SKU que usa AdminProductsPage) puede devolver la
+    # respuesta cacheada por el browser con datos viejos -- el admin
+    # necesita ver siempre el estado real, así que ahí no cacheamos nada.
+    response.headers["Cache-Control"] = (
+        "no-store" if admin else "public, max-age=60, stale-while-revalidate=30"
+    )
 
     stmt = select(Product).options(*_EAGER).where(Product.is_deleted.is_(False))
 
@@ -62,7 +69,7 @@ def list_products(
         except Exception:
             is_pg = False
         if is_pg:
-            trgm_filters = [Product.name.op("%%")(q_clean), Product.sku.op("%%")(q_clean)]
+            trgm_filters = [Product.name.op("%")(q_clean), Product.sku.op("%")(q_clean)]
             stmt = stmt.where(or_(*trgm_filters, *like_filters))
         else:
             stmt = stmt.where(or_(*like_filters))
@@ -114,7 +121,9 @@ def list_deleted_products(
 
 @router.get("/{product_id}", response_model=ProductRead)
 def get_product(product_id: int, db: DbSession, response: Response, admin: OptionalAdmin) -> ProductRead:
-    response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=60"
+    response.headers["Cache-Control"] = (
+        "no-store" if admin else "public, max-age=120, stale-while-revalidate=60"
+    )
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(False)))
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")

@@ -4,6 +4,9 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 frontend/.env.*.local
+frontend/playwright-report/
+frontend/test-results/
+frontend/playwright/.cache/
 
 # ─── Backend ──────────────────────────────────────────────────────────────────
 backend/__pycache__/

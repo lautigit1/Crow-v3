@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 
 from app.core.deps import CurrentUser, DbSession
 from app.models.favorite import UserFavorite
@@ -26,12 +25,19 @@ def add_favorite(product_id: int, current_user: CurrentUser, db: DbSession) -> d
     if product is None or product.is_deleted:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    fav = UserFavorite(user_id=current_user.id, product_id=product_id)
-    db.add(fav)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()  # Ya existe — idempotente, no error
+    # Chequeo previo en vez de insert-y-atrapar-IntegrityError: las rutas no
+    # deben hacer commit/rollback propio (get_db() maneja un único commit por
+    # request -- ver docstring de get_db en core/database.py). Comprobar antes
+    # de insertar da la misma idempotencia sin romper esa unidad de trabajo.
+    existing = db.scalar(
+        select(UserFavorite).where(
+            UserFavorite.user_id == current_user.id,
+            UserFavorite.product_id == product_id,
+        )
+    )
+    if existing is None:
+        db.add(UserFavorite(user_id=current_user.id, product_id=product_id))
+        db.flush()
 
     return {"product_id": product_id}
 
@@ -47,4 +53,4 @@ def remove_favorite(product_id: int, current_user: CurrentUser, db: DbSession) -
     )
     if fav is not None:
         db.delete(fav)
-        db.commit()
+        db.flush()

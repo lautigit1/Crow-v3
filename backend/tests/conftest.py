@@ -133,12 +133,27 @@ def login_as(client: TestClient, email: str, password: str = "Password1!") -> Te
 
 @pytest.fixture()
 def user_client(client: TestClient, user: User) -> TestClient:
-    return login_as(client, user.email)
+    """
+    Cliente logueado como user, con su propia cookie jar.
+
+    OJO: NO reutiliza el objeto `client` para loguearse -- si lo hiciera,
+    y un test pide `user_client` y `admin_client` a la vez, el segundo
+    login (el que se resuelva último) pisaría las cookies del primero en
+    el mismo objeto, dejando a los dos fixtures apuntando efectivamente
+    al mismo usuario. `client` ya dejó armado `dependency_overrides` y
+    corrió el lifespan una vez (queda abierto durante todo el test); acá
+    solo hace falta un TestClient adicional sobre esa misma app ya viva,
+    sin volver a entrar por el `with` (no vuelve a disparar lifespan).
+    """
+    c = TestClient(app, raise_server_exceptions=True)
+    return login_as(c, user.email)
 
 
 @pytest.fixture()
 def admin_client(client: TestClient, admin: User) -> TestClient:
-    return login_as(client, admin.email)
+    """Cliente logueado como admin -- ver nota en `user_client`."""
+    c = TestClient(app, raise_server_exceptions=True)
+    return login_as(c, admin.email)
 
 
 # ---------------------------------------------------------------------------

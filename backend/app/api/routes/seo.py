@@ -12,7 +12,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.deps import DbSession
 from app.models.category import Category
 
 router = APIRouter(tags=["seo"])
@@ -40,7 +40,7 @@ def _url_entry(loc: str, lastmod: str, changefreq: str, priority: str) -> str:
 
 
 @router.get("/sitemap.xml", response_class=PlainTextResponse)
-def sitemap() -> str:
+def sitemap(db: DbSession) -> str:
     base = settings.FRONTEND_URL.rstrip("/")
     today = str(date.today())
     entries: list[str] = []
@@ -51,15 +51,11 @@ def sitemap() -> str:
         entries.append(_url_entry(f"{base}{path}", lastmod, changefreq, priority))
 
     # Dynamic category filter pages — /catalogo?cat=<name>
-    db = next(get_db())
-    try:
-        categories = list(db.scalars(
-            select(Category.name)
-            .where(Category.is_deleted.is_(False))
-            .order_by(Category.name)
-        ).all())
-    finally:
-        db.close()
+    categories = list(db.scalars(
+        select(Category.name)
+        .where(Category.is_deleted.is_(False))
+        .order_by(Category.name)
+    ).all())
 
     for cat_name in categories:
         from urllib.parse import quote

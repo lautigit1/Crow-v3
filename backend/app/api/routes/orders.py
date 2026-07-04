@@ -72,7 +72,10 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession)
             )
         )
 
-    db.commit()
+    # Sin commit propio -- get_db() confirma una sola vez al final del
+    # request (ver docstring en core/database.py); acá alcanza con flush
+    # para tener order.id y poder hacer refresh.
+    db.flush()
     db.refresh(order)
     return order
 
@@ -89,7 +92,7 @@ def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession) -> 
             detail="Solo se pueden cancelar pedidos Pendientes",
         )
     order.status = OrderStatus.CANCELADO
-    db.commit()
+    db.flush()
     db.refresh(order)
     return order
 
@@ -127,6 +130,6 @@ def admin_update_order(
     order.status = payload.status
     if payload.admin_notes is not None:
         order.admin_notes = payload.admin_notes
-    db.commit()
+    db.flush()
     db.refresh(order)
     return order
