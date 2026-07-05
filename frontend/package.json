@@ -40,5 +40,9 @@
     "typescript": "^5.5.4",
     "vite": "^7.0.0",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "@emnapi/core": "1.11.2",
+    "@emnapi/runtime": "1.11.2"
   }
 }
