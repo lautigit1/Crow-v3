@@ -83,18 +83,18 @@ def _auth_response(user: User, response: Response) -> AuthResponse:
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterRequest, db: DbSession, request: Request, response: Response) -> AuthResponse:
     ip = audit.client_ip(request)
-    locked_for = _register_limiter.check(ip, ip or "anon")
+    locked_for = _register_limiter.check(ip, data.email)
     if locked_for:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Demasiados registros desde esta IP. Reintenta en {int(locked_for)} segundos.",
+            detail=f"Demasiados registros. Reintenta en {int(locked_for)} segundos.",
         )
 
     validate_password_strength(data.password)
 
     exists = db.scalar(select(User).where(User.email == data.email))
     if exists:
-        _register_limiter.register_failure(ip, ip or "anon")
+        _register_limiter.register_failure(ip, data.email)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El email ya esta registrado")
 
     user = User(

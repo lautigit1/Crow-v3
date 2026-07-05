@@ -12,7 +12,7 @@ class Supplier(Base):
     __tablename__ = "suppliers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(120))
+    name: Mapped[str] = mapped_column(String(120), unique=True)
     contact_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)

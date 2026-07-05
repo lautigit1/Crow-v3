@@ -1,7 +1,10 @@
+import base64
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from jose import JWTError, jwt
 
 from app.core.config import settings
@@ -34,6 +37,27 @@ _ISS = "crow-repuestos"
 _AUD = "crow-api"
 
 
+def _derive_secret(purpose: str) -> str:
+    """
+    Derives a purpose-specific signing secret from SECRET_KEY via HKDF-SHA256,
+    instead of naive string concatenation (`SECRET_KEY + ":refresh"`).
+
+    Naive concatenation means every derived secret is trivially recoverable
+    from SECRET_KEY (and vice-versa, an attacker who guesses one derived
+    secret has effectively guessed the root key). HKDF is a proper KDF: each
+    `purpose` yields an independent-looking key, and knowledge of one derived
+    secret gives no shortcut to recovering SECRET_KEY or any other purpose's
+    secret.
+    """
+    derived = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=purpose.encode("utf-8"),
+    ).derive(settings.SECRET_KEY.encode("utf-8"))
+    return base64.urlsafe_b64encode(derived).decode("utf-8")
+
+
 def create_access_token(subject: str | int, role: str) -> str:
     """
     Issues a signed JWT carrying the user id (sub), role, and a unique jti.
@@ -58,7 +82,7 @@ def create_access_token(subject: str | int, role: str) -> str:
 # Refresh token
 # ---------------------------------------------------------------------------
 
-_REFRESH_SECRET = settings.SECRET_KEY + ":refresh"  # separate signing secret
+_REFRESH_SECRET = _derive_secret("refresh")  # HKDF-derived, separate signing secret
 
 
 def create_refresh_token(subject: str | int) -> str:
@@ -101,7 +125,7 @@ def decode_refresh_token(token: str) -> tuple[str, str]:
 # Password reset token  (one-time use, 60 min by default)
 # ---------------------------------------------------------------------------
 
-_RESET_SECRET = settings.SECRET_KEY + ":reset"
+_RESET_SECRET = _derive_secret("reset")
 
 
 def create_reset_token(user_id: int) -> tuple[str, str]:
@@ -114,6 +138,8 @@ def create_reset_token(user_id: int) -> tuple[str, str]:
     expire = now + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
     jti = str(uuid.uuid4())
     payload = {
+        "iss": _ISS,
+        "aud": _AUD,
         "sub": str(user_id),
         "type": "reset",
         "jti": jti,

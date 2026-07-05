@@ -124,6 +124,14 @@ class TestCreateSupplier:
         r = admin_client.post(BASE, json={"name": ""})
         assert r.status_code == 422
 
+    def test_create_duplicate_name_rejected(self, admin_client, supplier):
+        r = admin_client.post(BASE, json={**_SUPPLIER_PAYLOAD, "name": supplier.name})
+        assert r.status_code == 409
+
+    def test_create_duplicate_name_case_insensitive_rejected(self, admin_client, supplier):
+        r = admin_client.post(BASE, json={**_SUPPLIER_PAYLOAD, "name": supplier.name.upper()})
+        assert r.status_code == 409
+
 
 # ---------------------------------------------------------------------------
 # Update
@@ -147,6 +155,18 @@ class TestUpdateSupplier:
     def test_update_requires_admin(self, user_client, supplier):
         r = user_client.patch(f"{BASE}/{supplier.id}", json={"city": "X"})
         assert r.status_code == 403
+
+    def test_update_to_duplicate_name_rejected(self, admin_client, supplier, db):
+        other = Supplier(name="Otro Proveedor", is_active=True)
+        db.add(other)
+        db.flush()
+        r = admin_client.patch(f"{BASE}/{other.id}", json={"name": supplier.name})
+        assert r.status_code == 409
+
+    def test_update_keeping_same_name_allowed(self, admin_client, supplier):
+        r = admin_client.patch(f"{BASE}/{supplier.id}", json={"name": supplier.name, "city": "Rosario"})
+        assert r.status_code == 200
+        assert r.json()["city"] == "Rosario"
 
 
 # ---------------------------------------------------------------------------

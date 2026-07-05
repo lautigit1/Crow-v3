@@ -65,8 +65,24 @@ def get_supplier(supplier_id: int, db: DbSession, _: AdminUser) -> SupplierRead:
     return _to_read(s, db)
 
 
+def _assert_name_available(db: DbSession, name: str, *, exclude_id: int | None = None) -> None:
+    """
+    Chequeo previo en vez de insert-y-atrapar-IntegrityError: las rutas no
+    deben hacer commit/rollback propio (get_db() maneja un único commit por
+    request -- ver docstring de get_db en core/database.py). Comprobar antes
+    de insertar/actualizar da el mismo error 409 legible sin romper esa
+    unidad de trabajo ni depender de parsear el texto del IntegrityError.
+    """
+    stmt = select(Supplier.id).where(func.lower(Supplier.name) == name.lower())
+    if exclude_id is not None:
+        stmt = stmt.where(Supplier.id != exclude_id)
+    if db.scalar(stmt) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un proveedor con ese nombre")
+
+
 @router.post("", response_model=SupplierRead, status_code=status.HTTP_201_CREATED)
 def create_supplier(data: SupplierCreate, db: DbSession, admin: AdminUser, request: Request) -> SupplierRead:
+    _assert_name_available(db, data.name)
     s = Supplier(**data.model_dump())
     db.add(s)
     db.flush()
@@ -80,6 +96,8 @@ def update_supplier(supplier_id: int, data: SupplierUpdate, db: DbSession, admin
     s = db.get(Supplier, supplier_id)
     if not s:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proveedor no encontrado")
+    if data.name is not None and data.name.lower() != s.name.lower():
+        _assert_name_available(db, data.name, exclude_id=supplier_id)
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(s, field, value)
     db.add(s)

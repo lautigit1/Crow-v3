@@ -1,0 +1,25 @@
+<html><body style="font-family:sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto">
+  <div style="border-top:3px solid #0057D9;padding:32px 0 0">
+    <h2 style="color:#0057D9;margin:0 0 24px">Nueva cotización #{{ quote_id }}</h2>
+    <table style="border-collapse:collapse;width:100%">
+      <tr><td style="padding:8px 0;color:#666;width:140px">Cliente</td>
+          <td style="padding:8px 0;font-weight:600">{{ customer_name }}</td></tr>
+      <tr><td style="padding:8px 0;color:#666">Email</td>
+          <td style="padding:8px 0">{{ customer_email or "—" }}</td></tr>
+      <tr><td style="padding:8px 0;color:#666">Teléfono</td>
+          <td style="padding:8px 0">{{ customer_phone or "—" }}</td></tr>
+      <tr><td style="padding:8px 0;color:#666">Vehículo</td>
+          <td style="padding:8px 0">{{ vehicle or "—" }}</td></tr>
+    </table>
+    <div style="margin:24px 0 0;padding:16px;background:#f4f7ff;border-radius:8px">
+      <div style="color:#666;font-size:12px;margin-bottom:8px">MENSAJE</div>
+      <p style="margin:0;line-height:1.6;white-space:pre-wrap">{{ message }}</p>
+    </div>
+    <div style="margin:24px 0 0">
+      <a href="{{ frontend_url }}/admin/cotizaciones"
+         style="background:#0057D9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">
+        Ver en el panel
+      </a>
+    </div>
+  </div>
+</body></html>
