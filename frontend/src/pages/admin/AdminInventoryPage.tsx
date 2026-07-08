@@ -5,7 +5,6 @@ import { AdminHeader } from "./ui/AdminHeader";
 import { StatCard } from "./ui/StatCard";
 import { productApi, type Product } from "@/entities/product";
 import { formatPrice } from "@/shared/lib/format";
-import { color, font } from "@/shared/config/theme";
 
 const LOW = 5;
 
@@ -54,8 +53,8 @@ export function AdminInventoryPage() {
       header: "Producto",
       render: (p) => (
         <div>
-          <strong style={{ color: color.ink900 }}>{p.name}</strong>
-          <div style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint }}>{p.sku} · {p.brand?.name ?? "—"}</div>
+          <strong className="text-ink900">{p.name}</strong>
+          <div className="font-mono text-[11px] text-textFaint">{p.sku} · {p.brand?.name ?? "—"}</div>
         </div>
       ),
     },
@@ -77,14 +76,14 @@ export function AdminInventoryPage() {
         const value = draft[p.id] ?? p.stock;
         const dirty = draft[p.id] != null && draft[p.id] !== p.stock;
         return (
-          <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-            <div style={{ width: 84 }}>
+          <div className="inline-flex gap-2 items-center">
+            <div className="w-[84px]">
               <Input
                 type="number"
                 min={0}
                 value={value}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft((d) => ({ ...d, [p.id]: Number(e.target.value) }))}
-                style={{ height: 36, textAlign: "right" }}
+                className="h-9 text-right"
               />
             </div>
             <Button size="sm" variant={dirty ? "primary" : "ghost"} disabled={!dirty || savingId === p.id} onClick={() => saveStock(p)}>
@@ -109,7 +108,7 @@ export function AdminInventoryPage() {
         }
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 22 }}>
+      <div className="grid grid-cols-3 gap-4 mb-[22px]">
         <StatCard icon="alert" label="Sin stock" value={summary.out} tone="danger" />
         <StatCard icon="box" label="Stock bajo (≤ 5)" value={summary.low} tone="warning" />
         <StatCard icon="trendingUp" label="Valor de inventario" value={formatPrice(summary.value)} tone="primary" />

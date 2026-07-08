@@ -1,6 +1,5 @@
 import { Modal } from "./Modal";
 import { Button } from "./Button";
-import { font, color } from "@/shared/config/theme";
 
 type ConfirmModalProps = {
   open: boolean;
@@ -32,23 +31,17 @@ export function ConfirmModal({
       title={title}
       width={400}
       footer={
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <div className="flex gap-2.5 justify-end">
           <Button variant="outline" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button
-            variant={danger ? "danger" : "primary"}
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button variant={danger ? "danger" : "primary"} onClick={onConfirm} disabled={loading}>
             {loading ? "Procesando…" : confirmLabel}
           </Button>
         </div>
       }
     >
-      <p style={{ fontFamily: font.body, fontSize: 14, color: color.ink900, margin: 0, lineHeight: 1.55 }}>
-        {message}
-      </p>
+      <p className="font-body text-[14px] text-ink900 m-0 leading-[1.55]">{message}</p>
     </Modal>
   );
 }

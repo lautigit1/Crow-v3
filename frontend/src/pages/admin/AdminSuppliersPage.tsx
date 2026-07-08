@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
+import clsx from "clsx";
 import {
   Button, DataTable, Modal, Drawer, Field, Input, Textarea,
   Badge, CenteredSpinner, Icon, Pagination, ConfirmModal, type Column, type SortState,
@@ -9,7 +10,7 @@ import { AdminHeader } from "./ui/AdminHeader";
 import { supplierApi, type Supplier, type SupplierInput } from "@/entities/supplier";
 import { apiError } from "@/shared/api/client";
 import { formatDateTime } from "@/shared/lib/format";
-import { color, font, radius } from "@/shared/config/theme";
+import { color } from "@/shared/config/theme";
 
 const PAGE = 15;
 
@@ -133,9 +134,9 @@ export function AdminSuppliersPage() {
       sortKey: "name",
       render: (s) => (
         <div>
-          <div style={{ fontWeight: 700, color: color.ink900 }}>{s.name}</div>
+          <div className="font-bold text-ink900">{s.name}</div>
           {s.contact_name && (
-            <div style={{ fontSize: 12, color: color.textMuted }}>{s.contact_name}</div>
+            <div className="text-xs text-textMuted">{s.contact_name}</div>
           )}
         </div>
       ),
@@ -143,20 +144,20 @@ export function AdminSuppliersPage() {
     {
       header: "Contacto",
       render: (s) => (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div className="flex flex-col gap-0.5">
           {s.phone && (
-            <a href={`tel:${s.phone}`} style={{ fontSize: 13, color: color.primary, textDecoration: "none" }}
+            <a href={`tel:${s.phone}`} className="text-[13px] text-primary no-underline"
               onClick={(e) => e.stopPropagation()}>
               {s.phone}
             </a>
           )}
           {s.email && (
-            <a href={`mailto:${s.email}`} style={{ fontSize: 12, color: color.textMuted, textDecoration: "none" }}
+            <a href={`mailto:${s.email}`} className="text-xs text-textMuted no-underline"
               onClick={(e) => e.stopPropagation()}>
               {s.email}
             </a>
           )}
-          {!s.phone && !s.email && <span style={{ color: color.textFaint, fontSize: 13 }}>—</span>}
+          {!s.phone && !s.email && <span className="text-textFaint text-[13px]">—</span>}
         </div>
       ),
     },
@@ -183,10 +184,13 @@ export function AdminSuppliersPage() {
       header: "Acciones",
       align: "right",
       render: (s) => (
-        <div style={{ display: "inline-flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
+        <div className="inline-flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button variant="outline" size="sm" onClick={() => openEdit(s)}>
             <Icon name="edit" size={14} /> Editar
           </Button>
+          {/* See AdminUsersPage: this toggle needs a reliable override of the
+              `outline` variant's own text/border classes, so it keeps the
+              `style` passthrough Button already supports. */}
           <Button
             variant="outline" size="sm"
             onClick={() => toggleActive(s)}
@@ -214,7 +218,7 @@ export function AdminSuppliersPage() {
       />
 
       {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="grid grid-cols-4 gap-4 mb-6">
         <SummaryCard label="Total" value={total} icon="users" />
         <SummaryCard label="Activos" value={items?.filter((s) => s.is_active).length ?? 0} icon="check" tone="success" />
         <SummaryCard label="Inactivos" value={items?.filter((s) => !s.is_active).length ?? 0} icon="close" tone="neutral" />
@@ -222,16 +226,16 @@ export function AdminSuppliersPage() {
       </div>
 
       {/* Toolbar */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: color.textFaint }}>
+      <div className="flex gap-3 mb-4 flex-wrap items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textFaint">
             <Icon name="search" size={16} />
           </span>
           <Input
             value={q}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetTo0(setQ)(e.target.value)}
             placeholder="Buscar por nombre, contacto o ciudad"
-            style={{ paddingLeft: 38 }}
+            className="pl-[38px]"
           />
         </div>
         <Button
@@ -275,49 +279,49 @@ export function AdminSuppliersPage() {
         }
       >
         {detail && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="flex flex-col gap-5">
             {/* Status badge */}
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="flex gap-2">
               <Badge tone={detail.is_active ? "success" : "neutral"}>{detail.is_active ? "Activo" : "Inactivo"}</Badge>
               <Badge tone="primary">{detail.product_count} productos</Badge>
             </div>
 
             {/* Contact card */}
-            <div style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.md, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase", marginBottom: 4 }}>Contacto</div>
+            <div className="bg-surface border border-border rounded-md p-4 flex flex-col gap-2.5">
+              <div className="font-mono text-[10px] tracking-[.1em] text-textFaint uppercase mb-1">Contacto</div>
               {detail.contact_name && <ContactRow icon="users" value={detail.contact_name} />}
               {detail.phone && (
-                <a href={`tel:${detail.phone}`} style={{ textDecoration: "none" }}>
+                <a href={`tel:${detail.phone}`} className="no-underline">
                   <ContactRow icon="phone" value={detail.phone} clickable />
                 </a>
               )}
               {detail.email && (
-                <a href={`mailto:${detail.email}`} style={{ textDecoration: "none" }}>
+                <a href={`mailto:${detail.email}`} className="no-underline">
                   <ContactRow icon="mail" value={detail.email} clickable />
                 </a>
               )}
               {detail.city && <ContactRow icon="mapPin" value={detail.city} />}
               {!detail.contact_name && !detail.phone && !detail.email && !detail.city && (
-                <span style={{ color: color.textFaint, fontSize: 13 }}>Sin datos de contacto</span>
+                <span className="text-textFaint text-[13px]">Sin datos de contacto</span>
               )}
             </div>
 
             {/* Notes */}
             {detail.notes && (
               <div>
-                <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase", marginBottom: 8 }}>Notas</div>
-                <p style={{ fontFamily: font.body, fontSize: 14, lineHeight: 1.6, color: color.ink800, margin: 0 }}>{detail.notes}</p>
+                <div className="font-mono text-[10px] tracking-[.1em] text-textFaint uppercase mb-2">Notas</div>
+                <p className="font-body text-sm leading-[1.6] text-ink800 m-0">{detail.notes}</p>
               </div>
             )}
 
             {/* Meta */}
-            <div style={{ borderTop: `1px solid ${color.border}`, paddingTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="border-t border-border pt-3.5 grid grid-cols-2 gap-3">
               <DrawerDetail label="Creado" value={formatDateTime(detail.created_at)} />
               <DrawerDetail label="Actualizado" value={formatDateTime(detail.updated_at)} />
             </div>
 
             {/* Danger zone */}
-            <div style={{ borderTop: `1px solid ${color.border}`, paddingTop: 14 }}>
+            <div className="border-t border-border pt-3.5">
               <Button
                 variant="outline"
                 fullWidth
@@ -340,18 +344,18 @@ export function AdminSuppliersPage() {
         width={640}
         footer={
           <>
-            {error && <div style={{ fontFamily: font.body, fontSize: 12.5, color: color.danger, flex: 1 }}>{error}</div>}
+            {error && <div className="font-body text-[12.5px] text-danger flex-1">{error}</div>}
             <Button type="submit" form="supplier-form" fullWidth disabled={saving}>
               {saving ? "Guardando…" : editing === "new" ? "Crear proveedor" : "Guardar cambios"}
             </Button>
           </>
         }
       >
-        <form id="supplier-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form id="supplier-form" onSubmit={save} className="flex flex-col gap-3">
           <Field label="Nombre del proveedor *">
             <Input required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} placeholder="Ej. Distribuidora del Sur S.A." />
           </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Persona de contacto">
               <Input value={form.contact_name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ contact_name: e.target.value })} placeholder="Nombre y apellido" />
             </Field>
@@ -359,7 +363,7 @@ export function AdminSuppliersPage() {
               <Input value={form.city ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ city: e.target.value })} placeholder="Ej. Mendoza" />
             </Field>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Teléfono">
               <Input type="tel" value={form.phone ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ phone: e.target.value })} placeholder="+54 261 …" />
             </Field>
@@ -370,8 +374,8 @@ export function AdminSuppliersPage() {
           <Field label="Notas internas">
             <Textarea rows={3} value={form.notes ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ notes: e.target.value })} placeholder="Condiciones comerciales, tiempos de entrega, observaciones…" />
           </Field>
-          <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontFamily: font.body, fontSize: 13.5, color: color.ink800 }}>
-            <input type="checkbox" checked={!!form.is_active} onChange={(e) => set({ is_active: e.target.checked })} style={{ width: 15, height: 15, accentColor: color.primary }} />
+          <label className="flex items-center gap-[9px] cursor-pointer font-body text-[13.5px] text-ink800">
+            <input type="checkbox" checked={!!form.is_active} onChange={(e) => set({ is_active: e.target.checked })} className="w-[15px] h-[15px] accent-primary" />
             Proveedor activo
           </label>
         </form>
@@ -384,25 +388,32 @@ export function AdminSuppliersPage() {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
+// `tone` is a fixed 3-way union -- precomputed literal classes, same pattern
+// as the other admin summary/stat cards in this phase.
+const SUMMARY_TONES: Record<"success" | "primary" | "neutral", { bg: string; iconBg: string; fg: string }> = {
+  success: { bg: "bg-[#F0FDF4]", iconBg: "bg-[#15803D18]", fg: "text-[#15803D]" },
+  primary: { bg: "bg-[#EFF6FF]", iconBg: "bg-[#1D4ED818]", fg: "text-[#1D4ED8]" },
+  neutral: { bg: "bg-surface", iconBg: "bg-[#47556918]", fg: "text-textMuted" },
+};
+
 function SummaryCard({
-  label, value, icon, tone,
+  label, value, icon, tone = "neutral",
 }: {
   label: string;
   value: number;
   icon: React.ComponentProps<typeof Icon>["name"];
   tone?: "success" | "neutral" | "primary";
 }) {
-  const bg = tone === "success" ? "#F0FDF4" : tone === "primary" ? "#EFF6FF" : color.surface;
-  const iconColor = tone === "success" ? "#15803D" : tone === "primary" ? "#1D4ED8" : color.textMuted;
-  const valColor = tone === "success" ? "#15803D" : tone === "primary" ? "#1D4ED8" : color.ink900;
+  const t = SUMMARY_TONES[tone];
+  const valColor = tone === "neutral" ? "text-ink900" : t.fg;
   return (
-    <div style={{ background: bg, border: `1px solid ${color.border}`, borderRadius: radius.md, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
-      <div style={{ width: 40, height: 40, borderRadius: radius.sm, background: `${iconColor}18`, display: "flex", alignItems: "center", justifyContent: "center", color: iconColor, flexShrink: 0 }}>
+    <div className={clsx("border border-border rounded-md py-3.5 px-[18px] flex items-center gap-3.5", t.bg)}>
+      <div className={clsx("w-10 h-10 rounded-sm shrink-0 flex items-center justify-center", t.iconBg, t.fg)}>
         <Icon name={icon} size={20} strokeWidth={1.8} />
       </div>
       <div>
-        <div style={{ fontFamily: font.display, fontSize: 22, fontWeight: 900, color: valColor }}>{value}</div>
-        <div style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint, textTransform: "uppercase", letterSpacing: ".07em" }}>{label}</div>
+        <div className={clsx("font-display text-[22px] font-black", valColor)}>{value}</div>
+        <div className="font-mono text-[11px] text-textFaint uppercase tracking-[.07em]">{label}</div>
       </div>
     </div>
   );
@@ -410,11 +421,11 @@ function SummaryCard({
 
 function ContactRow({ icon, value, clickable }: { icon: React.ComponentProps<typeof Icon>["name"]; value: string; clickable?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ color: clickable ? color.primary : color.textMuted, flexShrink: 0 }}>
+    <div className="flex items-center gap-2.5">
+      <span className={clsx("shrink-0", clickable ? "text-primary" : "text-textMuted")}>
         <Icon name={icon} size={15} strokeWidth={1.8} />
       </span>
-      <span style={{ fontFamily: font.body, fontSize: 13.5, color: clickable ? color.primary : color.ink800 }}>{value}</span>
+      <span className={clsx("font-body text-[13.5px]", clickable ? "text-primary" : "text-ink800")}>{value}</span>
     </div>
   );
 }
@@ -422,8 +433,8 @@ function ContactRow({ icon, value, clickable }: { icon: React.ComponentProps<typ
 function DrawerDetail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".06em", color: color.textFaint, textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontFamily: font.body, fontSize: 13, color: color.ink900 }}>{value}</div>
+      <div className="font-mono text-[10px] tracking-[.06em] text-textFaint uppercase mb-1">{label}</div>
+      <div className="font-body text-[13px] text-ink900">{value}</div>
     </div>
   );
 }

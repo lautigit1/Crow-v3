@@ -5,7 +5,6 @@ import { useFavorites } from "@/shared/lib/useFavorites";
 import { productApi, type Product } from "@/entities/product";
 import { ProductCard } from "@/entities/product/ProductCard";
 import { QuoteModal } from "@/features/quote/QuoteModal";
-import { color, font } from "@/shared/config/theme";
 
 export function FavoritesPage() {
   const { ids } = useFavorites();
@@ -21,40 +20,22 @@ export function FavoritesPage() {
   }, [ids]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="flex flex-col gap-5">
 
       {/* ── Page header ── */}
-      <div style={{
-        position: "relative", overflow: "hidden",
-        background: color.ink900, borderRadius: 14,
-        padding: "22px 28px",
-        boxShadow: "0 4px 24px rgba(7,17,31,.12)",
-      }}>
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: `linear-gradient(90deg, ${color.primary} 0%, #7FB0FF 55%, transparent 100%)`,
-        }} />
-        <div style={{
-          position: "absolute", top: -40, right: -20, width: 140, height: 140,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,87,217,.18) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{
-              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)",
-              color: "#EC4899",
-            }}>
+      <div className="relative overflow-hidden bg-ink900 rounded-[14px] py-[22px] px-7 shadow-[0_4px_24px_rgba(7,17,31,.12)]">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
+        <div className="absolute -top-10 -right-5 w-[140px] h-[140px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
+        <div className="relative flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center bg-[rgba(255,255,255,.08)] border border-[rgba(255,255,255,.12)] text-[#EC4899]">
               <Icon name="star" size={20} />
             </span>
             <div>
-              <div style={{ fontFamily: font.display, fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-.02em" }}>
+              <div className="font-display text-xl font-extrabold text-white tracking-[-.02em]">
                 Favoritos
               </div>
-              <div style={{ fontFamily: font.body, fontSize: 12.5, color: "#94A3B8", marginTop: 3 }}>
+              <div className="font-body text-[12.5px] text-[#94A3B8] mt-[3px]">
                 {products === null
                   ? "Cargando…"
                   : products.length > 0
@@ -81,7 +62,7 @@ export function FavoritesPage() {
           action={<Button as={Link} to="/catalogo">Ir al catálogo</Button>}
         />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 16 }}>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {products.map((p) => (
             <ProductCard
               key={p.id}

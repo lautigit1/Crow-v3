@@ -82,6 +82,13 @@ def main() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
+        # Reconcilia columnas/constraints/indices de migraciones que create_all()
+        # no pudo aplicar porque la tabla ya existia de una corrida anterior
+        # (ver scripts/verify_db_integrity.py). Tiene que correr ANTES de tocar
+        # `products` -- si no, un SELECT sobre una columna que todavia no
+        # existe (ej. cost_price) rompe el seed antes de llegar a arreglarla.
+        from scripts.verify_db_integrity import reconcile
+        reconcile(db)
         seed(db)
     finally:
         db.close()

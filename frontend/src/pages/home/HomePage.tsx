@@ -76,18 +76,27 @@ export function HomePage() {
     <>
       {/* 1. Hero — propuesta de valor + CTA WhatsApp */}
       <Hero onQuote={openBlank} />
-      <StatsSection />
 
-      {/* 2. Cómo funciona — 3 pasos simples */}
-      <HowItWorks />
-
-      {/* 5. Categorías — abren WhatsApp con mensaje pre-cargado */}
+      {/* 2. Categorías — subido arriba de todo a propósito: es la única
+          sección realmente navegable de la home, antes quedaba 4ta en el
+          scroll detrás de tres bloques de puro texto persuasivo. */}
       <CategoryGrid />
 
-      {/* 6. Quiénes somos — historia y confianza local */}
+      {/* 3. Stats — oscuro (ver StatsSection.tsx), quiebra el bloque claro
+          de Categorías en vez de sumarse a él. */}
+      <StatsSection />
+
+      {/* 4. Quiénes somos — clara a propósito: hace de respiro entre las
+          dos secciones oscuras (Stats y Cómo funciona) en vez de quedar
+          pegada a Categorías, que también es clara. */}
       <AboutSection />
 
-      {/* 7. CTA final — WhatsApp + teléfono + horario */}
+      {/* 5. Cómo funciona — 3 pasos simples. Queda justo antes del CTA:
+          "así de fácil es el proceso" enlaza mejor con "así que escribinos
+          ahora" que si quedara más arriba. */}
+      <HowItWorks />
+
+      {/* 6. CTA final — WhatsApp + teléfono + horario */}
       <CtaFinal onQuote={openBlank} />
 
       <QuoteModal

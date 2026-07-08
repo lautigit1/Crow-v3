@@ -1,40 +1,32 @@
 import { createElement, type CSSProperties, type ElementType, type ReactNode } from "react";
-import { color, font, radius } from "@/shared/config/theme";
+import clsx from "clsx";
 
 type Variant = "primary" | "outline" | "ghost" | "dark" | "whatsapp" | "danger";
 type Size = "sm" | "md" | "lg";
 
-const sizes: Record<Size, CSSProperties> = {
-  sm: { height: 38, padding: "0 16px", fontSize: 13 },
-  md: { height: 44, padding: "0 20px", fontSize: 14 },
-  lg: { height: 52, padding: "0 28px", fontSize: 15 },
+// Tailwind classes below are a 1:1 translation of the previous CSSProperties
+// objects (see git history) -- exact px/hex values, not Tailwind's default
+// scale, so there is zero visual diff. Colors use the custom tokens defined
+// in tailwind.config.js (generated from shared/config/theme.ts); the two
+// one-off whatsapp hover colors aren't tokens, so they stay as arbitrary
+// values.
+const sizeClasses: Record<Size, string> = {
+  sm: "h-[38px] px-4 text-[13px]",
+  md: "h-[44px] px-5 text-[14px]",
+  lg: "h-[52px] px-7 text-[15px]",
 };
 
-const variants: Record<Variant, { base: CSSProperties; hover: CSSProperties }> = {
-  primary: {
-    base: { background: color.primary, color: "#fff", border: "1px solid " + color.primary },
-    hover: { background: color.primaryDark, borderColor: color.primaryDark },
-  },
-  outline: {
-    base: { background: "#fff", color: color.ink800, border: "1px solid " + color.borderStrong },
-    hover: { borderColor: color.primary, color: color.primary },
-  },
-  ghost: {
-    base: { background: "transparent", color: color.ink800, border: "1px solid transparent" },
-    hover: { background: color.surface },
-  },
-  dark: {
-    base: { background: color.ink800, color: "#fff", border: "1px solid " + color.ink800 },
-    hover: { background: color.ink900 },
-  },
-  whatsapp: {
-    base: { background: color.whatsapp, color: "#06371a", border: "1px solid " + color.whatsapp },
-    hover: { background: "#1fbb59", borderColor: "#1fbb59" },
-  },
-  danger: {
-    base: { background: "#fff", color: color.danger, border: "1px solid " + color.dangerSoft },
-    hover: { borderColor: color.danger, background: color.dangerSoft },
-  },
+const variantClasses: Record<Variant, string> = {
+  primary:
+    "bg-primary text-white border border-primary hover:bg-primaryDark hover:border-primaryDark",
+  outline:
+    "bg-white text-ink800 border border-borderStrong hover:border-primary hover:text-primary",
+  ghost: "bg-transparent text-ink800 border border-transparent hover:bg-surface",
+  dark: "bg-ink800 text-white border border-ink800 hover:bg-ink900",
+  whatsapp:
+    "bg-whatsapp text-[#06371a] border border-whatsapp hover:bg-[#1fbb59] hover:border-[#1fbb59]",
+  danger:
+    "bg-white text-danger border border-dangerSoft hover:border-danger hover:bg-dangerSoft",
 };
 
 type ButtonProps = {
@@ -58,34 +50,21 @@ export function Button({
   className = "",
   ...rest
 }: ButtonProps) {
-  const v = variants[variant];
-  
-  const mergedStyle: CSSProperties & Record<string, string | number | undefined> = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    borderRadius: radius.sm,
-    fontFamily: font.body,
-    fontWeight: 600,
-    letterSpacing: ".01em",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    width: fullWidth ? "100%" : undefined,
-    ...sizes[size],
-    ...v.base,
-    ...style,
-    // Set custom CSS variables for CSS-native hover styles without triggering React renders
-    "--hover-bg": (v.hover.background || v.base.background) as string,
-    "--hover-border": (v.hover.borderColor || v.hover.border || v.base.border || "").toString().replace("1px solid ", "") as string,
-    "--hover-color": (v.hover.color || v.base.color) as string,
-  };
-
   return createElement(
     as,
     {
-      style: mergedStyle,
-      className: `hoverable ${className}`.trim(),
+      style,
+      className: clsx(
+        "inline-flex items-center justify-center gap-[9px] rounded-sm font-body font-semibold tracking-[0.01em] cursor-pointer whitespace-nowrap",
+        // Same transition the old `.hoverable` class gave every button:
+        // background/border/color over .16s ease (the exact curve, not
+        // Tailwind's default easing, via an arbitrary property).
+        "[transition:background-color_.16s_ease,border-color_.16s_ease,color_.16s_ease]",
+        sizeClasses[size],
+        variantClasses[variant],
+        fullWidth && "w-full",
+        className
+      ),
       ...rest,
     },
     children

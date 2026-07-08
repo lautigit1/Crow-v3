@@ -1,5 +1,5 @@
+import clsx from "clsx";
 import { Container, SectionHeading } from "@/shared/ui";
-import { color, font, radius } from "@/shared/config/theme";
 import { useInView } from "@/shared/lib/useInView";
 
 const ITEMS = [
@@ -29,18 +29,20 @@ const ITEMS = [
   },
 ];
 
+// ITEMS is a fixed 3-item literal array, so each card's stagger delay
+// (`i * 0.12`) is precomputed as its own static Tailwind class instead of
+// an interpolated arbitrary value.
+const REVEAL_ANIM = [
+  "animate-[revealScale_.55s_0s_ease_both]",
+  "animate-[revealScale_.55s_0.12s_ease_both]",
+  "animate-[revealScale_.55s_0.24s_ease_both]",
+];
+
 export function Testimonials() {
   const [ref, inView] = useInView();
 
   return (
-    <section
-      ref={ref as React.RefObject<HTMLElement>}
-      style={{
-        background: color.surface,
-        padding: "96px 0",
-        borderTop: `1px solid ${color.border}`,
-      }}
-    >
+    <section ref={ref as React.RefObject<HTMLElement>} className="bg-surface py-24 border-t border-border">
       <Container>
         <SectionHeading
           eyebrow="LO QUE DICEN NUESTROS CLIENTES"
@@ -48,119 +50,48 @@ export function Testimonials() {
           subtitle="Talleres, distribuidoras y empresas de transporte que eligen Crow cada día."
         />
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 20,
-            marginTop: 52,
-          }}
-        >
+        <div className="grid grid-cols-3 gap-5 mt-[52px]">
           {ITEMS.map((t, i) => (
             <div
               key={t.name}
-              style={{
-                background: "#fff",
-                border: `1px solid ${color.border}`,
-                borderRadius: radius.lg,
-                padding: "32px 28px 28px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 24,
-                opacity: inView ? 1 : 0,
-                animation: inView ? `revealScale .55s ${i * 0.12}s ease both` : "none",
-                position: "relative",
-                overflow: "hidden",
-              }}
+              className={clsx(
+                "bg-white border border-border rounded-lg pt-8 px-7 pb-7 flex flex-col gap-6 relative overflow-hidden",
+                inView ? "opacity-100" : "opacity-0",
+                inView && REVEAL_ANIM[i]
+              )}
             >
               {/* Decorative quote mark */}
               <div
-                style={{
-                  position: "absolute",
-                  top: 16,
-                  right: 24,
-                  fontFamily: "Georgia, serif",
-                  fontSize: 96,
-                  lineHeight: 1,
-                  color: color.primarySoft,
-                  userSelect: "none",
-                  pointerEvents: "none",
-                }}
+                className="absolute top-4 right-6 text-[96px] leading-none text-primarySoft select-none pointer-events-none"
+                style={{ fontFamily: "Georgia, serif" }}
               >
                 "
               </div>
 
               {/* Stars */}
-              <div style={{ display: "flex", gap: 3 }}>
+              <div className="flex gap-[3px]">
                 {[...Array(5)].map((_, si) => (
-                  <span key={si} style={{ fontSize: 14, color: "#F59E0B" }}>
+                  <span key={si} className="text-sm text-[#F59E0B]">
                     ★
                   </span>
                 ))}
               </div>
 
               {/* Quote text */}
-              <p
-                style={{
-                  fontFamily: font.body,
-                  fontSize: 15,
-                  lineHeight: 1.7,
-                  color: color.ink700,
-                  fontStyle: "italic",
-                  flex: 1,
-                  position: "relative",
-                }}
-              >
+              <p className="font-body text-[15px] leading-[1.7] text-ink700 italic flex-1 relative">
                 "{t.quote}"
               </p>
 
               {/* Author */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  paddingTop: 20,
-                  borderTop: `1px solid ${color.border}`,
-                }}
-              >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    background: `linear-gradient(135deg, ${color.primary} 0%, #0047B3 100%)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: font.display,
-                    fontWeight: 800,
-                    fontSize: 16,
-                    color: "#fff",
-                    flex: "none",
-                  }}
-                >
+              <div className="flex items-center gap-3 pt-5 border-t border-border">
+                <div className="w-10 h-10 rounded-full bg-[linear-gradient(135deg,#0057D9_0%,#0047B3_100%)] flex items-center justify-center font-display font-extrabold text-base text-white flex-none">
                   {t.initial}
                 </div>
                 <div>
-                  <div
-                    style={{
-                      fontFamily: font.display,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: color.ink900,
-                    }}
-                  >
+                  <div className="font-display text-sm font-bold text-ink900">
                     {t.name}
                   </div>
-                  <div
-                    style={{
-                      fontFamily: font.body,
-                      fontSize: 12,
-                      color: color.textMuted,
-                      marginTop: 2,
-                    }}
-                  >
+                  <div className="font-body text-xs text-textMuted mt-0.5">
                     {t.role} · {t.city}
                   </div>
                 </div>

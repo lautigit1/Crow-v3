@@ -1,5 +1,6 @@
 import { useState, type ElementType } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import clsx from "clsx";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Dropdown, Avatar, Button, Icon, type IconName } from "@/shared/ui";
 import { color, font, radius } from "@/shared/config/theme";
@@ -19,46 +20,39 @@ const ADMIN_ITEMS: MenuLink[] = [
 ];
 
 // ── Trigger button ────────────────────────────────────────────────────────────
+// Sin borde ni fondo propio, coloreado para vivir directo sobre la barra
+// oscura de `Navbar` (único consumidor en el repo, ver
+// openspec/changes/2026-07-07-navbar-redesign — el usuario pidió sacar la
+// cápsula blanca de la derecha y dejar los accesos sueltos sobre `ink900`):
+// texto claro en reposo, celeste `#7FB0FF` cuando está abierto -- mismo
+// acento que ya usa el resto del sitio sobre `ink900` (StatsSection, Hero).
+// `open` es un booleano plano, así que cada valor que controla tiene un par
+// fijo de resultados, totalmente convertible a clases estáticas de Tailwind
+// vía clsx.
 function TriggerButton({ name, open, label }: { name: string; open: boolean; label: string }) {
   return (
     <button
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        height: 40,
-        padding: "0 10px 0 6px",
-        borderRadius: radius.md,
-        border: `1.5px solid ${open ? color.primary : color.border}`,
-        background: open ? color.primarySoft : "#fff",
-        cursor: "pointer",
-        transition: "all .15s",
-        boxShadow: open ? `0 0 0 3px ${color.primary}18` : "none",
-      }}
+      className={clsx(
+        "inline-flex items-center gap-1.5 h-9 pl-1 pr-2.5 py-0 rounded-full border-none cursor-pointer transition-colors duration-150",
+        open ? "bg-[rgba(255,255,255,.1)]" : "bg-transparent hover:bg-[rgba(255,255,255,.08)]"
+      )}
     >
-      <Avatar name={name} size={28} />
-      <span style={{
-        fontFamily: font.body,
-        fontWeight: 600,
-        fontSize: 13.5,
-        color: open ? color.primary : color.ink800,
-        letterSpacing: "-.01em",
-        maxWidth: 120,
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-      }}>
+      <Avatar name={name} size={26} />
+      <span
+        className={clsx(
+          "hidden lg:inline font-body font-semibold text-[13px] tracking-[-0.01em] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap",
+          open ? "text-[#7FB0FF]" : "text-white/90"
+        )}
+      >
         {label}
       </span>
       <Icon
         name="chevronDown"
-        size={14}
-        style={{
-          color: open ? color.primary : color.textFaint,
-          transform: open ? "rotate(180deg)" : "none",
-          transition: "transform .15s",
-          marginLeft: 2,
-        }}
+        size={13}
+        className={clsx(
+          "hidden lg:block transition-transform duration-150",
+          open ? "rotate-180 text-[#7FB0FF]" : "text-[rgba(255,255,255,.5)]"
+        )}
       />
     </button>
   );
@@ -67,64 +61,28 @@ function TriggerButton({ name, open, label }: { name: string; open: boolean; lab
 // ── Dropdown header (dark) ────────────────────────────────────────────────────
 function DropdownHeader({ name, email, isAdmin }: { name: string; email: string; isAdmin: boolean }) {
   return (
-    <div style={{
-      position: "relative",
-      overflow: "hidden",
-      background: color.ink900,
-      borderRadius: `${radius.md} ${radius.md} 0 0`,
-      padding: "16px 16px 14px",
-      marginBottom: 6,
-    }}>
+    <div className="relative overflow-hidden bg-ink900 rounded-t-md pt-4 px-4 pb-3.5 mb-1.5">
       {/* Top accent */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: 2,
-        background: `linear-gradient(90deg, ${color.primary} 0%, #7FB0FF 55%, transparent 100%)`,
-      }} />
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
       {/* Glow */}
-      <div style={{
-        position: "absolute", top: -40, right: -20, width: 140, height: 140,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(0,87,217,.18) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }} />
+      <div className="absolute -top-10 -right-5 w-[140px] h-[140px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
 
-      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="relative flex items-center gap-3">
         <Avatar name={name} size={40} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontFamily: font.display,
-            fontSize: 13,
-            fontWeight: 700,
-            color: "#fff",
-            letterSpacing: "-.01em",
-            wordBreak: "break-word",
-          }}>
+        <div className="min-w-0">
+          <div className="font-display text-[13px] font-bold text-white tracking-[-0.01em] break-words">
             {name}
           </div>
-          <div style={{
-            fontFamily: font.mono,
-            fontSize: 10.5,
-            color: "#7FB0FF",
-            marginTop: 2,
-            wordBreak: "break-all",
-          }}>
-            {email}
-          </div>
+          <div className="font-mono text-[10.5px] text-[#7FB0FF] mt-0.5 break-all">{email}</div>
         </div>
-        <span style={{
-          marginLeft: "auto",
-          flexShrink: 0,
-          fontFamily: font.mono,
-          fontSize: 9,
-          fontWeight: 700,
-          letterSpacing: ".1em",
-          textTransform: "uppercase",
-          color: isAdmin ? "#FCD34D" : "#86EFAC",
-          background: isAdmin ? "rgba(252,211,77,.12)" : "rgba(134,239,172,.12)",
-          border: `1px solid ${isAdmin ? "rgba(252,211,77,.25)" : "rgba(134,239,172,.25)"}`,
-          padding: "2px 7px",
-          borderRadius: radius.pill,
-        }}>
+        <span
+          className={clsx(
+            "ml-auto shrink-0 font-mono text-[9px] font-bold tracking-[0.1em] uppercase border py-0.5 px-[7px] rounded-pill",
+            isAdmin
+              ? "text-[#FCD34D] bg-[rgba(252,211,77,.12)] border-[rgba(252,211,77,.25)]"
+              : "text-[#86EFAC] bg-[rgba(134,239,172,.12)] border-[rgba(134,239,172,.25)]"
+          )}
+        >
           {isAdmin ? "Admin" : "Cliente"}
         </span>
       </div>
@@ -133,6 +91,10 @@ function DropdownHeader({ name, email, isAdmin }: { name: string; email: string;
 }
 
 // ── Menu item ─────────────────────────────────────────────────────────────────
+// `accent` is a free hex-string prop (only ever called with a fixed set of
+// values today, but typed to accept any string), and its hover tint is
+// computed at runtime (`${fg}18`) -- Tailwind can't turn that into a static
+// class, so this one keeps its `hov` state + inline style on purpose.
 function PremiumMenuItem({
   icon,
   label,
@@ -201,7 +163,7 @@ function PremiumMenuItem({
 }
 
 function Divider() {
-  return <div style={{ height: 1, background: color.border, margin: "5px 6px" }} />;
+  return <div className="h-px bg-border my-[5px] mx-1.5" />;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -215,13 +177,21 @@ export function AccountMenu() {
     navigate("/");
   };
 
-  // Guest
+  // Guest -- estilado a mano en vez de reusar la variante "ghost" de
+  // `Button` (fondo transparente + texto oscuro): eso asumía vivir sobre
+  // un fondo claro, y hoy este componente cuelga directo de la barra
+  // oscura de `Navbar` (único consumidor en el repo). "Crear cuenta" sí
+  // reusa `Button` primary tal cual -- su fondo azul sólido funciona
+  // igual sobre cualquier fondo.
   if (!user) {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Button as={Link} to="/login" variant="ghost" size="sm">
+      <div className="flex items-center gap-1">
+        <Link
+          to="/login"
+          className="flex h-9 items-center rounded-full px-3 font-body text-[13px] font-semibold text-[rgba(255,255,255,.75)] no-underline transition-colors duration-150 hover:text-white"
+        >
           Iniciar sesión
-        </Button>
+        </Link>
         <Button as={Link} to="/registro" size="sm">
           Crear cuenta
         </Button>
@@ -240,7 +210,7 @@ export function AccountMenu() {
       )}
     >
       {(close) => (
-        <div style={{ padding: "0 4px 4px" }}>
+        <div className="pt-0 px-1 pb-1">
           <DropdownHeader
             name={user.full_name}
             email={user.email}

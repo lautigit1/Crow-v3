@@ -1,4 +1,4 @@
-import { color, font } from "@/shared/config/theme";
+import { color } from "@/shared/config/theme";
 import type { NamedCount } from "@/entities/dashboard";
 
 const PALETTE = ["#0057D9", "#3B82F6", "#0EA5E9", "#1E293B", "#64748B", "#0D9488", "#7C3AED", "#B45309"];
@@ -8,14 +8,15 @@ export function BarChart({ data, accent = color.primary }: { data: NamedCount[];
   const max = Math.max(1, ...data.map((d) => d.value));
   if (data.length === 0) return <Empty />;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="flex flex-col gap-3">
       {data.map((d) => (
-        <div key={d.label} style={{ display: "grid", gridTemplateColumns: "120px 1fr 40px", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: font.body, fontSize: 13, color: color.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.label}</span>
-          <div style={{ height: 10, background: color.surface, borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${(d.value / max) * 100}%`, height: "100%", background: accent, borderRadius: 999, transition: "width .4s ease" }} />
+        <div key={d.label} className="grid grid-cols-[120px_1fr_40px] items-center gap-3">
+          <span className="font-body text-[13px] text-textMuted whitespace-nowrap overflow-hidden text-ellipsis">{d.label}</span>
+          <div className="h-2.5 bg-surface rounded-full overflow-hidden">
+            {/* `accent` is a caller-supplied color (default token, but overridable per instance) -- genuinely dynamic, stays inline. */}
+            <div className="h-full rounded-full transition-[width] duration-[400ms] ease-in-out" style={{ width: `${(d.value / max) * 100}%`, background: accent }} />
           </div>
-          <span style={{ fontFamily: font.mono, fontSize: 13, color: color.ink800, textAlign: "right" }}>{d.value}</span>
+          <span className="font-mono text-[13px] text-ink800 text-right">{d.value}</span>
         </div>
       ))}
     </div>
@@ -36,8 +37,8 @@ export function DonutChart({ data, size = 168 }: { data: NamedCount[]; size?: nu
     return seg;
   });
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flex: "none" }}>
+    <div className="flex items-center gap-6">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="flex-none">
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
           {segments.map((s, i) => (
             <circle
@@ -53,15 +54,15 @@ export function DonutChart({ data, size = 168 }: { data: NamedCount[]; size?: nu
             />
           ))}
         </g>
-        <text x="50%" y="48%" textAnchor="middle" style={{ fontFamily: font.display, fontWeight: 800, fontSize: 26, fill: color.ink900 }}>{total}</text>
-        <text x="50%" y="60%" textAnchor="middle" style={{ fontFamily: font.mono, fontSize: 9, fill: color.textFaint, letterSpacing: "1px" }}>TOTAL</text>
+        <text x="50%" y="48%" textAnchor="middle" className="font-display font-extrabold text-[26px] fill-ink900">{total}</text>
+        <text x="50%" y="60%" textAnchor="middle" className="font-mono text-[9px] fill-textFaint tracking-[1px]">TOTAL</text>
       </svg>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {segments.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color }} />
-            <span style={{ fontFamily: font.body, fontSize: 13, color: color.ink800 }}>{s.label}</span>
-            <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint, marginLeft: "auto" }}>{s.value}</span>
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: s.color }} />
+            <span className="font-body text-[13px] text-ink800">{s.label}</span>
+            <span className="font-mono text-xs text-textFaint ml-auto">{s.value}</span>
           </div>
         ))}
       </div>
@@ -70,5 +71,5 @@ export function DonutChart({ data, size = 168 }: { data: NamedCount[]; size?: nu
 }
 
 function Empty() {
-  return <div style={{ fontFamily: font.body, fontSize: 14, color: color.textFaint, padding: "24px 0" }}>Sin datos para mostrar.</div>;
+  return <div className="font-body text-sm text-textFaint py-6">Sin datos para mostrar.</div>;
 }

@@ -1,12 +1,12 @@
 import type * as React from "react";
 import { useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
 import { Button, DataTable, Select, CenteredSpinner, type Column } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
 import { quoteApi, QUOTE_STATUSES, type Quote, type QuoteStatus } from "@/entities/quote";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
 import { waLink } from "@/shared/config/contact";
 import { formatDate } from "@/shared/lib/format";
-import { color, font, radius } from "@/shared/config/theme";
 
 type Filter = "Todas" | QuoteStatus;
 
@@ -31,34 +31,34 @@ export function AdminQuotesPage() {
   const rows = useMemo(() => (filter === "Todas" ? items ?? [] : (items ?? []).filter((q) => q.status === filter)), [items, filter]);
 
   const columns: Column<Quote>[] = [
-    { header: "#", width: 50, render: (q) => <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{q.id}</span> },
+    { header: "#", width: 50, render: (q) => <span className="font-mono text-xs text-textFaint">{q.id}</span> },
     {
       header: "Cliente",
       render: (q) => (
         <div>
-          <strong style={{ color: color.ink900 }}>{q.customer_name}</strong>
-          {q.customer_email && <div style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint }}>{q.customer_email}</div>}
+          <strong className="text-ink900">{q.customer_name}</strong>
+          {q.customer_email && <div className="font-mono text-[11px] text-textFaint">{q.customer_email}</div>}
         </div>
       ),
     },
     {
       header: "Solicitud",
       render: (q) => (
-        <div style={{ maxWidth: 280 }}>
-          <div style={{ fontSize: 13.5, color: color.ink800 }}>{q.message}</div>
-          {q.vehicle && <div style={{ fontFamily: font.body, fontSize: 12, color: color.textMuted }}>Vehículo: {q.vehicle}</div>}
+        <div className="max-w-[280px]">
+          <div className="text-[13.5px] text-ink800">{q.message}</div>
+          {q.vehicle && <div className="font-body text-xs text-textMuted">Vehículo: {q.vehicle}</div>}
         </div>
       ),
     },
-    { header: "Fecha", render: (q) => <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{formatDate(q.created_at)}</span> },
+    { header: "Fecha", render: (q) => <span className="font-mono text-xs text-textFaint">{formatDate(q.created_at)}</span> },
     { header: "Estado", render: (q) => <StatusBadge status={q.status} /> },
     {
       header: "Cambiar / contactar",
       align: "right",
       render: (q) => (
-        <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-          <div style={{ width: 150 }}>
-            <Select value={q.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => changeStatus(q, e.target.value as QuoteStatus)} style={{ height: 38, fontSize: 13 }}>
+        <div className="inline-flex gap-2 items-center">
+          <div className="w-[150px]">
+            <Select value={q.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => changeStatus(q, e.target.value as QuoteStatus)} className="h-[38px] text-[13px]">
               {QUOTE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </Select>
           </div>
@@ -76,30 +76,25 @@ export function AdminQuotesPage() {
     <div>
       <AdminHeader title="Cotizaciones" icon="quotes" subtitle="Solicitudes de clientes y su seguimiento." />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+      <div className="flex gap-2 mb-4 flex-wrap">
         {(["Todas", ...QUOTE_STATUSES] as Filter[]).map((f) => {
           const active = filter === f;
           return (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "8px 14px",
-                borderRadius: radius.pill,
-                border: `1px solid ${active ? color.primary : color.border}`,
-                background: active ? color.primary : "#fff",
-                color: active ? "#fff" : color.ink700,
-                fontFamily: font.body,
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
+              className={clsx(
+                "inline-flex items-center gap-[7px] py-2 px-3.5 rounded-full border font-body font-semibold text-[13px] cursor-pointer",
+                active ? "border-primary bg-primary text-white" : "border-border bg-white text-ink700"
+              )}
             >
               {f}
-              <span style={{ fontFamily: font.mono, fontSize: 11, padding: "1px 7px", borderRadius: 999, background: active ? "rgba(255,255,255,.22)" : color.surface, color: active ? "#fff" : color.textFaint }}>
+              <span
+                className={clsx(
+                  "font-mono text-[11px] py-px px-[7px] rounded-full",
+                  active ? "bg-[rgba(255,255,255,.22)] text-white" : "bg-surface text-textFaint"
+                )}
+              >
                 {counts[f] ?? 0}
               </span>
             </button>

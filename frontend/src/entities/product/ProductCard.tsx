@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
+import clsx from "clsx";
 import { Badge, Icon, ProductImage } from "@/shared/ui";
 import { formatPrice } from "@/shared/lib/format";
 import { useFavorites } from "@/shared/lib/useFavorites";
 import { waLink } from "@/shared/config/contact";
-import { color, font, radius, shadow } from "@/shared/config/theme";
 import type { Product } from ".";
 
 function WaIcon() {
@@ -16,35 +15,27 @@ function WaIcon() {
   );
 }
 
+/**
+ * `hovered`/`waHov` React state + onMouseEnter/Leave used to drive purely
+ * static color/shadow/transform swaps (plus one direct
+ * `currentTarget.style.background =` mutation on the "Cotizar" button, the
+ * same antipattern already flagged elsewhere). Since every value toggled was
+ * static, this now uses native `hover:`/`group-hover:` CSS instead -- same
+ * visual result, no re-render on hover, no DOM mutation.
+ */
 export function ProductCard({ product, onQuote }: { product: Product; onQuote: (p: Product) => void }) {
   const inStock = product.stock > 0;
   const { isFavorite, toggle } = useFavorites();
   const fav = isFavorite(product.id);
-  const [hovered, setHovered] = useState(false);
-  const [waHov, setWaHov] = useState(false);
 
   const waMsg = `Hola Crow! Me interesa este producto: ${product.name} (SKU: ${product.sku}). ¿Tienen disponibilidad?`;
   const detailUrl = `/producto/${product.id}`;
 
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: "#fff",
-        border: `1px solid ${hovered ? color.primary : color.border}`,
-        borderRadius: radius.lg,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        transition: "border-color .18s, box-shadow .18s, transform .18s",
-        boxShadow: hovered ? shadow.md : shadow.sm,
-        transform: hovered ? "translateY(-3px)" : "none",
-      }}
-    >
+    <div className="group bg-white border border-border hover:border-primary rounded-lg flex flex-col overflow-hidden transition-[border-color,box-shadow,transform] duration-[180ms] shadow-sm hover:shadow-md hover:-translate-y-[3px]">
       {/* Image */}
-      <div style={{ position: "relative" }}>
-        <Link to={detailUrl} style={{ display: "block" }}>
+      <div className="relative">
+        <Link to={detailUrl} className="block">
           <ProductImage
             name={product.name}
             sku={product.sku}
@@ -55,13 +46,9 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
         </Link>
 
         {/* Stock badge */}
-        <span style={{ position: "absolute", top: 10, right: 10, display: "flex", alignItems: "center", gap: 5 }}>
+        <span className="absolute top-2.5 right-2.5 flex items-center gap-[5px]">
           {inStock && product.stock <= 2 && (
-            <span style={{
-              width: 8, height: 8, borderRadius: "50%",
-              background: "#ef4444", flexShrink: 0,
-              animation: "stockPulse 1.4s ease-in-out infinite",
-            }} />
+            <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0 animate-[stockPulse_1.4s_ease-in-out_infinite]" />
           )}
           <Badge tone={!inStock ? "danger" : product.stock <= 2 ? "danger" : "success"}>
             {!inStock ? "Sin stock" : product.stock <= 2 ? `Últimas ${product.stock}` : "En stock"}
@@ -73,118 +60,63 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
           type="button"
           aria-label={fav ? "Quitar de favoritos" : "Agregar a favoritos"}
           onClick={(e) => { e.preventDefault(); toggle(product.id); }}
-          style={{
-            position: "absolute", top: 10, left: 10,
-            width: 30, height: 30, borderRadius: "50%",
-            border: `1px solid ${fav ? color.primary : color.border}`,
-            background: fav ? color.primarySoft : "rgba(255,255,255,.92)",
-            cursor: "pointer",
-            color: fav ? color.primary : color.textFaint,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all .15s",
-          }}
+          className={clsx(
+            "absolute top-2.5 left-2.5 w-[30px] h-[30px] rounded-full cursor-pointer flex items-center justify-center transition-all duration-150 border",
+            fav ? "border-primary bg-primarySoft text-primary" : "border-border bg-[rgba(255,255,255,.92)] text-textFaint"
+          )}
         >
           <Icon name="star" size={14} />
         </button>
       </div>
 
       {/* Content */}
-      <Link
-        to={detailUrl}
-        style={{
-          padding: "14px 14px 0", flex: 1, display: "flex", flexDirection: "column",
-          textDecoration: "none", color: "inherit",
-        }}
-      >
+      <Link to={detailUrl} className="pt-3.5 px-3.5 pb-0 flex-1 flex flex-col no-underline text-inherit">
         {/* Meta row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <div className="flex items-center gap-1.5 mb-2">
           {product.category?.name && (
-            <span style={{
-              fontFamily: font.mono, fontSize: 10, fontWeight: 700,
-              letterSpacing: ".06em", textTransform: "uppercase",
-              color: color.primary, background: color.primarySoft,
-              padding: "2px 7px", borderRadius: 3,
-            }}>
+            <span className="font-mono text-[10px] font-bold tracking-[0.06em] uppercase text-primary bg-primarySoft py-0.5 px-[7px] rounded-[3px]">
               {product.category.name}
             </span>
           )}
-          <span style={{ fontFamily: font.mono, fontSize: 10, color: color.textFaint }}>
-            {product.sku}
-          </span>
+          <span className="font-mono text-[10px] text-textFaint">{product.sku}</span>
         </div>
 
         {/* Name */}
-        <h3 style={{
-          fontFamily: font.display, fontSize: 15, fontWeight: 700,
-          lineHeight: 1.3, color: color.ink900,
-          marginBottom: 6, flex: 1,
-        }}>
+        <h3 className="font-display text-[15px] font-bold leading-[1.3] text-ink900 mb-1.5 flex-1">
           {product.name}
         </h3>
 
         {/* Brand */}
         {product.brand?.name && (
-          <div style={{
-            fontFamily: font.body, fontSize: 12, color: color.textFaint, marginBottom: 10,
-          }}>
-            {product.brand.name}
-          </div>
+          <div className="font-body text-[12px] text-textFaint mb-2.5">{product.brand.name}</div>
         )}
 
         {/* Price */}
-        <div style={{
-          fontFamily: font.display, fontSize: 20, fontWeight: 900,
-          letterSpacing: "-.02em",
-          color: color.primary, marginBottom: 12,
-        }}>
+        <div className="font-display text-[20px] font-black tracking-[-0.02em] text-primary mb-3">
           {formatPrice(product.price)}
         </div>
       </Link>
 
       {/* Actions */}
-      <div style={{
-        display: "flex",
-        borderTop: `1px solid ${color.border}`,
-      }}>
+      <div className="flex border-t border-border">
         {/* Cotizar */}
         <button
           onClick={() => onQuote(product)}
-          style={{
-            flex: 1, padding: "11px 0",
-            fontFamily: font.body, fontSize: 13, fontWeight: 600,
-            color: hovered ? color.primary : color.textMuted,
-            background: "transparent", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "color .15s, background .15s",
-            borderRadius: `0 0 0 ${radius.lg}`,
-          }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = color.primarySoft; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+          className="flex-1 py-[11px] font-body text-[13px] font-semibold text-textMuted group-hover:text-primary bg-transparent border-none cursor-pointer flex items-center justify-center gap-1.5 transition-[color,background-color] duration-150 rounded-bl-lg hover:bg-primarySoft"
         >
           <Icon name="message" size={13} />
           Cotizar
         </button>
 
         {/* Divider */}
-        <div style={{ width: 1, background: color.border, flexShrink: 0 }} />
+        <div className="w-px bg-border shrink-0" />
 
         {/* WhatsApp */}
         <a
           href={waLink(waMsg)}
           target="_blank"
           rel="noreferrer"
-          onMouseEnter={() => setWaHov(true)}
-          onMouseLeave={() => setWaHov(false)}
-          style={{
-            flex: 1, padding: "11px 0",
-            fontFamily: font.body, fontSize: 13, fontWeight: 600,
-            color: waHov ? "#fff" : "#16A34A",
-            background: waHov ? "#16A34A" : "transparent",
-            textDecoration: "none",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "color .15s, background .15s",
-            borderRadius: `0 0 ${radius.lg} 0`,
-          }}
+          className="flex-1 py-[11px] font-body text-[13px] font-semibold text-[#16A34A] bg-transparent no-underline flex items-center justify-center gap-1.5 transition-[color,background-color] duration-150 rounded-br-lg hover:text-white hover:bg-[#16A34A]"
         >
           <WaIcon />
           Consultar

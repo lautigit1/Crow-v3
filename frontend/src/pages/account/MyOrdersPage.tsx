@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import type { CSSProperties } from "react";
+import clsx from "clsx";
 import {
   CenteredSpinner,
   EmptyState,
@@ -9,31 +9,28 @@ import {
   Pagination,
   ConfirmModal,
 } from "@/shared/ui";
-import { orderApi, ORDER_STATUS_COLOR, type Order, type OrderCreate } from "@/entities/order";
+import { orderApi, type Order, type OrderCreate } from "@/entities/order";
 import { productApi, type Product } from "@/entities/product";
 import { formatPrice } from "@/shared/lib/format";
-import { color, font, radius } from "@/shared/config/theme";
 
 // ---------------------------------------------------------------------------
 // Status badge
 // ---------------------------------------------------------------------------
+// `ORDER_STATUS_COLOR` is a fixed 6-status enum (only consumed on this page),
+// so its hex values are mirrored here as complete literal Tailwind classes
+// (bg tint + text) instead of building `hex + "22"` at runtime.
+const STATUS_BADGE: Record<Order["status"], string> = {
+  Pendiente: "bg-[#f59e0b22] text-[#f59e0b]",
+  Confirmado: "bg-[#3b82f622] text-[#3b82f6]",
+  "En proceso": "bg-[#8b5cf622] text-[#8b5cf6]",
+  Enviado: "bg-[#06b6d422] text-[#06b6d4]",
+  Entregado: "bg-[#22c55e22] text-[#22c55e]",
+  Cancelado: "bg-[#ef444422] text-[#ef4444]",
+};
+
 function StatusBadge({ status }: { status: Order["status"] }) {
-  const bg = ORDER_STATUS_COLOR[status] ?? "#6b7280";
   return (
-    <span
-      style={{
-        display: "inline-block",
-        padding: "3px 10px",
-        borderRadius: 999,
-        background: bg + "22",
-        color: bg,
-        fontFamily: font.mono,
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: 0.5,
-        textTransform: "uppercase",
-      }}
-    >
+    <span className={clsx("inline-block py-[3px] px-2.5 rounded-full font-mono text-[11px] font-bold tracking-[0.5px] uppercase", STATUS_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
       {status}
     </span>
   );
@@ -42,37 +39,24 @@ function StatusBadge({ status }: { status: Order["status"] }) {
 // ---------------------------------------------------------------------------
 // Order card (list item)
 // ---------------------------------------------------------------------------
+// `hov` used to be tracked in JS purely to swap a static border-color/
+// box-shadow pair -- both are native `hover:` now.
 function OrderCard({ order, onExpand }: { order: Order; onExpand: () => void }) {
   const total = order.items.reduce(
     (acc, item) => acc + (item.unit_price_snapshot ?? 0) * item.quantity,
     0,
   );
-  const [hov, setHov] = useState(false);
 
   return (
     <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
       onClick={onExpand}
-      style={{
-        background: "#fff",
-        border: `1px solid ${hov ? color.primary : color.border}`,
-        borderRadius: radius.md,
-        padding: "16px 20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        cursor: "pointer",
-        transition: "border-color .15s, box-shadow .15s",
-        boxShadow: hov ? "0 2px 12px rgba(0,87,217,.08)" : "none",
-      }}
+      className="bg-white border border-border rounded-md py-4 px-5 flex items-center justify-between gap-3 cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-[0_2px_12px_rgba(0,87,217,.08)]"
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={{ fontFamily: font.display, fontWeight: 700, fontSize: 15, color: color.ink900 }}>
+      <div className="flex flex-col gap-1">
+        <span className="font-display font-bold text-[15px] text-ink900">
           Pedido #{order.id}
         </span>
-        <span style={{ fontFamily: font.body, fontSize: 13, color: color.textFaint }}>
+        <span className="font-body text-[13px] text-textFaint">
           {new Date(order.created_at).toLocaleDateString("es-AR", {
             day: "2-digit", month: "short", year: "numeric",
           })}
@@ -80,9 +64,9 @@ function OrderCard({ order, onExpand }: { order: Order; onExpand: () => void }) 
           {order.items.length} ítem{order.items.length !== 1 ? "s" : ""}
         </span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="flex items-center gap-4">
         {total > 0 && (
-          <span style={{ fontFamily: font.mono, fontWeight: 700, fontSize: 14, color: color.ink900 }}>
+          <span className="font-mono font-bold text-sm text-ink900">
             {formatPrice(total)}
           </span>
         )}
@@ -102,11 +86,11 @@ function OrderDetailBody({ order }: { order: Order }) {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+    <div className="flex flex-col gap-[18px]">
       {/* Status + date */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div className="flex items-center gap-2.5 flex-wrap">
         <StatusBadge status={order.status} />
-        <span style={{ fontFamily: font.body, fontSize: 13, color: color.textFaint }}>
+        <span className="font-body text-[13px] text-textFaint">
           {new Date(order.created_at).toLocaleDateString("es-AR", {
             day: "2-digit", month: "long", year: "numeric",
           })}
@@ -115,11 +99,11 @@ function OrderDetailBody({ order }: { order: Order }) {
 
       {/* Método de pago */}
       {order.payment_method && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase" }}>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] tracking-[.1em] text-textFaint uppercase">
             Pago
           </span>
-          <span style={{ fontFamily: font.body, fontSize: 13, fontWeight: 700, color: color.ink800 }}>
+          <span className="font-body text-[13px] font-bold text-ink800">
             {order.payment_method}
           </span>
         </div>
@@ -127,61 +111,53 @@ function OrderDetailBody({ order }: { order: Order }) {
 
       {/* User notes */}
       {order.notes && (
-        <div style={{ background: "#fff", border: `1px solid ${color.border}`, borderRadius: radius.sm, padding: "12px 16px" }}>
-          <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, marginBottom: 6, textTransform: "uppercase" }}>
+        <div className="bg-white border border-border rounded-sm py-3 px-4">
+          <div className="font-mono text-[10px] tracking-[.1em] text-textFaint mb-1.5 uppercase">
             Tus notas
           </div>
-          <div style={{ fontFamily: font.body, fontSize: 14, color: color.ink700, lineHeight: 1.5 }}>{order.notes}</div>
+          <div className="font-body text-sm text-ink700 leading-[1.5]">{order.notes}</div>
         </div>
       )}
 
       {/* Admin notes */}
       {order.admin_notes && (
-        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: radius.sm, padding: "12px 16px" }}>
-          <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: "#92400e", marginBottom: 6, textTransform: "uppercase" }}>
+        <div className="bg-[#fffbeb] border border-[#fde68a] rounded-sm py-3 px-4">
+          <div className="font-mono text-[10px] tracking-[.1em] text-[#92400e] mb-1.5 uppercase">
             Respuesta del equipo
           </div>
-          <div style={{ fontFamily: font.body, fontSize: 14, color: "#78350f", lineHeight: 1.5 }}>{order.admin_notes}</div>
+          <div className="font-body text-sm text-[#78350f] leading-[1.5]">{order.admin_notes}</div>
         </div>
       )}
 
       {/* Items */}
       <div>
-        <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, marginBottom: 10, textTransform: "uppercase" }}>
+        <div className="font-mono text-[10px] tracking-[.1em] text-textFaint mb-2.5 uppercase">
           Ítems
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="flex flex-col gap-1.5">
           {order.items.map((item) => (
             <div
               key={item.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "10px 14px",
-                background: "#fff",
-                border: `1px solid ${color.border}`,
-                borderRadius: radius.sm,
-              }}
+              className="flex justify-between items-center py-2.5 px-3.5 bg-white border border-border rounded-sm"
             >
               <div>
-                <div style={{ fontFamily: font.body, fontSize: 14, fontWeight: 600, color: color.ink900 }}>
+                <div className="font-body text-sm font-semibold text-ink900">
                   {item.name_snapshot}
                 </div>
-                <div style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint, marginTop: 2 }}>
+                <div className="font-mono text-[11px] text-textFaint mt-0.5">
                   SKU {item.sku_snapshot}
                   {item.unit_price_snapshot != null && (
                     <> · {formatPrice(item.unit_price_snapshot)} c/u</>
                   )}
                 </div>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: font.mono, fontSize: 13, fontWeight: 700, color: color.ink900 }}>
+              <div className="text-right">
+                <div className="font-mono text-[13px] font-bold text-ink900">
                   {item.unit_price_snapshot != null
                     ? formatPrice(item.unit_price_snapshot * item.quantity)
                     : "—"}
                 </div>
-                <div style={{ fontFamily: font.body, fontSize: 11, color: color.textFaint }}>
+                <div className="font-body text-[11px] text-textFaint">
                   ×{item.quantity}
                 </div>
               </div>
@@ -192,14 +168,9 @@ function OrderDetailBody({ order }: { order: Order }) {
 
       {/* Total */}
       {total > 0 && (
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "12px 16px",
-          background: color.primarySoft,
-          borderRadius: radius.sm,
-        }}>
-          <span style={{ fontFamily: font.body, fontSize: 14, fontWeight: 600, color: color.primaryDark }}>Total estimado</span>
-          <span style={{ fontFamily: font.mono, fontSize: 16, fontWeight: 800, color: color.primary }}>
+        <div className="flex justify-between items-center py-3 px-4 bg-primarySoft rounded-sm">
+          <span className="font-body text-sm font-semibold text-primaryDark">Total estimado</span>
+          <span className="font-mono text-base font-extrabold text-primary">
             {formatPrice(total)}
           </span>
         </div>
@@ -213,6 +184,8 @@ function OrderDetailBody({ order }: { order: Order }) {
 // ---------------------------------------------------------------------------
 type DraftItem = { product: Product; quantity: number };
 const PAGE_SIZE = 10;
+
+const inputCls = "w-full py-[9px] px-3 border border-border rounded-sm font-body text-sm text-ink900 outline-none bg-white box-border";
 
 export function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[] | null>(null);
@@ -319,24 +292,11 @@ export function MyOrdersPage() {
     }
   };
 
-  const inputStyle: CSSProperties = {
-    width: "100%",
-    padding: "9px 12px",
-    border: `1px solid ${color.border}`,
-    borderRadius: radius.sm,
-    fontFamily: font.body,
-    fontSize: 14,
-    color: color.ink900,
-    outline: "none",
-    background: "#fff",
-    boxSizing: "border-box",
-  };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+    <div className="flex flex-col gap-[18px]">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ fontFamily: font.display, fontSize: 26, fontWeight: 800, color: color.ink900, margin: 0 }}>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-2xl font-extrabold text-ink900 m-0">
           Mis pedidos
         </h1>
         <Button onClick={() => setShowCreate(true)}>+ Nuevo pedido</Button>
@@ -353,7 +313,7 @@ export function MyOrdersPage() {
         />
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="flex flex-col gap-2.5">
             {orders.map((o) => (
               <OrderCard key={o.id} order={o} onExpand={() => setSelected(o)} />
             ))}
@@ -401,7 +361,7 @@ export function MyOrdersPage() {
         eyebrow="Pedidos"
         width={520}
         footer={
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <div className="flex gap-2.5 justify-end">
             <Button variant="ghost" onClick={() => { setShowCreate(false); setCreateItems([]); setCreateNotes(""); setCreateError(null); }} disabled={createSubmitting}>
               Cancelar
             </Button>
@@ -411,42 +371,33 @@ export function MyOrdersPage() {
           </div>
         }
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="flex flex-col gap-3.5">
           {/* Buscador */}
           <div>
-            <label style={{ fontFamily: font.body, fontSize: 13, fontWeight: 600, color: color.ink700, display: "block", marginBottom: 6 }}>
+            <label className="font-body text-[13px] font-semibold text-ink700 block mb-1.5">
               Buscar producto
             </label>
             <input
-              style={inputStyle}
+              className={inputCls}
               placeholder="Nombre o SKU…"
               value={createSearch}
               onChange={(e) => setCreateSearch(e.target.value)}
               autoFocus
             />
             {(createSearching || createSearchResults.length > 0) && (
-              <div style={{ border: `1px solid ${color.border}`, borderRadius: radius.sm, marginTop: 4, overflow: "hidden", background: "#fff" }}>
+              <div className="border border-border rounded-sm mt-1 overflow-hidden bg-white">
                 {createSearching ? (
-                  <div style={{ padding: "10px 14px", fontFamily: font.body, fontSize: 13, color: color.textFaint }}>Buscando…</div>
+                  <div className="py-2.5 px-3.5 font-body text-[13px] text-textFaint">Buscando…</div>
                 ) : createSearchResults.length === 0 ? (
-                  <div style={{ padding: "10px 14px", fontFamily: font.body, fontSize: 13, color: color.textFaint }}>Sin resultados</div>
+                  <div className="py-2.5 px-3.5 font-body text-[13px] text-textFaint">Sin resultados</div>
                 ) : createSearchResults.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => addItem(p)}
-                    style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      width: "100%", padding: "10px 14px",
-                      background: "none", border: "none",
-                      borderBottom: `1px solid ${color.border}`,
-                      cursor: "pointer", textAlign: "left",
-                      transition: "background .1s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = color.primarySoft; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                    className="flex justify-between items-center w-full py-2.5 px-3.5 bg-transparent border-none border-b border-border cursor-pointer text-left transition-colors duration-100 hover:bg-primarySoft"
                   >
-                    <span style={{ fontFamily: font.body, fontSize: 14, color: color.ink900 }}>{p.name}</span>
-                    <span style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint }}>SKU {p.sku}</span>
+                    <span className="font-body text-sm text-ink900">{p.name}</span>
+                    <span className="font-mono text-[11px] text-textFaint">SKU {p.sku}</span>
                   </button>
                 ))}
               </div>
@@ -456,25 +407,19 @@ export function MyOrdersPage() {
           {/* Items draft */}
           {createItems.length > 0 && (
             <div>
-              <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, marginBottom: 8, textTransform: "uppercase" }}>
+              <div className="font-mono text-[10px] tracking-[.1em] text-textFaint mb-2 uppercase">
                 Ítems agregados
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="flex flex-col gap-1.5">
                 {createItems.map(({ product, quantity }) => (
-                  <div key={product.id} style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "8px 12px",
-                    background: color.surface,
-                    border: `1px solid ${color.border}`,
-                    borderRadius: radius.sm,
-                  }}>
-                    <span style={{ fontFamily: font.body, fontSize: 14, color: color.ink900, flex: 1 }}>{product.name}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <button onClick={() => updateQty(product.id, quantity - 1)} style={{ width: 26, height: 26, borderRadius: 4, border: `1px solid ${color.border}`, background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 16, lineHeight: 1 }}>−</button>
-                      <span style={{ fontFamily: font.mono, fontSize: 14, minWidth: 24, textAlign: "center" }}>{quantity}</span>
-                      <button onClick={() => updateQty(product.id, quantity + 1)} style={{ width: 26, height: 26, borderRadius: 4, border: `1px solid ${color.border}`, background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 16, lineHeight: 1 }}>+</button>
+                  <div key={product.id} className="flex items-center gap-2.5 py-2 px-3 bg-surface border border-border rounded-sm">
+                    <span className="font-body text-sm text-ink900 flex-1">{product.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => updateQty(product.id, quantity - 1)} className="w-[26px] h-[26px] rounded border border-border bg-white cursor-pointer font-bold text-base leading-none">−</button>
+                      <span className="font-mono text-sm min-w-6 text-center">{quantity}</span>
+                      <button onClick={() => updateQty(product.id, quantity + 1)} className="w-[26px] h-[26px] rounded border border-border bg-white cursor-pointer font-bold text-base leading-none">+</button>
                     </div>
-                    <button onClick={() => updateQty(product.id, 0)} style={{ background: "none", border: "none", cursor: "pointer", color: color.textFaint, fontSize: 18, lineHeight: 1, padding: "0 2px" }}>×</button>
+                    <button onClick={() => updateQty(product.id, 0)} className="bg-transparent border-none cursor-pointer text-textFaint text-lg leading-none py-0 px-0.5">×</button>
                   </div>
                 ))}
               </div>
@@ -483,11 +428,11 @@ export function MyOrdersPage() {
 
           {/* Notas */}
           <div>
-            <label style={{ fontFamily: font.body, fontSize: 13, fontWeight: 600, color: color.ink700, display: "block", marginBottom: 6 }}>
-              Notas <span style={{ fontWeight: 400, color: color.textFaint }}>(opcional)</span>
+            <label className="font-body text-[13px] font-semibold text-ink700 block mb-1.5">
+              Notas <span className="font-normal text-textFaint">(opcional)</span>
             </label>
             <textarea
-              style={{ ...inputStyle, resize: "vertical", minHeight: 70 }}
+              className={clsx(inputCls, "resize-y min-h-[70px]")}
               placeholder="Aclaraciones, vehículo, urgencia…"
               value={createNotes}
               onChange={(e) => setCreateNotes(e.target.value)}
@@ -495,7 +440,7 @@ export function MyOrdersPage() {
           </div>
 
           {createError && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: radius.sm, padding: "10px 14px", fontFamily: font.body, fontSize: 13, color: "#b91c1c" }}>
+            <div className="bg-[#fef2f2] border border-[#fecaca] rounded-sm py-2.5 px-3.5 font-body text-[13px] text-[#b91c1c]">
               {createError}
             </div>
           )}

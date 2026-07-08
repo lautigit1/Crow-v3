@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { color, font } from "@/shared/config/theme";
 
 type ModalProps = {
   open: boolean;
@@ -12,70 +11,42 @@ type ModalProps = {
   width?: number;
 };
 
+// `width` stays as an inline style: no current caller overrides the 480
+// default, but it's a public numeric prop that could be passed any value,
+// which Tailwind can't turn into a static class. Everything else is fixed.
 export function Modal({ open, onClose, title, eyebrow, children, footer, width = 480 }: ModalProps) {
   if (!open) return null;
   return createPortal(
     <div
       onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        background: "rgba(4,10,20,.38)",
-        backdropFilter: "blur(8px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        animation: "fadeUp .18s ease both",
-      }}
+      className="fixed inset-0 z-[200] bg-[rgba(4,10,20,.38)] backdrop-blur flex items-center justify-center p-6 animate-[fadeUp_0.18s_ease_both]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: width,
-          maxHeight: "calc(100vh - 48px)",
-          borderRadius: 14,
-          overflow: "hidden",
-          boxShadow: "0 40px 100px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.04)",
-          display: "flex",
-          flexDirection: "column",
-          animation: "fadeUp .2s ease both",
-        }}
+        className="w-full max-h-[calc(100vh-48px)] rounded-[14px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,.45),0_0_0_1px_rgba(255,255,255,.04)] flex flex-col animate-[fadeUp_0.2s_ease_both]"
+        style={{ maxWidth: width }}
       >
         {/* ── Header ───────────────────────────────────────── */}
-        <div style={{ position: "relative", overflow: "hidden", background: color.ink900, padding: "18px 22px", flexShrink: 0 }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color.primary} 0%, #7FB0FF 55%, transparent 100%)` }} />
-          <div style={{ position: "absolute", top: -50, right: -30, width: 180, height: 180, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,87,217,.2) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div className="relative overflow-hidden bg-ink900 py-4.5 px-[22px] shrink-0">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
+          <div className="absolute -top-[50px] -right-[30px] w-[180px] h-[180px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.2)_0%,transparent_70%)] pointer-events-none" />
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative" }}>
+          <div className="flex items-center justify-between gap-4 relative">
             <div>
               {eyebrow && (
-                <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".2em", color: "#5B8BDF", marginBottom: 6, textTransform: "uppercase" }}>
+                <div className="font-mono text-[10px] tracking-[0.2em] text-[#5B8BDF] mb-1.5 uppercase">
                   {eyebrow}
                 </div>
               )}
               {title && (
-                <div style={{ fontFamily: font.display, fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: "-.015em" }}>
+                <div className="font-display text-[19px] font-extrabold text-white tracking-[-0.015em]">
                   {title}
                 </div>
               )}
             </div>
             <button
               onClick={onClose}
-              style={{
-                width: 28, height: 28, flex: "none",
-                border: "1px solid rgba(255,255,255,.12)",
-                background: "rgba(255,255,255,.06)",
-                color: "rgba(255,255,255,.5)",
-                fontSize: 16, lineHeight: 1, cursor: "pointer",
-                borderRadius: 7,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "background .15s, color .15s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.14)"; e.currentTarget.style.color = "#fff"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.06)"; e.currentTarget.style.color = "rgba(255,255,255,.5)"; }}
+              className="w-7 h-7 flex-none border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.06)] text-[rgba(255,255,255,.5)] text-[16px] leading-none cursor-pointer rounded-[7px] flex items-center justify-center transition-[background-color,color] duration-150 hover:bg-[rgba(255,255,255,.14)] hover:text-white"
             >
               ×
             </button>
@@ -83,16 +54,10 @@ export function Modal({ open, onClose, title, eyebrow, children, footer, width =
         </div>
 
         {/* ── Body ─────────────────────────────────────────── */}
-        <div style={{ padding: "16px 20px", background: "#F8FAFC", overflowY: "auto", flex: 1, minHeight: 0 }}>
-          {children}
-        </div>
+        <div className="py-4 px-5 bg-surface overflow-y-auto flex-1 min-h-0">{children}</div>
 
         {/* ── Footer (submit button lives here) ────────────── */}
-        {footer && (
-          <div style={{ padding: "14px 22px", background: "#fff", borderTop: `1px solid ${color.border}`, flexShrink: 0 }}>
-            {footer}
-          </div>
-        )}
+        {footer && <div className="py-3.5 px-[22px] bg-white border-t border-border shrink-0">{footer}</div>}
       </div>
     </div>,
     document.body

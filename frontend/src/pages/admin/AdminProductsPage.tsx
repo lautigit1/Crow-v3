@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
+import clsx from "clsx";
 import {
   Button, DataTable, Modal, Drawer, Input, Textarea, Select, Badge, CenteredSpinner, Icon, Pagination,
   ProductImage, ConfirmModal, type Column, type SortState,
@@ -14,7 +15,6 @@ import { uploadApi } from "@/entities/upload/api";
 import { apiError } from "@/shared/api/client";
 import { formatPrice, formatDateTime } from "@/shared/lib/format";
 import { VEHICLE_TYPES } from "@/shared/config/categories";
-import { color, font } from "@/shared/config/theme";
 
 const PAGE = 10;
 
@@ -24,6 +24,9 @@ const empty: ProductInput = {
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Compact height override for Input/Select inside this modal.
+const inpCls = "h-[34px] text-[13px]";
 
 function toSort(s: SortState | undefined): ProductSort {
   if (!s) return "recent";
@@ -208,13 +211,13 @@ export function AdminProductsPage() {
   }
 
   const productNameCell = (p: Product) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ width: 44, flex: "none", borderRadius: 8, overflow: "hidden", border: `1px solid ${color.border}` }}>
+    <div className="flex items-center gap-3">
+      <div className="w-11 flex-none rounded-md overflow-hidden border border-border">
         <ProductImage name={p.name} category={p.category?.name} imageUrl={p.image_url} ratio={1} />
       </div>
-      <div style={{ minWidth: 0 }}>
-        <strong style={{ color: color.ink900 }}>{p.name}</strong>
-        <div style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint }}>{p.sku}</div>
+      <div className="min-w-0">
+        <strong className="text-ink900">{p.name}</strong>
+        <div className="font-mono text-[11px] text-textFaint">{p.sku}</div>
       </div>
     </div>
   );
@@ -227,9 +230,9 @@ export function AdminProductsPage() {
       header: "Proveedor",
       render: (p) =>
         p.supplier ? (
-          <span style={{ fontSize: 13, color: color.primary, fontWeight: 600 }}>{p.supplier.name}</span>
+          <span className="text-[13px] text-primary font-semibold">{p.supplier.name}</span>
         ) : (
-          <span style={{ color: color.textFaint }}>—</span>
+          <span className="text-textFaint">—</span>
         ),
     },
     { header: "Precio", align: "right", sortKey: "price", render: (p) => formatPrice(p.price) },
@@ -239,12 +242,12 @@ export function AdminProductsPage() {
       sortKey: "stock",
       render: (p) => <Badge tone={p.stock <= 0 ? "danger" : p.stock <= 5 ? "warning" : "success"}>{p.stock}</Badge>,
     },
-    { header: "Dest.", align: "center", render: (p) => (p.is_featured ? <Icon name="star" size={15} style={{ display: "inline", color: color.primary }} /> : "—") },
+    { header: "Dest.", align: "center", render: (p) => (p.is_featured ? <Icon name="star" size={15} className="inline text-primary" /> : "—") },
     {
       header: "Acciones",
       align: "right",
       render: (p) => (
-        <div style={{ display: "inline-flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
+        <div className="inline-flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button variant="outline" size="sm" onClick={() => openEdit(p)}><Icon name="edit" size={14} /> Editar</Button>
           <Button variant="danger" size="sm" onClick={() => remove(p)}><Icon name="trash" size={14} /></Button>
         </div>
@@ -261,7 +264,7 @@ export function AdminProductsPage() {
       header: "Eliminado",
       align: "right",
       render: (p) => (
-        <span style={{ fontFamily: font.mono, fontSize: 12, color: color.danger }}>
+        <span className="font-mono text-xs text-danger">
           {p.deleted_at ? formatDateTime(p.deleted_at) : "—"}
         </span>
       ),
@@ -270,7 +273,7 @@ export function AdminProductsPage() {
       header: "Acciones",
       align: "right",
       render: (p) => (
-        <div style={{ display: "inline-flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
+        <div className="inline-flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button variant="outline" size="sm" onClick={() => restore(p)}>
             <Icon name="refresh" size={14} /> Restaurar
           </Button>
@@ -279,18 +282,13 @@ export function AdminProductsPage() {
     },
   ];
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    padding: "7px 18px",
-    borderRadius: 8,
-    border: "none",
-    cursor: "pointer",
-    fontFamily: font.body,
-    fontSize: 13,
-    fontWeight: active ? 700 : 400,
-    background: active ? color.primary : "transparent",
-    color: active ? "#fff" : color.textMuted,
-    transition: "background 0.15s, color 0.15s",
-  });
+  // `active` drives which of two static class sets applies -- no need for a
+  // per-call inline style object.
+  const tabClass = (active: boolean) =>
+    clsx(
+      "py-[7px] px-[18px] rounded-md border-none cursor-pointer font-body text-[13px] [transition:background-color_.15s,color_.15s]",
+      active ? "bg-primary text-white font-bold" : "bg-transparent text-textMuted font-normal"
+    );
 
   return (
     <div>
@@ -302,35 +300,35 @@ export function AdminProductsPage() {
       />
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16, background: color.surface, borderRadius: 10, padding: 4, width: "fit-content" }}>
-        <button style={tabStyle(tab === "active")} onClick={() => { setTab("active"); setPage(0); }}>
+      <div className="flex gap-1 mb-4 bg-surface rounded-[10px] p-1 w-fit">
+        <button className={tabClass(tab === "active")} onClick={() => { setTab("active"); setPage(0); }}>
           Activos
         </button>
-        <button style={tabStyle(tab === "deleted")} onClick={() => { setTab("deleted"); setPage(0); }}>
+        <button className={tabClass(tab === "deleted")} onClick={() => { setTab("deleted"); setPage(0); }}>
           <Icon name="trash" size={13} /> Eliminados
         </button>
       </div>
 
       {/* Toolbar (solo en tab activos) */}
       {tab === "active" && (
-        <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
-            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: color.textFaint }}><Icon name="search" size={16} /></span>
-            <Input value={q} onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetTo0(setQ)(e.target.value)} placeholder="Buscar por nombre, SKU o descripción" style={{ paddingLeft: 38 }} />
+        <div className="flex gap-3 mb-4 flex-wrap items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textFaint"><Icon name="search" size={16} /></span>
+            <Input value={q} onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetTo0(setQ)(e.target.value)} placeholder="Buscar por nombre, SKU o descripción" className="pl-[38px]" />
           </div>
-          <div style={{ width: 160 }}>
+          <div className="w-40">
             <Select value={categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => resetTo0(setCategoryId)(e.target.value ? Number(e.target.value) : "")}>
               <option value="">Todas las categorías</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           </div>
-          <div style={{ width: 150 }}>
+          <div className="w-[150px]">
             <Select value={brandId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => resetTo0(setBrandId)(e.target.value ? Number(e.target.value) : "")}>
               <option value="">Todas las marcas</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </Select>
           </div>
-          <div style={{ width: 160 }}>
+          <div className="w-40">
             <Select value={supplierId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => resetTo0(setSupplierId)(e.target.value ? Number(e.target.value) : "")}>
               <option value="">Todos los proveedores</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -382,33 +380,33 @@ export function AdminProductsPage() {
         )}
       >
         {detail && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div className="flex flex-col gap-[18px]">
             {detail.is_deleted && (
-              <div style={{ background: "#FEF2F2", border: `1px solid ${color.danger}`, borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon name="trash" size={14} style={{ color: color.danger, flexShrink: 0 }} />
-                <span style={{ fontFamily: font.body, fontSize: 13, color: color.danger }}>
+              <div className="bg-[#FEF2F2] border border-danger rounded-md py-2.5 px-3.5 flex items-center gap-2">
+                <Icon name="trash" size={14} className="text-danger shrink-0" />
+                <span className="font-body text-[13px] text-danger">
                   Eliminado el {detail.deleted_at ? formatDateTime(detail.deleted_at) : "—"}
                 </span>
               </div>
             )}
-            <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${color.border}` }}>
+            <div className="rounded-[10px] overflow-hidden border border-border">
               <ProductImage name={detail.name} sku={detail.sku} category={detail.category?.name} imageUrl={detail.image_url} ratio={1.7} />
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="flex gap-2 flex-wrap">
               <Badge tone={detail.stock <= 0 ? "danger" : detail.stock <= 5 ? "warning" : "success"}>{detail.stock} en stock</Badge>
               {detail.is_featured && <Badge tone="primary">Destacado</Badge>}
               <Badge tone="neutral">{detail.vehicle_type}</Badge>
             </div>
-            <div style={{ fontFamily: font.display, fontSize: 26, fontWeight: 900, color: color.primary }}>{formatPrice(detail.price)}</div>
-            {detail.description && <p style={{ fontFamily: font.body, fontSize: 14, lineHeight: 1.6, color: color.textMuted }}>{detail.description}</p>}
+            <div className="font-display text-[26px] font-black text-primary">{formatPrice(detail.price)}</div>
+            {detail.description && <p className="font-body text-sm leading-[1.6] text-textMuted">{detail.description}</p>}
             {detail.cost_price != null && (
-              <div style={{ display: "flex", gap: 20, background: color.surface, borderRadius: 8, padding: "10px 14px" }}>
+              <div className="flex gap-5 bg-surface rounded-md py-2.5 px-3.5">
                 <Detail label="Costo" value={formatPrice(detail.cost_price)} />
                 <Detail label="Margen" value={detail.margin_pct != null ? `${detail.margin_pct}%` : "—"} />
                 <Detail label="Ganancia" value={formatPrice((detail.price ?? 0) - detail.cost_price)} />
               </div>
             )}
-            <div style={{ borderTop: `1px solid ${color.border}`, paddingTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="border-t border-border pt-4 grid grid-cols-2 gap-3.5">
               <Detail label="Categoría" value={detail.category?.name ?? "—"} />
               <Detail label="Marca" value={detail.brand?.name ?? "—"} />
               <Detail label="Proveedor" value={detail.supplier?.name ?? "—"} />
@@ -428,58 +426,58 @@ export function AdminProductsPage() {
         title="Producto"
         width={760}
         footer={
-          <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
-            {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}
-            <Button type="submit" form="product-form" disabled={saving} style={{ minWidth: 180 }}>
+          <div className="flex items-center gap-3 w-full">
+            {error && <span className="font-body text-xs text-danger flex-1">{error}</span>}
+            <Button type="submit" form="product-form" disabled={saving} className="min-w-[180px]">
               {saving ? "Guardando…" : "Guardar producto"}
             </Button>
           </div>
         }
       >
-        <form id="product-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <form id="product-form" onSubmit={save} className="flex flex-col gap-2.5">
 
           {/* Fila 1: Nombre + SKU */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 130px", gap: 10 }}>
+          <div className="grid grid-cols-[1fr_130px] gap-2.5">
             <CompactField label="Nombre">
-              <Input required value={form.name} placeholder="Kit de frenos delanteros Gol G5" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} style={inp} />
+              <Input required value={form.name} placeholder="Kit de frenos delanteros Gol G5" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} className={inpCls} />
             </CompactField>
             <CompactField label="SKU">
-              <Input required value={form.sku} placeholder="KIT-001" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ sku: e.target.value })} style={inp} />
+              <Input required value={form.sku} placeholder="KIT-001" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ sku: e.target.value })} className={inpCls} />
             </CompactField>
           </div>
 
           {/* Fila 2: Descripción */}
           <CompactField label="Descripción">
-            <Textarea rows={2} value={form.description ?? ""} placeholder="Descripción breve del producto…" onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ description: e.target.value })} style={{ fontSize: 13, minHeight: 58 }} />
+            <Textarea rows={2} value={form.description ?? ""} placeholder="Descripción breve del producto…" onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ description: e.target.value })} className="text-[13px] min-h-[58px]" />
           </CompactField>
 
           <Divider label="Precio y stock" />
 
           {/* Fila 3: Costo + Margen + Precio de venta */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div className="grid grid-cols-3 gap-2.5">
             <CompactField label="Precio de costo (ARS)">
-              <Input type="number" min={0} placeholder="0" value={form.cost_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCostPrice(e.target.value ? Number(e.target.value) : null)} style={inp} />
+              <Input type="number" min={0} placeholder="0" value={form.cost_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCostPrice(e.target.value ? Number(e.target.value) : null)} className={inpCls} />
             </CompactField>
             <CompactField label="Margen (%)">
-              <Input type="number" min={0} step="0.1" placeholder="0" value={form.margin_pct ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMarginPct(e.target.value ? Number(e.target.value) : null)} style={inp} />
+              <Input type="number" min={0} step="0.1" placeholder="0" value={form.margin_pct ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMarginPct(e.target.value ? Number(e.target.value) : null)} className={inpCls} />
             </CompactField>
             <CompactField label="Precio de venta (ARS)">
-              <Input type="number" min={0} placeholder="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceManual(e.target.value ? Number(e.target.value) : null)} style={inp} />
+              <Input type="number" min={0} placeholder="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceManual(e.target.value ? Number(e.target.value) : null)} className={inpCls} />
             </CompactField>
           </div>
           {form.cost_price != null && form.cost_price > 0 && form.margin_pct != null && (
-            <p style={{ fontFamily: font.body, fontSize: 11.5, color: color.textFaint, margin: "-4px 0 0" }}>
+            <p className="font-body text-[11.5px] text-textFaint -mt-1 mx-0 mb-0">
               Se calcula solo con costo y margen -- también podés escribir el precio de venta directo y el margen se ajusta solo.
             </p>
           )}
 
           {/* Fila 3b: Stock + Vehículo */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="grid grid-cols-2 gap-2.5">
             <CompactField label="Stock">
-              <Input type="number" min={0} value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ stock: Number(e.target.value) })} style={inp} />
+              <Input type="number" min={0} value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ stock: Number(e.target.value) })} className={inpCls} />
             </CompactField>
             <CompactField label="Tipo vehículo">
-              <Select value={form.vehicle_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ vehicle_type: e.target.value })} style={inp}>
+              <Select value={form.vehicle_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ vehicle_type: e.target.value })} className={inpCls}>
                 {VEHICLE_TYPES.filter((t) => t !== "Todos").map((t) => <option key={t} value={t}>{t}</option>)}
               </Select>
             </CompactField>
@@ -488,21 +486,21 @@ export function AdminProductsPage() {
           <Divider label="Clasificación" />
 
           {/* Fila 4: Categoría + Marca + Proveedor */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div className="grid grid-cols-3 gap-2.5">
             <CompactField label="Categoría">
-              <Select value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ category_id: e.target.value ? Number(e.target.value) : null })} style={inp}>
+              <Select value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ category_id: e.target.value ? Number(e.target.value) : null })} className={inpCls}>
                 <option value="">Sin categoría</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Select>
             </CompactField>
             <CompactField label="Marca">
-              <Select value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ brand_id: e.target.value ? Number(e.target.value) : null })} style={inp}>
+              <Select value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ brand_id: e.target.value ? Number(e.target.value) : null })} className={inpCls}>
                 <option value="">Sin marca</option>
                 {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </Select>
             </CompactField>
             <CompactField label="Proveedor">
-              <Select value={form.supplier_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ supplier_id: e.target.value ? Number(e.target.value) : null })} style={inp}>
+              <Select value={form.supplier_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set({ supplier_id: e.target.value ? Number(e.target.value) : null })} className={inpCls}>
                 <option value="">Sin proveedor</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </Select>
@@ -510,12 +508,12 @@ export function AdminProductsPage() {
           </div>
 
           {/* Fila 5: Imagen */}
-          <div style={{ display: "grid", gridTemplateColumns: "56px 1fr auto", gap: 10, alignItems: "end" }}>
-            <div style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", border: `1px solid ${color.border}` }}>
+          <div className="grid grid-cols-[56px_1fr_auto] gap-2.5 items-end">
+            <div className="w-14 h-14 rounded-md overflow-hidden border border-border">
               <ProductImage name={form.name || "Producto"} imageUrl={form.image_url} ratio={1} />
             </div>
             <CompactField label="URL de imagen (opcional)">
-              <Input value={form.image_url ?? ""} placeholder="https://…" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ image_url: e.target.value })} style={inp} />
+              <Input value={form.image_url ?? ""} placeholder="https://…" onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ image_url: e.target.value })} className={inpCls} />
             </CompactField>
             <div>
               <input
@@ -523,7 +521,7 @@ export function AdminProductsPage() {
                 type="file"
                 accept="image/*"
                 onChange={handleImageFile}
-                style={{ display: "none" }}
+                className="hidden"
               />
               <Button
                 type="button"
@@ -538,9 +536,9 @@ export function AdminProductsPage() {
           </div>
 
           {/* Fila 6: Featured */}
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer" }}>
-            <input type="checkbox" checked={!!form.is_featured} onChange={(e) => set({ is_featured: e.target.checked })} style={{ width: 14, height: 14, accentColor: color.primary, cursor: "pointer" }} />
-            <span style={{ fontFamily: font.body, fontSize: 12.5, color: color.textMuted }}>Destacado</span>
+          <label className="inline-flex items-center gap-[7px] cursor-pointer">
+            <input type="checkbox" checked={!!form.is_featured} onChange={(e) => set({ is_featured: e.target.checked })} className="w-3.5 h-3.5 accent-primary cursor-pointer" />
+            <span className="font-body text-[12.5px] text-textMuted">Destacado</span>
           </label>
 
         </form>
@@ -551,13 +549,10 @@ export function AdminProductsPage() {
   );
 }
 
-// Input height override for compact modal
-const inp: React.CSSProperties = { height: 34, fontSize: 13 };
-
 function CompactField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={{ fontFamily: font.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em", color: color.textFaint, textTransform: "uppercase" }}>{label}</span>
+    <div className="flex flex-col gap-1">
+      <span className="font-mono text-[9.5px] font-bold tracking-[.12em] text-textFaint uppercase">{label}</span>
       {children}
     </div>
   );
@@ -565,10 +560,10 @@ function CompactField({ label, children }: { label: string; children: React.Reac
 
 function Divider({ label }: { label: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
-      <div style={{ width: 3, height: 12, borderRadius: 2, background: color.primary, flexShrink: 0 }} />
-      <span style={{ fontFamily: font.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: ".14em", color: color.textFaint, textTransform: "uppercase" }}>{label}</span>
-      <div style={{ flex: 1, height: 1, background: color.border }} />
+    <div className="flex items-center gap-2.5 my-0.5">
+      <div className="w-[3px] h-3 rounded-[2px] bg-primary shrink-0" />
+      <span className="font-mono text-[9.5px] font-bold tracking-[.14em] text-textFaint uppercase">{label}</span>
+      <div className="flex-1 h-px bg-border" />
     </div>
   );
 }
@@ -576,8 +571,8 @@ function Divider({ label }: { label: string }) {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".06em", color: color.textFaint, textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontFamily: font.body, fontSize: 14, color: color.ink900 }}>{value}</div>
+      <div className="font-mono text-[10px] tracking-[.06em] text-textFaint uppercase mb-1">{label}</div>
+      <div className="font-body text-sm text-ink900">{value}</div>
     </div>
   );
 }

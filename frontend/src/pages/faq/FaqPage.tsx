@@ -1,7 +1,7 @@
 import { useState } from "react";
+import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Container } from "@/shared/ui";
-import { color, font } from "@/shared/config/theme";
 import { waLink } from "@/shared/config/contact";
 
 const FAQS = [
@@ -71,51 +71,24 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{
-      borderBottom: `1px solid ${color.border}`,
-    }}>
+    <div className="border-b border-border">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          padding: "20px 0",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-        }}
+        className="w-full flex items-center justify-between gap-4 py-5 bg-transparent border-none cursor-pointer text-left"
       >
-        <span style={{
-          fontFamily: font.display,
-          fontSize: 15,
-          fontWeight: 700,
-          letterSpacing: "-.01em",
-          color: color.ink900,
-          lineHeight: 1.4,
-        }}>
+        <span className="font-display text-[15px] font-bold tracking-[-.01em] text-ink900 leading-[1.4]">
           {q}
         </span>
-        <span style={{
-          flexShrink: 0,
-          width: 24,
-          height: 24,
-          borderRadius: "50%",
-          border: `1.5px solid ${open ? color.primary : color.border}`,
-          background: open ? color.primarySoft : "transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: open ? color.primary : color.textFaint,
-          transition: "all .15s",
-        }}>
+        <span
+          className={clsx(
+            "shrink-0 w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-150",
+            open ? "border-primary bg-primarySoft text-primary" : "border-border bg-transparent text-textFaint"
+          )}
+        >
           <svg
             width={12} height={12} viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"
-            style={{ transform: open ? "rotate(45deg)" : "none", transition: "transform .15s" }}
+            className={clsx("transition-transform duration-150", open && "rotate-45")}
           >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -124,14 +97,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
       </button>
 
       {open && (
-        <p style={{
-          fontFamily: font.body,
-          fontSize: 14.5,
-          lineHeight: 1.7,
-          color: color.textMuted,
-          margin: "0 0 20px",
-          paddingRight: 40,
-        }}>
+        <p className="font-body text-[14.5px] leading-[1.7] text-textMuted mt-0 mb-5 mx-0 pr-10">
           {a}
         </p>
       )}
@@ -148,58 +114,31 @@ export function FaqPage() {
   return (
     <>
       {/* Header */}
-      <section style={{ background: color.ink900, position: "relative", overflow: "hidden" }}>
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage: "radial-gradient(820px 320px at 85% -20%, rgba(0,87,217,.2), transparent 60%)",
-        }} />
-        <Container style={{ position: "relative", padding: "56px 40px" }}>
-          <div style={{
-            fontFamily: font.mono, fontSize: 10.5, fontWeight: 500,
-            letterSpacing: ".16em", color: "rgba(127,176,255,.7)",
-            textTransform: "uppercase", marginBottom: 16,
-          }}>
+      <section className="bg-ink900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(820px_320px_at_85%_-20%,rgba(0,87,217,.2),transparent_60%)]" />
+        <Container className="relative py-14 px-10">
+          <div className="font-mono text-[10.5px] font-medium tracking-[.16em] text-[rgba(127,176,255,.7)] uppercase mb-4">
             — FAQ
           </div>
-          <h1 style={{
-            fontFamily: font.display, fontSize: 38, fontWeight: 800,
-            letterSpacing: "-.025em", color: "#fff", marginBottom: 12,
-          }}>
+          <h1 className="font-display text-[38px] font-extrabold tracking-[-.025em] text-white mb-3">
             Preguntas frecuentes
           </h1>
-          <p style={{
-            fontFamily: font.body, fontSize: 16, lineHeight: 1.6,
-            color: "rgba(255,255,255,.45)", maxWidth: 480, margin: 0,
-          }}>
+          <p className="font-body text-base leading-[1.6] text-[rgba(255,255,255,.45)] max-w-[480px] m-0">
             Si no encontrás lo que buscás, escribinos por WhatsApp.
           </p>
         </Container>
       </section>
 
       {/* Content */}
-      <section style={{ background: color.surface, padding: "64px 0 96px" }}>
+      <section className="bg-surface py-16 pb-24">
         <Container>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            maxWidth: 720,
-            margin: "0 auto",
-            gap: 48,
-          }}>
+          <div className="grid grid-cols-1 max-w-[720px] mx-auto gap-12">
             {FAQS.map((group) => (
               <div key={group.category}>
-                <div style={{
-                  fontFamily: font.mono,
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  letterSpacing: ".14em",
-                  color: color.primary,
-                  textTransform: "uppercase",
-                  marginBottom: 4,
-                }}>
+                <div className="font-mono text-[10.5px] font-bold tracking-[.14em] text-primary uppercase mb-1">
                   {group.category}
                 </div>
-                <div style={{ borderTop: `2px solid ${color.ink900}` }}>
+                <div className="border-t-2 border-ink900">
                   {group.items.map((item) => (
                     <AccordionItem key={item.q} q={item.q} a={item.a} />
                   ))}
@@ -208,37 +147,15 @@ export function FaqPage() {
             ))}
 
             {/* CTA */}
-            <div style={{
-              borderTop: `1px solid ${color.border}`,
-              paddingTop: 40,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: 16,
-            }}>
-              <p style={{
-                fontFamily: font.body, fontSize: 15, color: color.textMuted,
-                margin: 0, lineHeight: 1.6,
-              }}>
+            <div className="border-t border-border pt-10 flex flex-col items-start gap-4">
+              <p className="font-body text-[15px] text-textMuted m-0 leading-[1.6]">
                 ¿Tenés una duda que no está acá?
               </p>
               <a
                 href={waLink("Hola Crow! Tengo una consulta.")}
                 target="_blank"
                 rel="noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: color.primary,
-                  color: "#fff",
-                  fontFamily: font.body,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  padding: "11px 20px",
-                  borderRadius: "8px",
-                  textDecoration: "none",
-                }}
+                className="inline-flex items-center gap-2 bg-primary text-white font-body text-sm font-semibold py-[11px] px-5 rounded-md no-underline"
               >
                 Escribinos por WhatsApp
               </a>

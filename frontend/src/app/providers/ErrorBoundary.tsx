@@ -48,106 +48,36 @@ export class ErrorBoundary extends Component<Props, State> {
     const section = this.props.section ?? "la aplicación";
 
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-          fontFamily: "DM Sans, system-ui, sans-serif",
-          background: "#F8FAFC",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: "#FEE2E2",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 28,
-            marginBottom: 24,
-          }}
-        >
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 font-body bg-surface text-center">
+        <div className="w-14 h-14 rounded-full bg-dangerSoft flex items-center justify-center text-[28px] mb-6">
           ⚠️
         </div>
 
-        <h1
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            color: "#07111F",
-            marginBottom: 8,
-          }}
-        >
+        <h1 className="text-[22px] font-bold text-ink900 mb-2">
           Algo salió mal
         </h1>
 
-        <p
-          style={{
-            fontSize: 14,
-            color: "#64748B",
-            maxWidth: 380,
-            lineHeight: 1.6,
-            marginBottom: 24,
-          }}
-        >
+        <p className="text-sm text-textFaint max-w-[380px] leading-[1.6] mb-6">
           Ocurrió un error inesperado en {section}. Podés intentar recargar la
           página. Si el problema persiste, contactá al administrador.
         </p>
 
         {this.state.error && (
-          <pre
-            style={{
-              background: "#1E293B",
-              color: "#F1F5F9",
-              fontSize: 11,
-              padding: "12px 16px",
-              borderRadius: 8,
-              maxWidth: 480,
-              width: "100%",
-              overflowX: "auto",
-              textAlign: "left",
-              marginBottom: 24,
-            }}
-          >
+          <pre className="bg-ink700 text-[#F1F5F9] text-[11px] py-3 px-4 rounded-md max-w-[480px] w-full overflow-x-auto text-left mb-6">
             {this.state.error.message}
           </pre>
         )}
 
-        <div style={{ display: "flex", gap: 12 }}>
+        <div className="flex gap-3">
           <button
             onClick={this.handleReset}
-            style={{
-              padding: "10px 20px",
-              borderRadius: 8,
-              border: "1.5px solid #0057D9",
-              background: "transparent",
-              color: "#0057D9",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="py-2.5 px-5 rounded-md border-[1.5px] border-primary bg-transparent text-primary text-sm font-semibold cursor-pointer"
           >
             Reintentar
           </button>
           <button
             onClick={() => window.location.reload()}
-            style={{
-              padding: "10px 20px",
-              borderRadius: 8,
-              border: "none",
-              background: "#0057D9",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="py-2.5 px-5 rounded-md border-none bg-primary text-white text-sm font-semibold cursor-pointer"
           >
             Recargar página
           </button>

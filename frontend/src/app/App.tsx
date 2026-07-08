@@ -13,8 +13,7 @@ import { CartPage } from "@/pages/cart/CartPage";
 import { BrandsPage } from "@/pages/brands/BrandsPage";
 import { ContactPage } from "@/pages/contact/ContactPage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
-import { LoginPage } from "@/pages/auth/LoginPage";
-import { RegisterPage } from "@/pages/auth/RegisterPage";
+import { AuthPanel } from "@/pages/auth/AuthPanel";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 
@@ -99,8 +98,8 @@ export function App() {
       </Route>
 
       {/* Auth (guest only, full-screen) */}
-      <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
-      <Route path="/registro" element={<GuestOnly><RegisterPage /></GuestOnly>} />
+      <Route path="/login" element={<GuestOnly><AuthPanel /></GuestOnly>} />
+      <Route path="/registro" element={<GuestOnly><AuthPanel /></GuestOnly>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 

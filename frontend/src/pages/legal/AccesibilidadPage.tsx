@@ -1,15 +1,14 @@
 import { LegalLayout, H2, P, UL, InfoBox, Divider } from "./LegalLayout";
 import { contact } from "@/shared/config/contact";
-import { color, font, radius } from "@/shared/config/theme";
 
 const CHECKS = [
-  { ok: true,  label: "Contraste de color",       desc: "Todos los textos cumplen ratio mínimo WCAG AA (4.5:1 en texto normal, 3:1 en texto grande)." },
-  { ok: true,  label: "Texto alternativo",         desc: "Las imágenes funcionales incluyen atributo alt descriptivo." },
-  { ok: true,  label: "Navegación por teclado",    desc: "Todos los controles interactivos son accesibles con Tab y Enter." },
-  { ok: true,  label: "Etiquetas semánticas",      desc: "Se usan elementos HTML semánticos: header, nav, main, footer, article." },
-  { ok: true,  label: "Formularios etiquetados",   desc: "Cada campo de formulario tiene su label asociado correctamente." },
+  { ok: true, label: "Contraste de color", desc: "Todos los textos cumplen ratio mínimo WCAG AA (4.5:1 en texto normal, 3:1 en texto grande)." },
+  { ok: true, label: "Texto alternativo", desc: "Las imágenes funcionales incluyen atributo alt descriptivo." },
+  { ok: true, label: "Navegación por teclado", desc: "Todos los controles interactivos son accesibles con Tab y Enter." },
+  { ok: true, label: "Etiquetas semánticas", desc: "Se usan elementos HTML semánticos: header, nav, main, footer, article." },
+  { ok: true, label: "Formularios etiquetados", desc: "Cada campo de formulario tiene su label asociado correctamente." },
   { ok: false, label: "Lector de pantalla (ARIA)", desc: "En proceso de mejora. Algunos componentes dinámicos aún carecen de roles ARIA completos." },
-  { ok: false, label: "Skip links",                desc: "Próximamente. Se agregarán enlaces para saltar al contenido principal." },
+  { ok: false, label: "Skip links", desc: "Próximamente. Se agregarán enlaces para saltar al contenido principal." },
 ];
 
 export function AccesibilidadPage() {
@@ -27,26 +26,18 @@ export function AccesibilidadPage() {
       <H2>Estado de accesibilidad</H2>
       <P>A continuación el estado actual de los aspectos más importantes:</P>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+      <div className="flex flex-col gap-2.5 mb-7">
         {CHECKS.map((c) => (
-          <div key={c.label} style={{
-            display: "flex", alignItems: "flex-start", gap: 14,
-            padding: "14px 16px",
-            background: c.ok ? "#F0FDF4" : "#FFFBEB",
-            border: `1px solid ${c.ok ? "#BBF7D0" : "#FDE68A"}`,
-            borderRadius: radius.md,
-          }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: c.ok ? color.success : "#D97706", color: "#fff",
-              fontSize: 12, fontWeight: 700,
-            }}>
+          <div
+            key={c.label}
+            className={`flex items-start gap-3.5 py-3.5 px-4 rounded-md border ${c.ok ? "bg-[#F0FDF4] border-[#BBF7D0]" : "bg-[#FFFBEB] border-[#FDE68A]"}`}
+          >
+            <div className={`w-[22px] h-[22px] rounded-full shrink-0 mt-px flex items-center justify-center text-white text-xs font-bold ${c.ok ? "bg-success" : "bg-[#D97706]"}`}>
               {c.ok ? "✓" : "~"}
             </div>
             <div>
-              <div style={{ fontFamily: font.body, fontSize: 14, fontWeight: 600, color: color.ink800, marginBottom: 3 }}>{c.label}</div>
-              <div style={{ fontFamily: font.body, fontSize: 13, color: color.textMuted }}>{c.desc}</div>
+              <div className="font-body text-sm font-semibold text-ink800 mb-[3px]">{c.label}</div>
+              <div className="font-body text-[13px] text-textMuted">{c.desc}</div>
             </div>
           </div>
         ))}
@@ -77,8 +68,8 @@ export function AccesibilidadPage() {
         Si encontrás una barrera de accesibilidad en nuestro sitio, te pedimos que nos lo hagas saber. Tu feedback nos ayuda a mejorar:
       </P>
       <UL>
-        <li>Email: <a href={`mailto:${contact.email}`} style={{ color: color.primary }}>{contact.email}</a></li>
-        <li>WhatsApp: <a href={`https://wa.me/${contact.whatsappNumber}`} target="_blank" rel="noreferrer" style={{ color: color.primary }}>{contact.phoneDisplay}</a></li>
+        <li>Email: <a href={`mailto:${contact.email}`} className="text-primary">{contact.email}</a></li>
+        <li>WhatsApp: <a href={`https://wa.me/${contact.whatsappNumber}`} target="_blank" rel="noreferrer" className="text-primary">{contact.phoneDisplay}</a></li>
       </UL>
       <P>
         Intentamos responder en un plazo de 5 días hábiles y trabajar en una solución dentro de los 30 días siguientes.

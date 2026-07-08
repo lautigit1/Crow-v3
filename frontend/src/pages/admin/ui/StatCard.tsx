@@ -1,14 +1,20 @@
+import clsx from "clsx";
 import { Icon, type IconName } from "@/shared/ui";
-import { color, font, radius } from "@/shared/config/theme";
 
 type Tone = "primary" | "success" | "warning" | "danger" | "neutral";
 
-const tones: Record<Tone, { fg: string; bg: string; accent: string; glow: string }> = {
-  primary: { fg: color.primary,  bg: color.primarySoft, accent: color.primary,  glow: "rgba(0,87,217,.08)" },
-  success: { fg: "#15803D",      bg: "#DCFCE7",         accent: "#16A34A",      glow: "rgba(22,163,74,.08)" },
-  warning: { fg: "#B45309",      bg: "#FEF3C7",         accent: "#D97706",      glow: "rgba(217,119,6,.08)" },
-  danger:  { fg: "#DC2626",      bg: "#FEE2E2",         accent: "#DC2626",      glow: "rgba(220,38,38,.08)" },
-  neutral: { fg: color.ink700,   bg: "#F1F5F9",         accent: color.ink700,   glow: "transparent" },
+// Tone is a fixed 5-item union, so each variant's colors are precomputed as
+// static Tailwind classes instead of hex strings. Some tones reuse design
+// tokens (primary/primarySoft/primaryDark, ink700); others (the accent bar
+// greens/ambers, the icon-chip backgrounds) are one-off values from the
+// original inline styles that aren't part of the token set, kept as
+// arbitrary values.
+const tones: Record<Tone, { iconBg: string; iconFg: string; ring: string; accentBg: string; accentOpacity: string }> = {
+  primary: { iconBg: "bg-primarySoft", iconFg: "text-primaryDark", ring: "shadow-[0_0_0_4px_rgba(0,87,217,.08)]", accentBg: "bg-primary", accentOpacity: "opacity-90" },
+  success: { iconBg: "bg-[#DCFCE7]", iconFg: "text-[#15803D]", ring: "shadow-[0_0_0_4px_rgba(22,163,74,.08)]", accentBg: "bg-[#16A34A]", accentOpacity: "opacity-90" },
+  warning: { iconBg: "bg-[#FEF3C7]", iconFg: "text-[#B45309]", ring: "shadow-[0_0_0_4px_rgba(217,119,6,.08)]", accentBg: "bg-[#D97706]", accentOpacity: "opacity-90" },
+  danger: { iconBg: "bg-[#FEE2E2]", iconFg: "text-[#DC2626]", ring: "shadow-[0_0_0_4px_rgba(220,38,38,.08)]", accentBg: "bg-[#DC2626]", accentOpacity: "opacity-90" },
+  neutral: { iconBg: "bg-[#F1F5F9]", iconFg: "text-ink700", ring: "shadow-none", accentBg: "bg-ink700", accentOpacity: "opacity-20" },
 };
 
 export function StatCard({
@@ -24,63 +30,41 @@ export function StatCard({
   const t = tones[tone];
 
   return (
-    <div style={{
-      background: "#fff",
-      border: `1px solid ${color.border}`,
-      borderRadius: radius.lg,
-      overflow: "hidden",
-      display: "flex", flexDirection: "column",
-      boxShadow: "0 1px 3px rgba(13,23,40,.05)",
-      transition: "box-shadow .2s",
-    }}>
+    <div className="bg-white border border-border rounded-lg overflow-hidden flex flex-col shadow-[0_1px_3px_rgba(13,23,40,.05)] transition-shadow duration-200">
       {/* Top accent */}
-      <div style={{ height: 3, background: t.accent, opacity: tone === "neutral" ? 0.2 : 0.9 }} />
+      <div className={clsx("h-[3px]", t.accentBg, t.accentOpacity)} />
 
-      <div style={{ padding: "18px 20px 20px", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="pt-[18px] px-5 pb-5 flex-1 flex flex-col gap-3">
         {/* Row: label + icon */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-          <span style={{
-            fontFamily: font.mono, fontSize: 10.5, fontWeight: 700,
-            letterSpacing: ".1em", color: color.textFaint,
-            textTransform: "uppercase", lineHeight: 1.3,
-          }}>
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase leading-[1.3]">
             {label}
           </span>
-          <span style={{
-            width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-            background: t.bg,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: t.fg,
-            boxShadow: `0 0 0 4px ${t.glow}`,
-          }}>
+          <span className={clsx("w-9 h-9 rounded-[9px] shrink-0 flex items-center justify-center", t.iconBg, t.iconFg, t.ring)}>
             <Icon name={icon} size={17} />
           </span>
         </div>
 
         {/* Value */}
-        <div style={{
-          fontFamily: font.display, fontSize: 32, fontWeight: 900,
-          color: color.ink900, lineHeight: 1, letterSpacing: "-.02em",
-        }}>
+        <div className="font-display text-[32px] font-black text-ink900 leading-none tracking-[-.02em]">
           {value}
         </div>
 
         {/* Delta + hint */}
         {(delta || hint) && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+          <div className="flex items-center gap-2 mt-0.5">
             {delta && (
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 3,
-                fontFamily: font.mono, fontSize: 11, fontWeight: 700,
-                color: delta.value >= 0 ? "#15803D" : "#DC2626",
-                background: delta.value >= 0 ? "#DCFCE7" : "#FEE2E2",
-                padding: "2px 7px", borderRadius: 4,
-              }}>
+              <span
+                className={clsx(
+                  "inline-flex items-center gap-[3px] font-mono text-[11px] font-bold py-0.5 px-[7px] rounded",
+                  delta.value >= 0 ? "text-[#15803D] bg-[#DCFCE7]" : "text-[#DC2626] bg-[#FEE2E2]"
+                )}
+              >
                 {delta.value >= 0 ? "↑" : "↓"} {Math.abs(delta.value)}%
               </span>
             )}
             {hint && (
-              <span style={{ fontFamily: font.body, fontSize: 12, color: color.textFaint }}>
+              <span className="font-body text-xs text-textFaint">
                 {delta ? hint : hint}
               </span>
             )}

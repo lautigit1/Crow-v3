@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "@/shared/ui";
-import { color, font } from "@/shared/config/theme";
 
 export function AdminHeader({
   title,
@@ -14,16 +13,16 @@ export function AdminHeader({
   action?: ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, marginBottom: 26, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+    <div className="flex items-end justify-between gap-5 mb-[26px] flex-wrap">
+      <div className="flex items-center gap-3.5">
         {icon && (
-          <span style={{ width: 44, height: 44, borderRadius: 10, background: color.primarySoft, color: color.primaryDark, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span className="w-11 h-11 rounded-[10px] bg-primarySoft text-primaryDark flex items-center justify-center">
             <Icon name={icon} size={22} />
           </span>
         )}
         <div>
-          <h1 style={{ fontFamily: font.display, fontSize: 25, fontWeight: 800, color: color.ink900, letterSpacing: "-.01em" }}>{title}</h1>
-          {subtitle && <p style={{ fontFamily: font.body, fontSize: 14, color: color.textMuted, marginTop: 3 }}>{subtitle}</p>}
+          <h1 className="font-display text-[25px] font-extrabold text-ink900 tracking-[-.01em]">{title}</h1>
+          {subtitle && <p className="font-body text-sm text-textMuted mt-[3px]">{subtitle}</p>}
         </div>
       </div>
       {action}

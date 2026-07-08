@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useSearchParams } from "react-router-dom";
 import { Container, Select, EmptyState, Button, Icon } from "@/shared/ui";
@@ -9,29 +10,21 @@ import { productApi, type Product } from "@/entities/product";
 import { categoryApi, type Category } from "@/entities/category";
 import { brandApi, type Brand } from "@/entities/brand";
 import { VEHICLE_TYPES } from "@/shared/config/categories";
-import { color, font, radius, shadow } from "@/shared/config/theme";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 
 // ── Skeleton card ─────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div style={{
-      background: "#fff", border: `1px solid ${color.border}`,
-      borderRadius: radius.lg, overflow: "hidden",
-    }}>
-      <div style={{ height: 180, background: color.surface, position: "relative", overflow: "hidden" }}>
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.6) 50%, transparent 100%)",
-          animation: "shimmer 1.4s infinite",
-        }} />
+    <div className="bg-white border border-border rounded-lg overflow-hidden">
+      <div className="h-[180px] bg-surface relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,.6)_50%,transparent_100%)] animate-[shimmer_1.4s_infinite]" />
       </div>
-      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ height: 10, width: "40%", background: color.surface, borderRadius: 4 }} />
-        <div style={{ height: 14, width: "85%", background: color.surface, borderRadius: 4 }} />
-        <div style={{ height: 14, width: "60%", background: color.surface, borderRadius: 4 }} />
-        <div style={{ height: 20, width: "35%", background: color.surface, borderRadius: 4, marginTop: 4 }} />
-        <div style={{ height: 36, background: color.surface, borderRadius: radius.md, marginTop: 4 }} />
+      <div className="p-4 flex flex-col gap-2.5">
+        <div className="h-2.5 w-[40%] bg-surface rounded-sm" />
+        <div className="h-3.5 w-[85%] bg-surface rounded-sm" />
+        <div className="h-3.5 w-[60%] bg-surface rounded-sm" />
+        <div className="h-5 w-[35%] bg-surface rounded-sm mt-1" />
+        <div className="h-9 bg-surface rounded-md mt-1" />
       </div>
     </div>
   );
@@ -39,31 +32,12 @@ function SkeletonCard() {
 
 // ── Filter chip ────────────────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  const [hov, setHov] = useState(false);
   return (
-    <div
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 6,
-        padding: "4px 10px 4px 12px",
-        background: color.primarySoft,
-        border: `1px solid rgba(0,87,217,.2)`,
-        borderRadius: radius.pill,
-        fontFamily: font.body, fontSize: 12.5, fontWeight: 600,
-        color: color.primary,
-      }}
-    >
+    <div className="inline-flex items-center gap-1.5 py-1 pr-2.5 pl-3 bg-primarySoft border border-[rgba(0,87,217,.2)] rounded-pill font-body text-[12.5px] font-semibold text-primary">
       {label}
       <button
         onClick={onRemove}
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
-          background: hov ? color.primary : "rgba(0,87,217,.15)",
-          border: "none", borderRadius: "50%",
-          width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", padding: 0, transition: "background .15s", flexShrink: 0,
-          color: hov ? "#fff" : color.primary,
-        }}
+        className="bg-[rgba(0,87,217,.15)] hover:bg-primary border-none rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 transition-[background] duration-150 shrink-0 text-primary hover:text-white"
       >
         <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
           <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -88,17 +62,17 @@ function FilterPanel({
   onClose?: () => void;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "16px 18px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: font.body, fontSize: 13, fontWeight: 700, color: color.ink900 }}>Filtros</span>
-        <div style={{ display: "flex", gap: 8 }}>
+    <div className="flex flex-col gap-5 py-4 px-[18px]">
+      <div className="flex items-center justify-between">
+        <span className="font-body text-[13px] font-bold text-ink900">Filtros</span>
+        <div className="flex gap-2">
           {hasFilters && (
-            <button onClick={clearFilters} style={{ fontFamily: font.body, fontSize: 12, color: color.primary, background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
+            <button onClick={clearFilters} className="font-body text-xs text-primary bg-none border-none cursor-pointer p-0 font-semibold">
               Limpiar
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: radius.md, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: color.textMuted }}>
+            <button onClick={onClose} className="bg-surface border border-border rounded-md w-7 h-7 flex items-center justify-center cursor-pointer text-textMuted">
               <Icon name="close" size={14} />
             </button>
           )}
@@ -106,7 +80,7 @@ function FilterPanel({
       </div>
 
       <div>
-        <div style={{ fontFamily: font.mono, fontSize: 10.5, fontWeight: 700, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase", marginBottom: 10 }}>Categoría</div>
+        <div className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase mb-2.5">Categoría</div>
         <Select value={categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryId(e.target.value ? Number(e.target.value) : "")}>
           <option value="">Todas las categorías</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -114,12 +88,19 @@ function FilterPanel({
       </div>
 
       <div>
-        <div style={{ fontFamily: font.mono, fontSize: 10.5, fontWeight: 700, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase", marginBottom: 10 }}>Vehículo</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase mb-2.5">Vehículo</div>
+        <div className="flex flex-wrap gap-1.5">
           {VEHICLE_TYPES.map((t) => {
             const active = vehicleType === t;
             return (
-              <button key={t} onClick={() => setVehicleType(t)} style={{ fontFamily: font.body, fontSize: 12.5, fontWeight: 600, padding: "5px 12px", borderRadius: radius.pill, cursor: "pointer", border: `1.5px solid ${active ? color.primary : color.border}`, background: active ? color.primarySoft : "#fff", color: active ? color.primary : color.textMuted, transition: "all .15s" }}>
+              <button
+                key={t}
+                onClick={() => setVehicleType(t)}
+                className={clsx(
+                  "font-body text-[12.5px] font-semibold py-[5px] px-3 rounded-pill cursor-pointer border-[1.5px] transition-all duration-150",
+                  active ? "border-primary bg-primarySoft text-primary" : "border-border bg-white text-textMuted",
+                )}
+              >
                 {t}
               </button>
             );
@@ -128,16 +109,21 @@ function FilterPanel({
       </div>
 
       <div>
-        <div style={{ fontFamily: font.mono, fontSize: 10.5, fontWeight: 700, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase", marginBottom: 10 }}>Marca</div>
+        <div className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase mb-2.5">Marca</div>
         <Select value={brandId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBrandId(e.target.value ? Number(e.target.value) : "")}>
           <option value="">Todas las marcas</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </Select>
       </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 12px", border: `1.5px solid ${inStock ? color.primary : color.border}`, borderRadius: radius.md, background: inStock ? color.primarySoft : "#fff", transition: "all .15s" }}>
-        <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} style={{ width: 15, height: 15, accentColor: color.primary, flexShrink: 0 }} />
-        <span style={{ fontFamily: font.body, fontSize: 13, fontWeight: 600, color: inStock ? color.primary : color.ink800 }}>Solo en stock</span>
+      <label
+        className={clsx(
+          "flex items-center gap-2.5 cursor-pointer py-2.5 px-3 rounded-md border-[1.5px] transition-all duration-150",
+          inStock ? "border-primary bg-primarySoft" : "border-border bg-white",
+        )}
+      >
+        <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="w-[15px] h-[15px] accent-primary shrink-0" />
+        <span className={clsx("font-body text-[13px] font-semibold", inStock ? "text-primary" : "text-ink800")}>Solo en stock</span>
       </label>
     </div>
   );
@@ -160,6 +146,12 @@ export function CatalogPage() {
   const [total, setTotal] = useState(0);
   const [modal, setModal] = useState<{ open: boolean; message: string; productId: number | null }>({ open: false, message: "", productId: null });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // `isMobile` drives which markup gets *mounted*, not just how it looks: the
+  // sidebar (desktop) and the drawer (mobile) each render their own full
+  // `FilterPanel` copy (selects, checkbox, buttons). Rendering both at once
+  // and hiding one with CSS would duplicate those interactive/labelled
+  // elements in the DOM -- same reasoning as `widgets/navbar/Navbar.tsx`'s
+  // kept `useBreakpoint()`. Purely cosmetic sizing below still uses `md:`.
   const { isMobile } = useBreakpoint();
 
   useEffect(() => {
@@ -214,69 +206,46 @@ export function CatalogPage() {
   return (
     <>
       {/* ── Header ── */}
-      <section style={{ background: color.ink900, position: "relative", overflow: "hidden" }}>
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage: "radial-gradient(700px 300px at 80% 0%, rgba(0,87,217,.22), transparent 60%)",
-        }} />
-        <Container style={{ position: "relative", padding: "40px 40px 0" }}>
+      <section className="bg-ink900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(700px_300px_at_80%_0%,rgba(0,87,217,.22),transparent_60%)]" />
+        {/* This header uses a fixed 40px side padding at every breakpoint
+            (unlike Container's own responsive 16/40 default), so the
+            horizontal padding is passed as `style` -- inline style always
+            wins over Container's own utility classes regardless of Tailwind's
+            generated CSS order, which a conflicting className couldn't
+            guarantee (see shared/ui/Field.tsx's comment on the same trap). */}
+        <Container className="relative pt-10 pb-0" style={{ paddingLeft: 40, paddingRight: 40 }}>
           {/* Breadcrumb */}
-          <div style={{ fontFamily: font.mono, fontSize: 11, color: "#3F5165", letterSpacing: ".08em", marginBottom: 20 }}>
-            INICIO <span style={{ margin: "0 6px", color: "#1E2D3D" }}>/</span>
-            <span style={{ color: color.primary }}>CATÁLOGO</span>
+          <div className="font-mono text-[11px] text-[#3F5165] tracking-[.08em] mb-5">
+            INICIO <span className="mx-1.5 text-[#1E2D3D]">/</span>
+            <span className="text-primary">CATÁLOGO</span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 40, paddingBottom: 32 }}>
+          <div className="flex items-end justify-between gap-10 pb-8">
             <div>
-              <h1 style={{
-                fontFamily: font.display, fontSize: 36, fontWeight: 900,
-                letterSpacing: "-.025em", color: "#fff", marginBottom: 8,
-              }}>
+              <h1 className="font-display text-4xl font-black tracking-[-.025em] text-white mb-2">
                 Catálogo de repuestos
               </h1>
-              <p style={{ fontFamily: font.body, fontSize: 15, color: "#4E6B82", margin: 0 }}>
+              <p className="font-body text-[15px] text-[#4E6B82] m-0">
                 Stock actualizado · Cotización directa por WhatsApp
               </p>
             </div>
 
             {/* Search bar in header */}
-            <div style={{ position: "relative", width: 320, flexShrink: 0 }}>
-              <div style={{
-                position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                color: "#3F5165", pointerEvents: "none",
-              }}>
+            <div className="relative w-80 shrink-0">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#3F5165] pointer-events-none">
                 <Icon name="search" size={16} />
               </div>
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Buscar por nombre, SKU o marca…"
-                style={{
-                  width: "100%", boxSizing: "border-box",
-                  height: 44, padding: "0 14px 0 42px",
-                  fontFamily: font.body, fontSize: 14, color: "#fff",
-                  background: "rgba(255,255,255,.07)",
-                  border: "1.5px solid rgba(255,255,255,.1)",
-                  borderRadius: radius.md, outline: "none",
-                  transition: "border-color .15s, background .15s",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "rgba(0,87,217,.6)";
-                  e.target.style.background = "rgba(255,255,255,.1)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(255,255,255,.1)";
-                  e.target.style.background = "rgba(255,255,255,.07)";
-                }}
+                className="w-full box-border h-11 pr-3.5 pl-[42px] font-body text-sm text-white bg-[rgba(255,255,255,.07)] border-[1.5px] border-[rgba(255,255,255,.1)] rounded-md outline-none transition-[border-color,background] duration-150 focus:border-[rgba(0,87,217,.6)] focus:bg-[rgba(255,255,255,.1)]"
               />
               {q && (
                 <button
                   onClick={() => setQ("")}
-                  style={{
-                    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer", color: "#4E6B82",
-                    padding: 4, lineHeight: 0,
-                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-[#4E6B82] p-1 leading-[0]"
                 >
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -290,15 +259,10 @@ export function CatalogPage() {
 
       {/* ── Mobile filter drawer ── */}
       {isMobile && drawerOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-          <div onClick={() => setDrawerOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(7,17,31,.5)", backdropFilter: "blur(4px)" }} />
-          <div style={{
-            position: "relative", background: "#fff",
-            borderRadius: "16px 16px 0 0", boxShadow: shadow.lg,
-            maxHeight: "80vh", overflowY: "auto",
-            animation: "slideUp .25s ease both",
-          }}>
-            <div style={{ width: 36, height: 4, background: color.border, borderRadius: 2, margin: "12px auto 4px" }} />
+        <div className="fixed inset-0 z-[200] flex flex-col justify-end">
+          <div onClick={() => setDrawerOpen(false)} className="absolute inset-0 bg-[rgba(7,17,31,.5)] backdrop-blur-[4px]" />
+          <div className="relative bg-white rounded-t-2xl shadow-lg max-h-[80vh] overflow-y-auto animate-[slideUp_.25s_ease_both]">
+            <div className="w-9 h-1 bg-border rounded-[2px] mx-auto mt-3 mb-1" />
             <FilterPanel
               categories={categories} brands={brands}
               categoryId={categoryId} setCategoryId={setCategoryId}
@@ -308,30 +272,25 @@ export function CatalogPage() {
               hasFilters={!!hasFilters} clearFilters={clearFilters}
               onClose={() => setDrawerOpen(false)}
             />
-            <div style={{ padding: "0 18px 24px" }}>
+            <div className="px-[18px] pb-6">
               <Button fullWidth onClick={() => setDrawerOpen(false)}>Ver resultados</Button>
             </div>
           </div>
-          <style>{`@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }`}</style>
         </div>
       )}
 
       {/* ── Body ── */}
-      <section style={{ background: color.surface, minHeight: "60vh" }}>
-        <Container style={{
-          padding: isMobile ? "20px 16px 60px" : "28px 40px 80px",
-          display: isMobile ? "block" : "grid",
-          gridTemplateColumns: "252px 1fr",
-          gap: 28, alignItems: "start",
-        }}>
+      <section className="bg-surface min-h-[60vh]">
+        <Container
+          className={clsx(
+            "pt-5 pb-[60px] md:pt-7 md:pb-20 items-start gap-7",
+            isMobile ? "block" : "grid grid-cols-[252px_1fr]",
+          )}
+        >
 
           {/* ── Sidebar (desktop only) ── */}
           {!isMobile && (
-            <aside style={{
-              position: "sticky", top: 90,
-              background: "#fff", border: `1px solid ${color.border}`,
-              borderRadius: radius.lg, boxShadow: shadow.sm, overflow: "hidden",
-            }}>
+            <aside className="sticky top-[90px] bg-white border border-border rounded-lg shadow-sm overflow-hidden">
               <FilterPanel
                 categories={categories} brands={brands}
                 categoryId={categoryId} setCategoryId={setCategoryId}
@@ -346,30 +305,25 @@ export function CatalogPage() {
           {/* ── Results ── */}
           <div>
             {/* Results bar */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: activeChips.length ? 12 : 0 }}>
-                <div style={{ fontFamily: font.body, fontSize: 14, color: color.textMuted }}>
+            <div className="mb-4">
+              <div className={clsx("flex items-center justify-between", activeChips.length ? "mb-3" : "mb-0")}>
+                <div className="font-body text-sm text-textMuted">
                   {products === null ? (
-                    <span style={{ color: color.textFaint }}>Cargando…</span>
+                    <span className="text-textFaint">Cargando…</span>
                   ) : (
                     <>
-                      <strong style={{ fontFamily: font.display, fontSize: 16, color: color.ink900 }}>{total}</strong>
-                      <span style={{ marginLeft: 4 }}>producto{total !== 1 ? "s" : ""}</span>
+                      <strong className="font-display text-base text-ink900">{total}</strong>
+                      <span className="ml-1">producto{total !== 1 ? "s" : ""}</span>
                     </>
                   )}
                 </div>
                 {isMobile && (
                   <button
                     onClick={() => setDrawerOpen(true)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      fontFamily: font.body, fontSize: 13, fontWeight: 600,
-                      color: hasFilters ? color.primary : color.ink700,
-                      background: hasFilters ? color.primarySoft : "#fff",
-                      border: `1.5px solid ${hasFilters ? color.primary : color.border}`,
-                      borderRadius: radius.pill, padding: "7px 14px",
-                      cursor: "pointer",
-                    }}
+                    className={clsx(
+                      "flex items-center gap-1.5 font-body text-[13px] font-semibold rounded-pill py-[7px] px-3.5 cursor-pointer border-[1.5px]",
+                      hasFilters ? "text-primary bg-primarySoft border-primary" : "text-ink700 bg-white border-border",
+                    )}
                   >
                     <Icon name="settings" size={14} />
                     Filtros{hasFilters ? ` (${activeChips.length})` : ""}
@@ -379,7 +333,7 @@ export function CatalogPage() {
 
               {/* Active filter chips */}
               {activeChips.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <div className="flex flex-wrap gap-1.5">
                   {activeChips.map((chip) => (
                     <FilterChip key={chip.label} label={chip.label} onRemove={chip.clear} />
                   ))}
@@ -389,7 +343,7 @@ export function CatalogPage() {
 
             {/* Grid */}
             {products === null ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 14 }}>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5">
                 {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : products.length === 0 ? (
@@ -399,7 +353,7 @@ export function CatalogPage() {
                 action={<Button onClick={clearFilters}>Limpiar filtros</Button>}
               />
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 14 }}>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5">
                 {products.map((p) => (
                   <ProductCard
                     key={p.id}

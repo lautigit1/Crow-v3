@@ -6,11 +6,12 @@ import { AdminHeader } from "./ui/AdminHeader";
 import { categoryApi, type Category, type CategoryInput } from "@/entities/category";
 import { apiError } from "@/shared/api/client";
 import { slugify } from "@/shared/lib/slug";
-import { color, font, radius } from "@/shared/config/theme";
 
 const empty: CategoryInput = { name: "", slug: "", description: "" };
 
 const MAX_DESC = 200;
+
+const inpCls = "h-9 text-[13px]";
 
 export function AdminCategoriesPage() {
   const [items, setItems] = useState<Category[] | null>(null);
@@ -66,29 +67,25 @@ export function AdminCategoriesPage() {
     {
       header: "Categoría",
       render: (c) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: radius.sm, flexShrink: 0,
-            background: `${color.primary}15`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Icon name="categories" size={15} style={{ color: color.primary }} />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-sm shrink-0 bg-[#0057D915] flex items-center justify-center">
+            <Icon name="categories" size={15} className="text-primary" />
           </div>
-          <strong style={{ color: color.ink900 }}>{c.name}</strong>
+          <strong className="text-ink900">{c.name}</strong>
         </div>
       ),
     },
     {
       header: "Descripción",
       render: (c) => c.description
-        ? <span style={{ fontSize: 13, color: color.textMuted }}>{c.description.length > 60 ? c.description.slice(0, 60) + "…" : c.description}</span>
-        : <span style={{ color: color.textFaint }}>—</span>,
+        ? <span className="text-[13px] text-textMuted">{c.description.length > 60 ? c.description.slice(0, 60) + "…" : c.description}</span>
+        : <span className="text-textFaint">—</span>,
     },
     {
       header: "Acciones",
       align: "right",
       render: (c) => (
-        <div style={{ display: "inline-flex", gap: 8 }}>
+        <div className="inline-flex gap-2">
           <Button variant="outline" size="sm" onClick={() => openEdit(c)}><Icon name="edit" size={14} /> Editar</Button>
           <Button variant="danger" size="sm" onClick={() => remove(c)}><Icon name="trash" size={14} /></Button>
         </div>
@@ -117,15 +114,15 @@ export function AdminCategoriesPage() {
         title="Categoría"
         width={560}
         footer={
-          <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
-            {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}
+          <div className="flex items-center gap-3 w-full">
+            {error && <span className="font-body text-xs text-danger flex-1">{error}</span>}
             <Button type="submit" form="cat-form" fullWidth disabled={saving}>
               {saving ? "Guardando…" : editing === "new" ? "Crear categoría" : "Guardar cambios"}
             </Button>
           </div>
         }
       >
-        <form id="cat-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <form id="cat-form" onSubmit={save} className="flex flex-col gap-3.5">
 
           <CompactField label="Nombre de la categoría *">
             <Input
@@ -133,14 +130,14 @@ export function AdminCategoriesPage() {
               value={form.name}
               placeholder="Ej. Frenos, Suspensión, Filtros…"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })}
-              style={inp}
+              className={inpCls}
             />
           </CompactField>
 
           <CompactField
             label="Descripción"
             right={
-              <span style={{ fontFamily: font.mono, fontSize: 9.5, color: descLen > MAX_DESC ? color.danger : color.textFaint }}>
+              <span className={`font-mono text-[9.5px] ${descLen > MAX_DESC ? "text-danger" : "text-textFaint"}`}>
                 {descLen}/{MAX_DESC}
               </span>
             }
@@ -150,32 +147,20 @@ export function AdminCategoriesPage() {
               value={form.description ?? ""}
               placeholder="Breve descripción de qué productos incluye esta categoría…"
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ description: e.target.value })}
-              style={{ fontSize: 13, resize: "none" }}
+              className="text-[13px] resize-none"
             />
           </CompactField>
 
           {/* Preview card */}
           {form.name && (
-            <div style={{
-              borderRadius: radius.md,
-              border: `1px solid ${color.border}`,
-              background: "#fafafa",
-              padding: 14,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: radius.sm, flexShrink: 0,
-                background: `${color.primary}15`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Icon name="categories" size={18} style={{ color: color.primary }} />
+            <div className="rounded-md border border-border bg-[#fafafa] p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-sm shrink-0 bg-[#0057D915] flex items-center justify-center">
+                <Icon name="categories" size={18} className="text-primary" />
               </div>
               <div>
-                <div style={{ fontFamily: font.display, fontWeight: 700, fontSize: 14, color: color.ink900 }}>{form.name}</div>
+                <div className="font-display font-bold text-sm text-ink900">{form.name}</div>
                 {form.description && (
-                  <div style={{ fontFamily: font.body, fontSize: 12, color: color.textMuted, marginTop: 2 }}>
+                  <div className="font-body text-xs text-textMuted mt-0.5">
                     {form.description.slice(0, 55)}{form.description.length > 55 ? "…" : ""}
                   </div>
                 )}
@@ -189,13 +174,11 @@ export function AdminCategoriesPage() {
   );
 }
 
-const inp: React.CSSProperties = { height: 36, fontSize: 13 };
-
 function CompactField({ label, children, right }: { label: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: font.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em", color: color.textFaint, textTransform: "uppercase" }}>{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[9.5px] font-bold tracking-[.12em] text-textFaint uppercase">{label}</span>
         {right}
       </div>
       {children}

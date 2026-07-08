@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
-import { color, font } from "@/shared/config/theme";
 
 /** Right-side slide-in panel for detail views. */
 export function Drawer({
@@ -25,43 +24,29 @@ export function Drawer({
   return createPortal(
     <div
       onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 200,
-        background: "rgba(4,10,20,.68)",
-        backdropFilter: "blur(4px)",
-        display: "flex", justifyContent: "flex-end",
-        animation: "fadeUp .15s ease both",
-      }}
+      className="fixed inset-0 z-[200] bg-[rgba(4,10,20,.68)] backdrop-blur-sm flex justify-end animate-[fadeUp_0.15s_ease_both]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: width,
-          height: "100%",
-          background: "#fff",
-          boxShadow: "-24px 0 80px rgba(0,0,0,.28)",
-          display: "flex",
-          flexDirection: "column",
-          animation: "slideInRight .22s cubic-bezier(.25,.46,.45,.94) both",
-        }}
+        className="w-full h-full bg-white shadow-[-24px_0_80px_rgba(0,0,0,.28)] flex flex-col animate-[slideInRight_0.22s_cubic-bezier(.25,.46,.45,.94)_both]"
+        style={{ maxWidth: width }}
       >
         {/* Header */}
-        <div style={{ position: "relative", overflow: "hidden", background: color.ink900, padding: "20px 24px", flexShrink: 0 }}>
+        <div className="relative overflow-hidden bg-ink900 py-5 px-6 shrink-0">
           {/* Top accent */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color.primary}, #7FB0FF 60%, transparent)` }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9,#7FB0FF_60%,transparent)]" />
           {/* Glow */}
-          <div style={{ position: "absolute", top: -60, right: -30, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,87,217,.16) 0%, transparent 70%)", pointerEvents: "none" }} />
+          <div className="absolute -top-[60px] -right-[30px] w-[220px] h-[220px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.16)_0%,transparent_70%)] pointer-events-none" />
 
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, position: "relative" }}>
+          <div className="flex items-start justify-between gap-4 relative">
             <div>
               {eyebrow && (
-                <div style={{ fontFamily: font.mono, fontSize: 10.5, letterSpacing: ".18em", color: "#7FB0FF", marginBottom: 8, textTransform: "uppercase" }}>
+                <div className="font-mono text-[10.5px] tracking-[0.18em] text-[#7FB0FF] mb-2 uppercase">
                   {eyebrow}
                 </div>
               )}
               {title && (
-                <div style={{ fontFamily: font.display, fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-.01em" }}>
+                <div className="font-display text-[20px] font-extrabold text-white tracking-[-0.01em]">
                   {title}
                 </div>
               )}
@@ -69,17 +54,7 @@ export function Drawer({
             <button
               onClick={onClose}
               aria-label="Cerrar"
-              style={{
-                width: 30, height: 30, flex: "none",
-                border: "1px solid rgba(255,255,255,.15)",
-                background: "rgba(255,255,255,.06)",
-                color: "rgba(255,255,255,.6)",
-                cursor: "pointer", borderRadius: 8,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "background .15s, color .15s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.14)"; e.currentTarget.style.color = "#fff"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.06)"; e.currentTarget.style.color = "rgba(255,255,255,.6)"; }}
+              className="w-[30px] h-[30px] flex-none border border-[rgba(255,255,255,.15)] bg-[rgba(255,255,255,.06)] text-[rgba(255,255,255,.6)] cursor-pointer rounded-md flex items-center justify-center transition-[background-color,color] duration-150 hover:bg-[rgba(255,255,255,.14)] hover:text-white"
             >
               <Icon name="close" size={16} />
             </button>
@@ -87,15 +62,11 @@ export function Drawer({
         </div>
 
         {/* Body */}
-        <div style={{ padding: "22px 24px", overflowY: "auto", flex: 1, background: "#FAFBFD" }}>
-          {children}
-        </div>
+        <div className="py-[22px] px-6 overflow-y-auto flex-1 bg-[#FAFBFD]">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div style={{ padding: "14px 20px", borderTop: `1px solid ${color.border}`, display: "flex", gap: 10, background: "#fff", flexShrink: 0 }}>
-            {footer}
-          </div>
+          <div className="py-3.5 px-5 border-t border-border flex gap-2.5 bg-white shrink-0">{footer}</div>
         )}
       </div>
     </div>,

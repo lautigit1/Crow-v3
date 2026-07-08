@@ -1,9 +1,9 @@
 import { useState, type FormEvent, type ChangeEvent } from "react";
+import clsx from "clsx";
 import { Field, Input, Button, Avatar, Icon } from "@/shared/ui";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { userApi } from "@/entities/user";
 import { apiError } from "@/shared/api/client";
-import { color, font, radius } from "@/shared/config/theme";
 import { formatDate } from "@/shared/lib/format";
 
 // ── Section card ──────────────────────────────────────────────────────────────
@@ -19,38 +19,23 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{
-      background: "#fff",
-      border: `1px solid ${color.border}`,
-      borderRadius: 14,
-      overflow: "hidden",
-      boxShadow: "0 2px 12px rgba(7,17,31,.04)",
-    }}>
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "16px 22px",
-        borderBottom: `1px solid ${color.border}`,
-        background: color.surface,
-      }}>
-        <span style={{
-          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: color.primarySoft, color: color.primary,
-        }}>
+    <div className="bg-white border border-border rounded-[14px] overflow-hidden shadow-[0_2px_12px_rgba(7,17,31,.04)]">
+      <div className="flex items-center gap-3 py-4 px-[22px] border-b border-border bg-surface">
+        <span className="w-9 h-9 rounded-[10px] shrink-0 flex items-center justify-center bg-primarySoft text-primary">
           {icon}
         </span>
         <div>
-          <div style={{ fontFamily: font.display, fontSize: 15, fontWeight: 700, color: color.ink900 }}>
+          <div className="font-display text-[15px] font-bold text-ink900">
             {title}
           </div>
           {subtitle && (
-            <div style={{ fontFamily: font.body, fontSize: 12, color: color.textFaint, marginTop: 1 }}>
+            <div className="font-body text-xs text-textFaint mt-px">
               {subtitle}
             </div>
           )}
         </div>
       </div>
-      <div style={{ padding: "22px 22px" }}>
+      <div className="p-[22px]">
         {children}
       </div>
     </div>
@@ -60,17 +45,11 @@ function SectionCard({
 // ── Stat chip ─────────────────────────────────────────────────────────────────
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", gap: 3,
-      padding: "10px 16px",
-      background: "rgba(255,255,255,.08)",
-      borderRadius: radius.md,
-      border: "1px solid rgba(255,255,255,.1)",
-    }}>
-      <span style={{ fontFamily: font.mono, fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "#7FB0FF" }}>
+    <div className="flex flex-col gap-[3px] py-2.5 px-4 bg-[rgba(255,255,255,.08)] rounded-md border border-[rgba(255,255,255,.1)]">
+      <span className="font-mono text-[9px] tracking-[.1em] uppercase text-[#7FB0FF]">
         {label}
       </span>
-      <span style={{ fontFamily: font.body, fontSize: 13, fontWeight: 600, color: "#fff" }}>
+      <span className="font-body text-[13px] font-semibold text-white">
         {value}
       </span>
     </div>
@@ -101,41 +80,27 @@ export function ProfilePage() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="flex flex-col gap-5">
 
       {/* ── Hero header ── */}
-      <div style={{
-        position: "relative", overflow: "hidden",
-        background: color.ink900,
-        borderRadius: 14,
-        padding: "28px 28px 24px",
-        boxShadow: "0 4px 24px rgba(7,17,31,.12)",
-      }}>
+      <div className="relative overflow-hidden bg-ink900 rounded-[14px] pt-7 px-7 pb-6 shadow-[0_4px_24px_rgba(7,17,31,.12)]">
         {/* Accent line */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: `linear-gradient(90deg, ${color.primary} 0%, #7FB0FF 55%, transparent 100%)`,
-        }} />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
         {/* Glow */}
-        <div style={{
-          position: "absolute", top: -60, right: -40, width: 240, height: 240,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,87,217,.18) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
+        <div className="absolute -top-[60px] -right-10 w-60 h-60 rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
 
-        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 20 }}>
+        <div className="relative flex items-center gap-5">
           <Avatar name={user?.full_name ?? "?"} size={64} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: font.display, fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-.02em" }}>
+          <div className="flex-1 min-w-0">
+            <div className="font-display text-[22px] font-extrabold text-white tracking-[-.02em]">
               {user?.full_name}
             </div>
-            <div style={{ fontFamily: font.mono, fontSize: 11, color: "#7FB0FF", marginTop: 4 }}>
+            <div className="font-mono text-[11px] text-[#7FB0FF] mt-1">
               {user?.email}
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+          <div className="flex gap-2.5 shrink-0">
             <StatChip label="Miembro desde" value={user ? formatDate(user.created_at) : "—"} />
             {user?.last_login_at && (
               <StatChip label="Último acceso" value={formatDate(user.last_login_at)} />
@@ -150,8 +115,8 @@ export function ProfilePage() {
         title="Información personal"
         subtitle="Actualizá tu nombre y número de contacto"
       >
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 480 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <form onSubmit={submit} className="flex flex-col gap-4 max-w-[480px]">
+          <div className="grid grid-cols-2 gap-3.5">
             <Field label="Nombre completo">
               <Input
                 value={fullName}
@@ -171,23 +136,21 @@ export function ProfilePage() {
             <Input
               value={user?.email ?? ""}
               disabled
-              style={{ background: color.surface, color: color.textFaint }}
+              className="bg-surface text-textFaint"
             />
-            <div style={{ fontFamily: font.body, fontSize: 11, color: color.textFaint, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+            <div className="font-body text-[11px] text-textFaint mt-1 flex items-center gap-1">
               <Icon name="lock" size={10} />
               El email no se puede cambiar
             </div>
           </Field>
 
           {status && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 14px", borderRadius: radius.sm,
-              background: status.kind === "ok" ? color.successSoft : color.dangerSoft,
-              border: `1px solid ${status.kind === "ok" ? "#BBF7D0" : "#FECACA"}`,
-              fontFamily: font.body, fontSize: 13,
-              color: status.kind === "ok" ? color.success : color.danger,
-            }}>
+            <div
+              className={clsx(
+                "flex items-center gap-2.5 py-2.5 px-3.5 rounded-sm font-body text-[13px] border",
+                status.kind === "ok" ? "bg-successSoft border-[#BBF7D0] text-success" : "bg-dangerSoft border-[#FECACA] text-danger"
+              )}
+            >
               <Icon name={status.kind === "ok" ? "check" : "alert"} size={14} />
               {status.msg}
             </div>

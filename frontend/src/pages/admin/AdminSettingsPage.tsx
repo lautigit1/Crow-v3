@@ -1,10 +1,10 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
+import clsx from "clsx";
 import { Card, Field, Input, Button, CenteredSpinner } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
 import { settingsApi, type SiteSettings } from "@/entities/settings";
 import { apiError } from "@/shared/api/client";
-import { color, font } from "@/shared/config/theme";
 
 export function AdminSettingsPage() {
   const [form, setForm] = useState<SiteSettings | null>(null);
@@ -43,23 +43,23 @@ export function AdminSettingsPage() {
         <CenteredSpinner label="Cargando configuración…" />
       ) : (
         <Card style={{ maxWidth: 640 }}>
-          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <form onSubmit={submit} className="flex flex-col gap-4">
             <Field label="Nombre de la empresa"><Input value={form.company_name} onChange={set("company_name")} /></Field>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="grid grid-cols-2 gap-3.5">
               <Field label="Teléfono (visible)"><Input value={form.phone_display} onChange={set("phone_display")} /></Field>
               <Field label="WhatsApp (solo números)"><Input value={form.whatsapp_number} onChange={set("whatsapp_number")} /></Field>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="grid grid-cols-2 gap-3.5">
               <Field label="Email"><Input type="email" value={form.email} onChange={set("email")} /></Field>
               <Field label="Horario"><Input value={form.hours} onChange={set("hours")} /></Field>
             </div>
             <Field label="Dirección / ubicación"><Input value={form.address} onChange={set("address")} /></Field>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+            <div className="grid grid-cols-3 gap-3.5">
               <Field label="Instagram"><Input value={form.instagram} onChange={set("instagram")} /></Field>
               <Field label="Facebook"><Input value={form.facebook} onChange={set("facebook")} /></Field>
               <Field label="TikTok"><Input value={form.tiktok} onChange={set("tiktok")} /></Field>
             </div>
-            {status && <div style={{ fontFamily: font.body, fontSize: 13, color: status.kind === "ok" ? color.success : color.danger }}>{status.msg}</div>}
+            {status && <div className={clsx("font-body text-[13px]", status.kind === "ok" ? "text-success" : "text-danger")}>{status.msg}</div>}
             <div>
               <Button type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar configuración"}</Button>
             </div>

@@ -1,158 +1,146 @@
-import type * as React from "react";
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Container } from "@/shared/ui";
+import { motion } from "framer-motion";
+import { Container, Icon, Reveal } from "@/shared/ui";
 import { CATEGORIES } from "@/shared/config/categories";
-import { color, font, radius } from "@/shared/config/theme";
-import { useInView } from "@/shared/lib/useInView";
-import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 
 const PRIMARY   = CATEGORIES.slice(0, 3); // Autos, Camiones, Motos
 const SECONDARY = CATEGORIES.slice(3);    // Lubricantes, Baterías, Filtros, Detailing, Accesorios
 
-function Card({
-  c,
-  idx,
-  inView,
-  size,
-}: {
-  c: (typeof CATEGORIES)[number];
-  idx: number;
-  inView: boolean;
-  size: "primary" | "secondary";
-}) {
-  const [hov, setHov] = useState(false);
+const MotionLink = motion(Link);
+const LIFT_SPRING = { type: "spring", stiffness: 380, damping: 28 } as const;
 
+// El link subrayado + flecha reutiliza la misma micro-interacción del
+// "Ver catálogo" del Hero — mismo gesto en dos lugares distintos del
+// sitio, en vez de inventar una tercera variante.
+function CatalogLink() {
   return (
-    <Link
-      to={`/catalogo?cat=${encodeURIComponent(c.label)}`}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        background: "#fff",
-        border: `1.5px solid ${hov ? color.primary : color.border}`,
-        borderRadius: radius.lg,
-        padding: size === "primary" ? "28px 26px 22px" : "20px 20px 16px",
-        textDecoration: "none",
-        transition: "border-color .18s, box-shadow .18s, transform .18s",
-        transform: hov ? "translateY(-2px)" : "none",
-        boxShadow: hov ? `0 8px 24px rgba(0,87,217,.1)` : "0 1px 3px rgba(13,23,40,.05)",
-        opacity: inView ? 1 : 0,
-        animation: inView ? `reveal .4s ${0.05 * idx}s ease both` : "none",
-        cursor: "pointer",
-      }}
-    >
-      {/* Name */}
-      <div>
-        <h3 style={{
-          fontFamily: font.display,
-          fontSize: size === "primary" ? 20 : 14,
-          fontWeight: 800,
-          letterSpacing: "-.02em",
-          color: hov ? color.primary : color.ink900,
-          marginBottom: size === "primary" ? 10 : 6,
-          transition: "color .18s",
-          lineHeight: 1.2,
-        }}>
-          {c.label}
-        </h3>
-
-        <p style={{
-          fontFamily: font.body,
-          fontSize: size === "primary" ? 13.5 : 11.5,
-          lineHeight: 1.55,
-          color: color.textMuted,
-          margin: 0,
-        }}>
-          {c.desc}
-        </p>
-      </div>
-
-      {/* Arrow */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        marginTop: size === "primary" ? 24 : 14,
-        fontFamily: font.body,
-        fontSize: 12,
-        fontWeight: 600,
-        color: hov ? color.primary : color.textFaint,
-        transition: "color .18s",
-      }}>
+    <span className="mt-6 inline-flex items-center gap-1.5 font-body text-[12.5px] font-semibold text-textFaint transition-colors duration-200 group-hover:text-primary">
+      <span className="relative">
         Ver catálogo
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+        <motion.span
+          variants={{ rest: { scaleX: 0 }, hover: { scaleX: 1 } }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="absolute left-0 -bottom-0.5 h-px w-full origin-left bg-primary"
+        />
+      </span>
+      <motion.svg
+        variants={{ rest: { x: 0 }, hover: { x: 3 } }}
+        transition={{ duration: 0.15 }}
+        width={11}
+        height={11}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+      </motion.svg>
+    </span>
+  );
+}
+
+function PrimaryCard({ c, idx }: { c: (typeof CATEGORIES)[number]; idx: number }) {
+  return (
+    <Reveal index={idx} className="h-full">
+      <MotionLink
+        to={`/catalogo?cat=${encodeURIComponent(c.label)}`}
+        variants={{ rest: { y: 0 }, hover: { y: -4 } }}
+        initial="rest"
+        whileHover="hover"
+        animate="rest"
+        transition={LIFT_SPRING}
+        className="group relative flex h-full flex-col justify-between rounded-xl border-[1.5px] border-border bg-white pt-6 px-[26px] pb-[22px] no-underline shadow-[0_1px_3px_rgba(13,23,40,.05)] transition-[border-color,box-shadow] duration-200 hover:border-primary hover:shadow-[0_16px_36px_rgba(0,87,217,.14)]"
+      >
+        <span className="absolute right-5 top-6 font-mono text-[10px] font-bold tracking-[0.14em] text-textFaint">
+          {String(idx + 1).padStart(2, "0")}
+        </span>
+
+        <div>
+          <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#EEF4FF] text-primary">
+            <Icon name={c.icon} size={20} />
+          </span>
+
+          <h3 className="mb-2.5 font-display text-[20px] font-extrabold leading-[1.2] tracking-[-0.02em] text-ink900 transition-colors duration-200 group-hover:text-primary">
+            {c.label}
+          </h3>
+          <p className="max-w-[85%] font-body text-[13.5px] leading-[1.55] text-textMuted">
+            {c.desc}
+          </p>
+        </div>
+
+        <CatalogLink />
+      </MotionLink>
+    </Reveal>
+  );
+}
+
+// Las 5 secundarias pasan de "tarjetas chicas" (versión achicada de la
+// misma card) a chips horizontales — un lenguaje visual distinto a
+// propósito, para que la jerarquía primaria/secundaria se lea a simple
+// vista en vez de solo notarse por el tamaño de fuente.
+function SecondaryChip({ c, idx }: { c: (typeof CATEGORIES)[number]; idx: number }) {
+  return (
+    <Reveal index={PRIMARY.length + idx}>
+      <MotionLink
+        to={`/catalogo?cat=${encodeURIComponent(c.label)}`}
+        variants={{
+          rest: { backgroundColor: "#FFFFFF", color: "#07111F", borderColor: "#E2E8F0" },
+          hover: { backgroundColor: "#0057D9", color: "#FFFFFF", borderColor: "#0057D9" },
+        }}
+        initial="rest"
+        whileHover="hover"
+        animate="rest"
+        transition={{ duration: 0.18 }}
+        className="inline-flex items-center gap-2.5 rounded-full border-[1.5px] py-2.5 pl-3.5 pr-[18px] no-underline"
+      >
+        <Icon name={c.icon} size={15} />
+        <span className="font-display text-[13.5px] font-bold whitespace-nowrap">{c.label}</span>
+        <motion.svg
+          variants={{ rest: { x: 0 }, hover: { x: 3 } }}
+          transition={{ duration: 0.15 }}
+          width={10}
+          height={10}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-        </svg>
-      </div>
-    </Link>
+        </motion.svg>
+      </MotionLink>
+    </Reveal>
   );
 }
 
 export function CategoryGrid() {
-  const [ref, inView] = useInView();
-  const { isMobile } = useBreakpoint();
-
   return (
-    <section
-      ref={ref as React.RefObject<HTMLElement>}
-      style={{
-        background: color.surface,
-        padding: isMobile ? "64px 0" : "96px 0",
-        borderTop: `1px solid ${color.border}`,
-        borderBottom: `1px solid ${color.border}`,
-      }}
-    >
+    <section className="border-t border-b border-border bg-surface py-16 md:py-24">
       <Container>
         {/* Heading */}
-        <div style={{ marginBottom: isMobile ? 32 : 48 }}>
-          <div style={{
-            fontFamily: font.mono,
-            fontSize: 10.5,
-            fontWeight: 500,
-            letterSpacing: ".16em",
-            color: color.primary,
-            textTransform: "uppercase",
-            marginBottom: 16,
-          }}>
+        <div className="mb-8 md:mb-12">
+          <div className="mb-4 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-primary">
             — Catálogo
           </div>
-          <h2 style={{
-            fontFamily: font.display,
-            fontSize: isMobile ? 26 : 32,
-            fontWeight: 800,
-            letterSpacing: "-.03em",
-            lineHeight: 1.1,
-            color: color.ink900,
-            margin: 0,
-          }}>
+          <h2 className="m-0 font-display text-[26px] font-extrabold leading-[1.1] tracking-[-0.03em] text-ink900 md:text-[32px]">
             Todo lo que tu vehículo necesita.
           </h2>
         </div>
 
-        {/* Primary row — Autos, Camiones, Motos */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
-          gap: isMobile ? 8 : 10,
-          marginBottom: isMobile ? 8 : 10,
-        }}>
+        {/* Primary — Autos, Camiones, Motos */}
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-4">
           {PRIMARY.map((c, i) => (
-            <Card key={c.label} c={c} idx={i} inView={inView} size="primary" />
+            <PrimaryCard key={c.label} c={c} idx={i} />
           ))}
         </div>
 
-        {/* Secondary row — Lubricantes, Baterías, Filtros, Detailing, Accesorios */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)",
-          gap: isMobile ? 8 : 10,
-        }}>
+        {/* Secondary — chips */}
+        <div className="flex flex-wrap gap-2.5">
           {SECONDARY.map((c, i) => (
-            <Card key={c.label} c={c} idx={PRIMARY.length + i} inView={inView} size="secondary" />
+            <SecondaryChip key={c.label} c={c} idx={i} />
           ))}
         </div>
       </Container>

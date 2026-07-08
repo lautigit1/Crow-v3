@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { DataTable, Badge, Icon, CenteredSpinner, type Column, type IconName } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
 import { auditApi, type AuditLog } from "@/entities/audit";
-import { color, font } from "@/shared/config/theme";
 
 type Tone = "primary" | "success" | "warning" | "danger" | "neutral";
 
@@ -40,8 +39,8 @@ export function AdminAuditPage() {
       render: (l) => {
         const m = actionMeta(l.action);
         return (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ color: color.textMuted }}>
+          <div className="flex items-center gap-2.5">
+            <span className="text-textMuted">
               <Icon name={m.icon} size={17} />
             </span>
             <Badge tone={m.tone}>{m.label}</Badge>
@@ -52,19 +51,19 @@ export function AdminAuditPage() {
     {
       header: "Actor",
       render: (l) => (
-        <div style={{ fontFamily: font.body, fontSize: 13.5, color: color.ink800 }}>{l.actor_email ?? "—"}</div>
+        <div className="font-body text-[13.5px] text-ink800">{l.actor_email ?? "—"}</div>
       ),
     },
     {
       header: "Entidad",
-      render: (l) => (l.entity ? <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{l.entity}{l.entity_id ? ` #${l.entity_id}` : ""}</span> : "—"),
+      render: (l) => (l.entity ? <span className="font-mono text-xs text-textFaint">{l.entity}{l.entity_id ? ` #${l.entity_id}` : ""}</span> : "—"),
     },
-    { header: "Detalle", render: (l) => <span style={{ fontSize: 13, color: color.textMuted }}>{l.detail ?? "—"}</span> },
-    { header: "IP", render: (l) => <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{l.ip_address ?? "—"}</span> },
+    { header: "Detalle", render: (l) => <span className="text-[13px] text-textMuted">{l.detail ?? "—"}</span> },
+    { header: "IP", render: (l) => <span className="font-mono text-xs text-textFaint">{l.ip_address ?? "—"}</span> },
     {
       header: "Fecha",
       align: "right",
-      render: (l) => <span style={{ fontFamily: font.mono, fontSize: 12, color: color.textFaint }}>{new Date(l.created_at).toLocaleString("es-CO")}</span>,
+      render: (l) => <span className="font-mono text-xs text-textFaint">{new Date(l.created_at).toLocaleString("es-CO")}</span>,
     },
   ];
 

@@ -3,7 +3,6 @@ import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Container, Button, Card } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
 import { contact, waLink } from "@/shared/config/contact";
-import { color, font } from "@/shared/config/theme";
 
 const FAQ = [
   { q: "¿Hacen envíos?", a: "Sí. Despachamos a todo el país; coordinamos por WhatsApp según tu ubicación." },
@@ -18,21 +17,21 @@ export function ContactPage() {
 
   return (
     <>
-      <section style={{ background: color.ink900, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(820px 320px at 85% -20%, rgba(0,87,217,.2), transparent 60%)" }} />
-        <Container style={{ position: "relative", padding: "56px 40px" }}>
-          <h1 style={{ fontFamily: font.display, fontSize: 42, fontWeight: 800, letterSpacing: "-.02em", color: "#fff", marginBottom: 12 }}>Contacto</h1>
-          <p style={{ fontFamily: font.body, fontSize: 16, lineHeight: 1.6, color: color.textOnDark, maxWidth: 560 }}>
+      <section className="bg-ink900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(820px_320px_at_85%_-20%,rgba(0,87,217,.2),transparent_60%)]" />
+        <Container className="relative py-14 px-10">
+          <h1 className="font-display text-[42px] font-extrabold tracking-[-.02em] text-white mb-3">Contacto</h1>
+          <p className="font-body text-base leading-[1.6] text-textOnDark max-w-[560px]">
             Atención personalizada. Escribinos y un asesor te responde con disponibilidad y precio.
           </p>
         </Container>
       </section>
 
-      <section style={{ background: color.surface, padding: "56px 0 90px" }}>
-        <Container style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <section className="bg-surface pt-14 pb-[90px]">
+        <Container className="grid grid-cols-2 gap-10 items-start">
+          <div className="flex flex-col gap-4">
             <Card>
-              <div style={{ fontFamily: font.mono, fontSize: 11, letterSpacing: ".14em", color: color.primary, marginBottom: 18 }}>DATOS DE CONTACTO</div>
+              <div className="font-mono text-[11px] tracking-[.14em] text-primary mb-[18px]">DATOS DE CONTACTO</div>
               {[
                 ["Teléfono", contact.phoneDisplay],
                 ["Correo", contact.email],
@@ -40,14 +39,14 @@ export function ContactPage() {
                 ["Ubicación", contact.city],
               ].map(([label, value], i, arr) => (
                 <div key={label}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontFamily: font.mono, fontSize: 11, color: color.textFaint }}>{label.toUpperCase()}</span>
-                    <span style={{ fontFamily: font.body, fontSize: 16, fontWeight: 600, color: color.ink900 }}>{value}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-mono text-[11px] text-textFaint">{label.toUpperCase()}</span>
+                    <span className="font-body text-base font-semibold text-ink900">{value}</span>
                   </div>
-                  {i < arr.length - 1 && <div style={{ height: 1, background: color.border, margin: "14px 0" }} />}
+                  {i < arr.length - 1 && <div className="h-px bg-border my-3.5" />}
                 </div>
               ))}
-              <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+              <div className="flex gap-3 mt-5">
                 <Button as="a" href={waLink()} target="_blank" rel="noreferrer" variant="whatsapp">WhatsApp</Button>
                 <Button onClick={() => setOpen(true)} variant="outline">Solicitar cotización</Button>
               </div>
@@ -55,12 +54,12 @@ export function ContactPage() {
           </div>
 
           <div>
-            <h2 style={{ fontFamily: font.display, fontSize: 24, fontWeight: 800, color: color.ink900, marginBottom: 18 }}>Preguntas frecuentes</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h2 className="font-display text-2xl font-extrabold text-ink900 mb-[18px]">Preguntas frecuentes</h2>
+            <div className="flex flex-col gap-3">
               {FAQ.map((f) => (
                 <Card key={f.q} pad={18}>
-                  <div style={{ fontFamily: font.display, fontSize: 15.5, fontWeight: 700, color: color.ink900, marginBottom: 6 }}>{f.q}</div>
-                  <p style={{ fontFamily: font.body, fontSize: 14, lineHeight: 1.55, color: color.textMuted }}>{f.a}</p>
+                  <div className="font-display text-[15.5px] font-bold text-ink900 mb-1.5">{f.q}</div>
+                  <p className="font-body text-sm leading-[1.55] text-textMuted">{f.a}</p>
                 </Card>
               ))}
             </div>

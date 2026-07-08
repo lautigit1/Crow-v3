@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import clsx from "clsx";
 
 /**
  * Self-contained line-icon set (no external dependency, no emojis).
@@ -41,7 +42,15 @@ export type IconName =
   | "image"
   | "refresh"
   | "lock"
-  | "cart";
+  | "cart"
+  | "car"
+  | "motorcycle"
+  | "droplet"
+  | "battery"
+  | "filter"
+  | "sparkles"
+  | "home"
+  | "more";
 
 const P: Record<IconName, ReactNode> = {
   dashboard: (
@@ -264,6 +273,59 @@ const P: Record<IconName, ReactNode> = {
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
     </>
   ),
+  // ── Agregados para CategoryGrid: el set original no tenía nada
+  // vehículo-específico, así que Autos/Motos/Lubricantes/Baterías/
+  // Filtros/Detailing usaban íconos genéricos que no representaban la
+  // categoría (ajustes para "Motos", una flecha de gráfico para
+  // "Baterías", etc.) — ver openspec/changes/2026-07-07-landing-visual-refresh.
+  car: (
+    <>
+      <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2" />
+      <circle cx="6.5" cy="16.5" r="2.5" />
+      <circle cx="16.5" cy="16.5" r="2.5" />
+    </>
+  ),
+  motorcycle: (
+    <>
+      <circle cx="5.5" cy="17.5" r="3.5" />
+      <circle cx="18.5" cy="17.5" r="3.5" />
+      <path d="M5.5 17.5h6l2.5-6h3.5" />
+      <path d="M11 11.5h3l2 3" />
+      <path d="M17 8.5h2" />
+    </>
+  ),
+  droplet: <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />,
+  battery: (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="1" />
+      <line x1="8" y1="7" x2="8" y2="4" />
+      <line x1="16" y1="7" x2="16" y2="4" />
+      <line x1="7" y1="13" x2="11" y2="13" />
+      <line x1="9" y1="11" x2="9" y2="15" />
+    </>
+  ),
+  filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
+  sparkles: (
+    <>
+      <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+      <path d="M19 15l.7 2.1L22 18l-2.3.9L19 21l-.7-2.1L16 18l2.3-.9L19 15z" />
+    </>
+  ),
+  // ── Agregados para el rediseño de Navbar (dock mobile "Inicio" +
+  // botón "Menú") — ver openspec/changes/2026-07-07-navbar-redesign.
+  home: (
+    <>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
+    </>
+  ),
 };
 
 export function Icon({
@@ -271,11 +333,13 @@ export function Icon({
   size = 20,
   strokeWidth = 1.8,
   style,
+  className,
 }: {
   name: IconName;
   size?: number;
   strokeWidth?: number;
   style?: CSSProperties;
+  className?: string;
 }) {
   return (
     <svg
@@ -287,7 +351,8 @@ export function Icon({
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ display: "block", flex: "none", ...style }}
+      className={clsx("block flex-none", className)}
+      style={style}
       aria-hidden="true"
     >
       {P[name]}

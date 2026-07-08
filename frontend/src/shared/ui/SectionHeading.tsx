@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { color, font } from "@/shared/config/theme";
+import clsx from "clsx";
 
 /** Eyebrow + title block used to open most landing sections. */
 export function SectionHeading({
@@ -16,17 +16,25 @@ export function SectionHeading({
   align?: "left" | "center";
 }) {
   return (
-    <div style={{ textAlign: align, maxWidth: align === "center" ? 640 : undefined, marginInline: align === "center" ? "auto" : undefined }}>
+    <div className={clsx(align === "center" ? "text-center max-w-[640px] mx-auto" : "text-left")}>
       {eyebrow && (
-        <div style={{ fontFamily: font.mono, fontSize: 12, fontWeight: 600, letterSpacing: ".18em", color: color.primary, marginBottom: 14 }}>
-          {eyebrow}
-        </div>
+        <div className="font-mono text-[12px] font-semibold tracking-[0.18em] text-primary mb-3.5">{eyebrow}</div>
       )}
-      <h2 style={{ fontFamily: font.display, fontSize: 36, fontWeight: 800, lineHeight: 1.08, letterSpacing: "-.02em", color: dark ? "#fff" : color.ink900 }}>
+      <h2
+        className={clsx(
+          "font-display text-[36px] font-extrabold leading-[1.08] tracking-[-0.02em]",
+          dark ? "text-white" : "text-ink900"
+        )}
+      >
         {title}
       </h2>
       {subtitle && (
-        <p style={{ fontFamily: font.body, fontSize: 16, lineHeight: 1.6, color: dark ? color.textOnDarkFaint : color.textMuted, marginTop: 14 }}>
+        <p
+          className={clsx(
+            "font-body text-[16px] leading-[1.6] mt-3.5",
+            dark ? "text-textOnDarkFaint" : "text-textMuted"
+          )}
+        >
           {subtitle}
         </p>
       )}

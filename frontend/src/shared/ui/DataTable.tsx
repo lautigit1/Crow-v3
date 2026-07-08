@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import clsx from "clsx";
 import { Icon } from "./Icon";
-import { color, font } from "@/shared/config/theme";
 
 export type Column<T> = {
   header: string;
@@ -12,6 +12,9 @@ export type Column<T> = {
 };
 
 export type SortState = { key: string; dir: "asc" | "desc" };
+
+const alignClass = (align?: "left" | "right" | "center") =>
+  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 
 export function DataTable<T>({
   columns,
@@ -31,11 +34,11 @@ export function DataTable<T>({
   onRowClick?: (row: T) => void;
 }) {
   return (
-    <div style={{ background: "#fff", border: `1px solid ${color.border}`, borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+    <div className="bg-white border border-border rounded-[10px] overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse min-w-[640px]">
           <thead>
-            <tr style={{ background: color.surface }}>
+            <tr className="bg-surface">
               {columns.map((c, i) => {
                 const sortable = !!c.sortKey && !!onSort;
                 const active = sort && c.sortKey === sort.key;
@@ -43,27 +46,28 @@ export function DataTable<T>({
                   <th
                     key={i}
                     onClick={sortable ? () => onSort!(c.sortKey!) : undefined}
-                    style={{
-                      textAlign: c.align ?? "left",
-                      padding: "13px 16px",
-                      fontFamily: font.mono,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: ".06em",
-                      color: active ? color.primary : color.textFaint,
-                      textTransform: "uppercase",
-                      width: c.width,
-                      borderBottom: `1px solid ${color.border}`,
-                      whiteSpace: "nowrap",
-                      cursor: sortable ? "pointer" : "default",
-                      userSelect: "none",
-                    }}
+                    className={clsx(
+                      alignClass(c.align),
+                      "py-[13px] px-4 font-mono text-[11px] font-semibold tracking-[0.06em] uppercase border-b border-border whitespace-nowrap select-none",
+                      active ? "text-primary" : "text-textFaint",
+                      sortable ? "cursor-pointer" : "cursor-default"
+                    )}
+                    style={{ width: c.width }}
                   >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, justifyContent: c.align === "right" ? "flex-end" : "flex-start" }}>
+                    <span
+                      className={clsx(
+                        "inline-flex items-center gap-[5px]",
+                        c.align === "right" ? "justify-end" : "justify-start"
+                      )}
+                    >
                       {c.header}
                       {sortable && (
-                        <span style={{ opacity: active ? 1 : 0.35 }}>
-                          <Icon name="chevronDown" size={13} style={{ transform: active && sort?.dir === "asc" ? "rotate(180deg)" : "none" }} />
+                        <span className={active ? "opacity-100" : "opacity-[0.35]"}>
+                          <Icon
+                            name="chevronDown"
+                            size={13}
+                            className={active && sort?.dir === "asc" ? "rotate-180" : undefined}
+                          />
                         </span>
                       )}
                     </span>
@@ -75,7 +79,10 @@ export function DataTable<T>({
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} style={{ padding: "40px 16px", textAlign: "center", fontFamily: font.body, fontSize: 14, color: color.textFaint }}>
+                <td
+                  colSpan={columns.length}
+                  className="py-10 px-4 text-center font-body text-[14px] text-textFaint"
+                >
                   {empty}
                 </td>
               </tr>
@@ -84,12 +91,20 @@ export function DataTable<T>({
                 <tr
                   key={getKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  style={{ borderBottom: `1px solid ${color.border}`, cursor: onRowClick ? "pointer" : "default", transition: "background .12s", background: idx % 2 === 1 ? "#FAFBFD" : "#fff" }}
-                  onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = color.primarySoft)}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = idx % 2 === 1 ? "#FAFBFD" : "#fff"; }}
+                  className={clsx(
+                    "border-b border-border transition-[background-color] duration-[120ms]",
+                    idx % 2 === 1 ? "bg-[#FAFBFD]" : "bg-white",
+                    onRowClick ? "cursor-pointer hover:bg-primarySoft" : "cursor-default"
+                  )}
                 >
                   {columns.map((c, i) => (
-                    <td key={i} style={{ padding: "13px 16px", textAlign: c.align ?? "left", fontFamily: font.body, fontSize: 14, color: color.ink800, verticalAlign: "middle" }}>
+                    <td
+                      key={i}
+                      className={clsx(
+                        alignClass(c.align),
+                        "py-[13px] px-4 font-body text-[14px] text-ink800 align-middle"
+                      )}
+                    >
                       {c.render(row)}
                     </td>
                   ))}

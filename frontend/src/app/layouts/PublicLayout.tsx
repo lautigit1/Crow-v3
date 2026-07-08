@@ -1,15 +1,18 @@
 import { Navbar } from "@/widgets/navbar/Navbar";
 import { Footer } from "@/widgets/footer/Footer";
 import { AnimatedOutlet } from "@/shared/ui/AnimatedOutlet";
+import { LenisProvider } from "@/app/providers/LenisProvider";
 
 export function PublicLayout() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <Navbar />
-      <main style={{ flex: 1 }}>
-        <AnimatedOutlet />
-      </main>
-      <Footer />
-    </div>
+    <LenisProvider>
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1">
+          <AnimatedOutlet />
+        </main>
+        <Footer />
+      </div>
+    </LenisProvider>
   );
 }

@@ -17,5 +17,7 @@ COPY . .
 
 EXPOSE 8000
 
-# Seeds the DB (idempotent) then starts the API.
+# Seeds the DB (idempotent) -- which itself reconciles schema drift left by
+# create_all() not altering pre-existing tables, see scripts/verify_db_integrity.py
+# and the call to reconcile() inside app/seed.py -- then starts the API.
 CMD ["sh", "-c", "python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

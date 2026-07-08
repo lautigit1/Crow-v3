@@ -5,7 +5,6 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { quoteApi } from "@/entities/quote";
 import { apiError } from "@/shared/api/client";
 import { waLink } from "@/shared/config/contact";
-import { color, font } from "@/shared/config/theme";
 
 type QuoteModalProps = {
   open: boolean;
@@ -63,14 +62,12 @@ export function QuoteModal({ open, onClose, initialMessage = "", productId = nul
   return (
     <Modal open={open} onClose={onClose} eyebrow="SOLICITAR COTIZACIÓN" title="Cuéntanos qué necesitas">
       {done ? (
-        <div style={{ textAlign: "center", padding: "10px 0 6px" }}>
-          <div style={{ fontFamily: font.display, fontSize: 20, fontWeight: 800, color: color.ink900, marginBottom: 8 }}>
-            ¡Cotización enviada!
-          </div>
-          <p style={{ fontFamily: font.body, fontSize: 14.5, lineHeight: 1.6, color: color.textMuted, marginBottom: 20 }}>
+        <div className="text-center pt-2.5 px-0 pb-1.5">
+          <div className="font-display text-[20px] font-extrabold text-ink900 mb-2">¡Cotización enviada!</div>
+          <p className="font-body text-[14.5px] leading-[1.6] text-textMuted mb-5">
             Un asesor revisará tu solicitud y te responderá a la brevedad. También puedes acelerar la respuesta por WhatsApp.
           </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <div className="flex gap-2.5 justify-center">
             <Button as="a" href={waLink(whatsappText)} target="_blank" rel="noreferrer" variant="whatsapp">
               Continuar por WhatsApp
             </Button>
@@ -80,7 +77,7 @@ export function QuoteModal({ open, onClose, initialMessage = "", productId = nul
           </div>
         </div>
       ) : (
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={submit} className="flex flex-col gap-4">
           <Field label="Nombre">
             <Input required value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} placeholder="Tu nombre" />
           </Field>
@@ -93,7 +90,7 @@ export function QuoteModal({ open, onClose, initialMessage = "", productId = nul
           <Field label="Qué necesitas">
             <Textarea required rows={3} value={message} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)} placeholder="Repuesto, producto o referencia que buscas" />
           </Field>
-          {error && <div style={{ fontFamily: font.body, fontSize: 13, color: color.danger }}>{error}</div>}
+          {error && <div className="font-body text-[13px] text-danger">{error}</div>}
           <Button type="submit" fullWidth size="lg" disabled={loading}>
             {loading ? "Enviando…" : "Enviar cotización"}
           </Button>

@@ -1,5 +1,3 @@
-import { font } from "@/shared/config/theme";
-
 function initials(name: string): string {
   return name
     .split(" ")
@@ -31,22 +29,23 @@ function nameToColor(name: string): [string, string] {
   return PALETTE[hash % PALETTE.length];
 }
 
+/**
+ * `size` (any number, 28-64 across current callers), the hash-derived
+ * background/text color, and the size-derived font size are genuinely
+ * dynamic at runtime -- Tailwind's build-time class scanner can't turn a
+ * computed value into a static utility, so those three stay as inline
+ * style. Everything with a fixed value moved to Tailwind classes.
+ */
 export function Avatar({ name, size = 38, dark }: { name: string; size?: number; dark?: boolean }) {
   const [bg, fg] = nameToColor(name);
   return (
     <span
+      className="flex-none flex items-center justify-center rounded-full font-display font-bold"
       style={{
         width: size,
         height: size,
-        flex: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: "50%",
         background: dark ? "rgba(255,255,255,.1)" : bg,
         color: dark ? "#fff" : fg,
-        fontFamily: font.display,
-        fontWeight: 700,
         fontSize: size * 0.38,
       }}
     >

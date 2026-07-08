@@ -1,58 +1,37 @@
 import { Link } from "react-router-dom";
-import { color, font, radius } from "@/shared/config/theme";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 
 export function NotFoundPage() {
   usePageMeta("404 — Crow Repuestos", "Esta página no existe.");
 
   return (
-    <section style={{ background: color.ink900, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+    <section className="bg-ink900 min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Glow */}
-      <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 600, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,87,217,.18) 0%, transparent 70%)", pointerEvents: "none" }} />
+      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
 
-      <div style={{ position: "relative", textAlign: "center", padding: "0 24px" }}>
+      <div className="relative text-center px-6">
         {/* Big number */}
-        <div style={{
-          fontFamily: font.display, fontSize: 140, fontWeight: 900, lineHeight: 1,
-          letterSpacing: "-.04em",
-          background: "linear-gradient(135deg, #1A3A6B 0%, #0057D9 50%, #7FB0FF 100%)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-          marginBottom: 8,
-        }}>
+        <div className="font-display text-[140px] font-black leading-none tracking-[-.04em] bg-[linear-gradient(135deg,#1A3A6B_0%,#0057D9_50%,#7FB0FF_100%)] bg-clip-text text-transparent [-webkit-text-fill-color:transparent] mb-2">
           404
         </div>
 
-        <h1 style={{ fontFamily: font.display, fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 12, letterSpacing: "-.01em" }}>
+        <h1 className="font-display text-2xl font-extrabold text-white mb-3 tracking-[-.01em]">
           Página no encontrada
         </h1>
-        <p style={{ fontFamily: font.body, fontSize: 15, color: "#4E6B82", marginBottom: 36, maxWidth: 340, margin: "0 auto 36px" }}>
+        <p className="font-body text-[15px] text-[#4E6B82] mb-9 max-w-[340px] mx-auto">
           La URL no existe o fue movida. Podés volver al inicio y seguir navegando.
         </p>
 
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link to="/" style={{
-            fontFamily: font.display, fontSize: 15, fontWeight: 700,
-            background: color.primary, color: "#fff",
-            padding: "13px 28px", borderRadius: radius.pill,
-            textDecoration: "none",
-            boxShadow: "0 6px 20px rgba(0,87,217,.35)",
-            transition: "opacity .15s",
-          }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = ".85")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+        <div className="flex gap-3 justify-center flex-wrap">
+          <Link
+            to="/"
+            className="font-display text-[15px] font-bold bg-primary text-white py-[13px] px-7 rounded-full no-underline shadow-[0_6px_20px_rgba(0,87,217,.35)] transition-opacity duration-150 hover:opacity-85"
           >
             Volver al inicio
           </Link>
-          <Link to="/catalogo" style={{
-            fontFamily: font.display, fontSize: 15, fontWeight: 700,
-            background: "rgba(255,255,255,.06)", color: "#fff",
-            border: "1px solid rgba(255,255,255,.14)",
-            padding: "13px 28px", borderRadius: radius.pill,
-            textDecoration: "none",
-            transition: "background .15s",
-          }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,.1)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,.06)")}
+          <Link
+            to="/catalogo"
+            className="font-display text-[15px] font-bold bg-[rgba(255,255,255,.06)] text-white border border-[rgba(255,255,255,.14)] py-[13px] px-7 rounded-full no-underline transition-colors duration-150 hover:bg-[rgba(255,255,255,.1)]"
           >
             Ver catálogo
           </Link>

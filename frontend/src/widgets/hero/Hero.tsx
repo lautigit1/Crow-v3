@@ -1,7 +1,9 @@
-import { color, font } from "@/shared/config/theme";
+import { motion, useReducedMotion } from "framer-motion";
 import { waLink } from "@/shared/config/contact";
 import { Container, Icon, type IconName } from "@/shared/ui";
-import { useBreakpoint } from "@/shared/lib/useBreakpoint";
+
+// Spring compartido por los dos CTAs — mismo "peso" de rebote en ambos.
+const CTA_SPRING = { type: "spring", stiffness: 400, damping: 24 } as const;
 
 const CHIPS: { icon: IconName; label: string }[] = [
   { icon: "shieldCheck", label: "Garantía incluida" },
@@ -11,197 +13,87 @@ const CHIPS: { icon: IconName; label: string }[] = [
 
 const WA_MSG = "Hola Crow Repuestos! Necesito consultar un repuesto.";
 
-export function Hero({ onQuote }: { onQuote: () => void }) {
-  const { isMobile } = useBreakpoint();
-  return (
-    <section style={{ background: color.ink900, position: "relative", overflow: "hidden" }}>
-      {/* Background layers */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "radial-gradient(900px 500px at 75% -5%, rgba(0,87,217,.28), transparent 60%), " +
-            "radial-gradient(600px 400px at 10% 110%, rgba(0,47,130,.2), transparent 60%), " +
-            "linear-gradient(180deg, rgba(7,17,31,0) 50%, rgba(7,17,31,.75))",
-        }}
-      />
+// Per-dot animation delay for the typing indicator -- STEPS is a fixed
+// 3-item literal ([0, 1, 2]), so each delay is precomputed as its own
+// static Tailwind class instead of an interpolated arbitrary value.
+const DOT_ANIM = [
+  "animate-[pulse-glow_1.2s_0s_ease_infinite]",
+  "animate-[pulse-glow_1.2s_0.2s_ease_infinite]",
+  "animate-[pulse-glow_1.2s_0.4s_ease_infinite]",
+];
 
-      <Container style={{ position: "relative" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "1.1fr .9fr",
-            gap: isMobile ? 0 : 64,
-            alignItems: "center",
-            padding: isMobile ? "60px 0 52px" : "96px 0 88px",
-            minHeight: isMobile ? "auto" : 560,
-          }}
-        >
+export function Hero({ onQuote }: { onQuote: () => void }) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <section className="bg-ink900 relative overflow-hidden">
+      {/* Background layers */}
+      <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_75%_-5%,rgba(0,87,217,.28),transparent_60%),radial-gradient(600px_400px_at_10%_110%,rgba(0,47,130,.2),transparent_60%),linear-gradient(180deg,rgba(7,17,31,0)_50%,rgba(7,17,31,.75))]" />
+
+      <Container className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-[1.1fr_.9fr] gap-0 md:gap-16 items-center pt-[60px] pb-[52px] md:pt-24 md:pb-[88px] md:min-h-[560px]">
           {/* ── Copy ─────────────────────────────── */}
-          <div style={{ animation: "fadeUp .6s ease both" }}>
+          <div className="animate-[fadeUp_.6s_ease_both]">
             {/* Eyebrow */}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "rgba(0,87,217,.18)",
-                border: "1px solid rgba(0,87,217,.35)",
-                borderRadius: 999,
-                padding: "5px 14px 5px 10px",
-                marginBottom: 24,
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: color.primary,
-                  animation: "pulse-glow 2s ease infinite",
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: font.mono,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: ".1em",
-                  color: "#7FB0FF",
-                }}
-              >
+            <div className="inline-flex items-center gap-2 bg-[rgba(0,87,217,.18)] border border-[rgba(0,87,217,.35)] rounded-full py-[5px] pl-2.5 pr-3.5 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-[pulse-glow_2s_ease_infinite]" />
+              <span className="font-mono text-[11px] font-semibold tracking-[.1em] text-[#7FB0FF]">
                 REPUESTOS · LUBRICANTES · MENDOZA
               </span>
             </div>
 
-            <h1
-              style={{
-                fontFamily: font.display,
-                fontSize: isMobile ? 30 : 48,
-                fontWeight: 800,
-                lineHeight: 1.1,
-                letterSpacing: "-.03em",
-                color: "#fff",
-                marginBottom: 22,
-              }}
-            >
+            <h1 className="font-display text-[30px] md:text-[48px] font-extrabold leading-[1.1] tracking-[-.03em] text-white mb-[22px]">
               Todo para tu
               <br />
               vehículo en
               <br />
-              <span
-                style={{
-                  background: "linear-gradient(95deg, #7FB0FF 0%, #0057D9 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  display: "inline-block",
-                  paddingBottom: "0.12em",
-                }}
+              <motion.span
+                className="bg-[length:200%_auto] bg-[linear-gradient(95deg,#7FB0FF_0%,#0057D9_35%,#7FB0FF_70%,#0057D9_100%)] bg-clip-text text-transparent [-webkit-text-fill-color:transparent] inline-block pb-[0.12em]"
+                animate={reduceMotion ? undefined : { backgroundPosition: ["0% 50%", "200% 50%"] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
               >
                 un solo lugar.
-              </span>
+              </motion.span>
             </h1>
 
-            <p
-              style={{
-                fontFamily: font.body,
-                fontSize: 17.5,
-                lineHeight: 1.65,
-                color: color.textOnDark,
-                maxWidth: 490,
-                marginBottom: 38,
-              }}
-            >
+            <p className="font-body text-[17.5px] leading-[1.65] text-textOnDark max-w-[490px] mb-[38px]">
               Repuestos, lubricantes, baterías y detailing para autos, motos y
               camiones. Atención personalizada en Mendoza ciudad.
             </p>
 
-            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="flex gap-3.5 items-center flex-wrap">
               {/* WhatsApp CTA — primary */}
-              <a
+              <motion.a
                 href={waLink(WA_MSG)}
                 target="_blank"
                 rel="noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 10,
-                  background: "#25D366",
-                  color: "#fff",
-                  fontFamily: font.display,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  borderRadius: 999,
-                  padding: "13px 26px",
-                  textDecoration: "none",
-                  boxShadow: "0 6px 24px rgba(37,211,102,.35)",
-                  transition: "transform .18s ease, box-shadow .18s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-2px)";
-                  (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                    "0 10px 32px rgba(37,211,102,.45)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.transform = "none";
-                  (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                    "0 6px 24px rgba(37,211,102,.35)";
-                }}
+                whileHover={{ y: -3, boxShadow: "0 10px 32px rgba(37,211,102,.45)" }}
+                whileTap={{ scale: 0.96 }}
+                transition={CTA_SPRING}
+                className="inline-flex items-center gap-2.5 bg-[#25D366] text-white font-display text-[15px] font-bold rounded-full py-[13px] px-[26px] no-underline shadow-[0_6px_24px_rgba(37,211,102,.35)]"
               >
                 {/* WhatsApp SVG icon */}
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
                 Escribir por WhatsApp
-              </a>
+              </motion.a>
 
-              <button
+              <motion.button
                 onClick={onQuote}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "rgba(255,255,255,.06)",
-                  color: "#fff",
-                  border: "1px solid rgba(255,255,255,.22)",
-                  fontFamily: font.display,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  borderRadius: 999,
-                  padding: "13px 26px",
-                  cursor: "pointer",
-                  backdropFilter: "blur(4px)",
-                  transition: "background .18s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "rgba(255,255,255,.12)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "rgba(255,255,255,.06)";
-                }}
+                whileHover={{ y: -3, backgroundColor: "rgba(255,255,255,.12)" }}
+                whileTap={{ scale: 0.96 }}
+                transition={CTA_SPRING}
+                className="inline-flex items-center gap-2 bg-[rgba(255,255,255,.06)] text-white border border-[rgba(255,255,255,.22)] font-display text-[15px] font-bold rounded-full py-[13px] px-[26px] cursor-pointer [backdrop-filter:blur(4px)]"
               >
                 Pedir cotización
-              </button>
+              </motion.button>
             </div>
 
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 36 }}>
+            <div className="flex gap-6 flex-wrap mt-9">
               {CHIPS.map((c) => (
-                <span
-                  key={c.label}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontFamily: font.body,
-                    fontSize: 13,
-                    color: color.textOnDarkFaint,
-                  }}
-                >
-                  <span style={{ color: color.primary }}>
+                <span key={c.label} className="inline-flex items-center gap-2 font-body text-[13px] text-textOnDarkFaint">
+                  <span className="text-primary">
                     <Icon name={c.icon} size={15} />
                   </span>
                   {c.label}
@@ -211,82 +103,33 @@ export function Hero({ onQuote }: { onQuote: () => void }) {
           </div>
 
           {/* ── WhatsApp mockup — hidden on mobile ── */}
-          {!isMobile && <div style={{ position: "relative", animation: "fadeUp .75s .15s ease both" }}>
+          <div className="hidden md:block relative animate-[fadeUp_.75s_.15s_ease_both]">
             {/* Glow */}
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%,-50%)",
-                width: 340,
-                height: 340,
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(37,211,102,.25) 0%, transparent 70%)",
-                filter: "blur(48px)",
-                pointerEvents: "none",
-              }}
-            />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[radial-gradient(circle,rgba(37,211,102,.25)_0%,transparent_70%)] blur-[48px] pointer-events-none" />
 
             {/* Chat window */}
-            <div
-              style={{
-                position: "relative",
-                borderRadius: 20,
-                overflow: "hidden",
-                boxShadow: "0 32px 80px rgba(0,0,0,.5)",
-                border: "1px solid rgba(255,255,255,.08)",
-              }}
-            >
+            <div className="relative rounded-[20px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,.5)] border border-[rgba(255,255,255,.08)]">
               {/* Header */}
-              <div
-                style={{
-                  background: "#075E54",
-                  padding: "14px 18px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                }}
-              >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    background: "#128C7E",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flex: "none",
-                    overflow: "hidden",
-                  }}
-                >
+              <div className="bg-[#075E54] py-3.5 px-[18px] flex items-center gap-3">
+                <div className="w-[42px] h-[42px] rounded-full bg-[#128C7E] flex items-center justify-center flex-none overflow-hidden">
                   <img
                     src="/crow-logo.png"
                     alt="Crow"
-                    style={{ width: 28, height: 28, objectFit: "contain" }}
+                    className="w-7 h-7 object-contain"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}
                   />
                 </div>
                 <div>
-                  <div
-                    style={{
-                      fontFamily: font.display,
-                      fontSize: 14.5,
-                      fontWeight: 700,
-                      color: "#fff",
-                      lineHeight: 1.2,
-                    }}
-                  >
+                  <div className="font-display text-[14.5px] font-bold text-white leading-[1.2]">
                     Crow Repuestos
                   </div>
-                  <div style={{ fontFamily: font.body, fontSize: 11.5, color: "rgba(255,255,255,.7)" }}>
+                  <div className="font-body text-[11.5px] text-[rgba(255,255,255,.7)]">
                     En línea · Responde en minutos
                   </div>
                 </div>
-                <div style={{ marginLeft: "auto" }}>
+                <div className="ml-auto">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,.6)">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                   </svg>
@@ -294,81 +137,44 @@ export function Hero({ onQuote }: { onQuote: () => void }) {
               </div>
 
               {/* Chat body */}
+              {/* The WhatsApp-paper background is a data: URI (quotes, %,
+                  and commas throughout) -- too fragile to express safely as
+                  a Tailwind arbitrary-value class, so it stays inline. */}
               <div
+                className="bg-[#ECE5DD] pt-5 px-4 flex flex-col gap-3 min-h-[240px]"
                 style={{
-                  background: "#ECE5DD",
-                  padding: "20px 16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                  minHeight: 240,
                   backgroundImage:
                     "url(\"data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='%23d4cfc7' fill-opacity='.07'/%3E%3C/svg%3E\")",
                 }}
               >
                 {/* User message */}
-                <div style={{ display: "flex", justifyContent: "flex-end", animation: "fadeUp .5s .5s ease both", opacity: 0 }}>
-                  <div
-                    style={{
-                      background: "#DCF8C6",
-                      borderRadius: "14px 14px 4px 14px",
-                      padding: "10px 14px",
-                      maxWidth: "80%",
-                      boxShadow: "0 1px 2px rgba(0,0,0,.15)",
-                    }}
-                  >
-                    <p style={{ fontFamily: font.body, fontSize: 13.5, color: "#1a1a1a", margin: 0, lineHeight: 1.45 }}>
+                <div className="flex justify-end opacity-0 animate-[fadeUp_.5s_.5s_ease_both]">
+                  <div className="bg-[#DCF8C6] rounded-[14px_14px_4px_14px] py-2.5 px-3.5 max-w-[80%] shadow-[0_1px_2px_rgba(0,0,0,.15)]">
+                    <p className="font-body text-[13.5px] text-[#1a1a1a] m-0 leading-[1.45]">
                       Hola! Necesito frenos para mi VW Gol 2019 🔧
                     </p>
-                    <div style={{ textAlign: "right", marginTop: 4, fontFamily: font.mono, fontSize: 10, color: "#7a8f7a" }}>
+                    <div className="text-right mt-1 font-mono text-[10px] text-[#7a8f7a]">
                       14:32 ✓✓
                     </div>
                   </div>
                 </div>
 
                 {/* Typing indicator */}
-                <div style={{ display: "flex", justifyContent: "flex-start", animation: "fadeUp .5s .9s ease both", opacity: 0 }}>
-                  <div
-                    style={{
-                      background: "#fff",
-                      borderRadius: "14px 14px 14px 4px",
-                      padding: "12px 16px",
-                      boxShadow: "0 1px 2px rgba(0,0,0,.1)",
-                      display: "flex",
-                      gap: 5,
-                      alignItems: "center",
-                    }}
-                  >
+                <div className="flex justify-start opacity-0 animate-[fadeUp_.5s_.9s_ease_both]">
+                  <div className="bg-white rounded-[14px_14px_14px_4px] py-3 px-4 shadow-[0_1px_2px_rgba(0,0,0,.1)] flex gap-[5px] items-center">
                     {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: "50%",
-                          background: "#9E9E9E",
-                          animation: `pulse-glow 1.2s ${i * 0.2}s ease infinite`,
-                        }}
-                      />
+                      <div key={i} className={`w-[7px] h-[7px] rounded-full bg-[#9E9E9E] ${DOT_ANIM[i]}`} />
                     ))}
                   </div>
                 </div>
 
                 {/* Response */}
-                <div style={{ display: "flex", justifyContent: "flex-start", animation: "fadeUp .5s 1.4s ease both", opacity: 0 }}>
-                  <div
-                    style={{
-                      background: "#fff",
-                      borderRadius: "14px 14px 14px 4px",
-                      padding: "10px 14px",
-                      maxWidth: "85%",
-                      boxShadow: "0 1px 2px rgba(0,0,0,.1)",
-                    }}
-                  >
-                    <p style={{ fontFamily: font.body, fontSize: 13.5, color: "#1a1a1a", margin: 0, lineHeight: 1.5 }}>
+                <div className="flex justify-start opacity-0 animate-[fadeUp_.5s_1.4s_ease_both]">
+                  <div className="bg-white rounded-[14px_14px_14px_4px] py-2.5 px-3.5 max-w-[85%] shadow-[0_1px_2px_rgba(0,0,0,.1)]">
+                    <p className="font-body text-[13.5px] text-[#1a1a1a] m-0 leading-[1.5]">
                       ¡Hola! Tenemos kit de frenos delanteros para el Gol G5. Te lo llevamos hoy en Mendoza ciudad 🚚
                     </p>
-                    <div style={{ textAlign: "right", marginTop: 4, fontFamily: font.mono, fontSize: 10, color: "#999" }}>
+                    <div className="text-right mt-1 font-mono text-[10px] text-[#999]">
                       14:33
                     </div>
                   </div>
@@ -376,41 +182,11 @@ export function Hero({ onQuote }: { onQuote: () => void }) {
               </div>
 
               {/* Input bar */}
-              <div
-                style={{
-                  background: "#F0F0F0",
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  borderTop: "1px solid rgba(0,0,0,.08)",
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    background: "#fff",
-                    borderRadius: 999,
-                    padding: "9px 16px",
-                    fontFamily: font.body,
-                    fontSize: 13,
-                    color: "#999",
-                  }}
-                >
+              <div className="bg-[#F0F0F0] py-2.5 px-3.5 flex items-center gap-2.5 border-t border-[rgba(0,0,0,.08)]">
+                <div className="flex-1 bg-white rounded-full py-[9px] px-4 font-body text-[13px] text-[#999]">
                   Escribí tu consulta...
                 </div>
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    background: "#25D366",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flex: "none",
-                  }}
-                >
+                <div className="w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center flex-none">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                   </svg>
@@ -419,109 +195,37 @@ export function Hero({ onQuote }: { onQuote: () => void }) {
             </div>
 
             {/* Floating badge — response time */}
-            <div
-              style={{
-                position: "absolute",
-                top: -18,
-                right: -22,
-                background: "#fff",
-                borderRadius: 12,
-                padding: "10px 16px",
-                boxShadow: "0 12px 36px rgba(0,0,0,.28)",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                animation: "fadeUp .7s .3s ease both",
-              }}
-            >
-              <span
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: "#DCFCE7",
-                  color: "#15803D",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  flex: "none",
-                }}
-              >
+            <div className="absolute -top-[18px] -right-[22px] bg-white rounded-xl py-2.5 px-4 shadow-[0_12px_36px_rgba(0,0,0,.28)] flex items-center gap-2.5 animate-[fadeUp_.7s_.3s_ease_both]">
+              <span className="w-8 h-8 rounded-lg bg-[#DCFCE7] text-[#15803D] flex items-center justify-center text-base flex-none">
                 ⚡
               </span>
               <div>
-                <div
-                  style={{
-                    fontFamily: font.display,
-                    fontSize: 13.5,
-                    fontWeight: 800,
-                    color: color.ink900,
-                    lineHeight: 1,
-                    marginBottom: 3,
-                  }}
-                >
+                <div className="font-display text-[13.5px] font-extrabold text-ink900 leading-none mb-[3px]">
                   &lt; 1 hora
                 </div>
-                <div style={{ fontFamily: font.body, fontSize: 11, color: color.textMuted }}>
+                <div className="font-body text-[11px] text-textMuted">
                   tiempo de respuesta
                 </div>
               </div>
             </div>
 
             {/* Floating badge — location */}
-            <div
-              style={{
-                position: "absolute",
-                left: -28,
-                bottom: -22,
-                background: "#11223A",
-                border: "1px solid rgba(255,255,255,.12)",
-                borderRadius: 12,
-                boxShadow: "0 24px 60px rgba(0,0,0,.5)",
-                padding: 14,
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                animation: "fadeUp .7s .4s ease both",
-              }}
-            >
-              <span
-                style={{
-                  width: 38,
-                  height: 38,
-                  flex: "none",
-                  borderRadius: 10,
-                  background: "rgba(0,87,217,.2)",
-                  color: "#7FB0FF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+            <div className="absolute -left-7 -bottom-[22px] bg-[#11223A] border border-[rgba(255,255,255,.12)] rounded-xl shadow-[0_24px_60px_rgba(0,0,0,.5)] p-3.5 flex items-center gap-3 animate-[fadeUp_.7s_.4s_ease_both]">
+              <span className="w-[38px] h-[38px] flex-none rounded-[10px] bg-[rgba(0,87,217,.2)] text-[#7FB0FF] flex items-center justify-center">
                 <Icon name="mapPin" size={19} strokeWidth={1.5} />
               </span>
               <div>
-                <div
-                  style={{
-                    fontFamily: font.body,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "#fff",
-                    marginBottom: 3,
-                  }}
-                >
+                <div className="font-body text-[13px] font-bold text-white mb-[3px]">
                   Mendoza ciudad
                 </div>
-                <div style={{ fontFamily: font.mono, fontSize: 10, color: "#25D366", letterSpacing: ".05em" }}>
+                <div className="font-mono text-[10px] text-[#25D366] tracking-[.05em]">
                   ENTREGA EL MISMO DÍA
                 </div>
               </div>
             </div>
-          </div>}
+          </div>
         </div>
       </Container>
-
     </section>
   );
 }

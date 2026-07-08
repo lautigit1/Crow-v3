@@ -6,10 +6,11 @@ import { AdminHeader } from "./ui/AdminHeader";
 import { brandApi, type Brand, type BrandInput } from "@/entities/brand";
 import { apiError } from "@/shared/api/client";
 import { slugify } from "@/shared/lib/slug";
-import { color, font, radius } from "@/shared/config/theme";
 import { formatDateTime } from "@/shared/lib/format";
 
 const empty: BrandInput = { name: "", slug: "", logo_url: "" };
+
+const inpCls = "h-9 text-[13px]";
 
 export function AdminBrandsPage() {
   const [items, setItems] = useState<Brand[] | null>(null);
@@ -66,36 +67,32 @@ export function AdminBrandsPage() {
     {
       header: "Marca",
       render: (b) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: radius.sm, flexShrink: 0,
-            border: `1px solid ${color.border}`, background: "#fff",
-            display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-          }}>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-sm shrink-0 border border-border bg-white flex items-center justify-center overflow-hidden">
             {b.logo_url
-              ? <img src={b.logo_url} alt={b.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
-              : <span style={{ fontFamily: font.display, fontWeight: 900, fontSize: 13, color: color.primary }}>{b.name.slice(0, 2).toUpperCase()}</span>
+              ? <img src={b.logo_url} alt={b.name} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              : <span className="font-display font-black text-[13px] text-primary">{b.name.slice(0, 2).toUpperCase()}</span>
             }
           </div>
-          <strong style={{ color: color.ink900 }}>{b.name}</strong>
+          <strong className="text-ink900">{b.name}</strong>
         </div>
       ),
     },
     {
       header: "Logo",
       render: (b) => b.logo_url
-        ? <span style={{ fontFamily: font.mono, fontSize: 11, color: color.primary }}>Configurado</span>
-        : <span style={{ color: color.textFaint, fontSize: 13 }}>—</span>,
+        ? <span className="font-mono text-[11px] text-primary">Configurado</span>
+        : <span className="text-textFaint text-[13px]">—</span>,
     },
     {
       header: "Creada",
-      render: (b) => <span style={{ fontSize: 13, color: color.textMuted }}>{formatDateTime(b.created_at)}</span>,
+      render: (b) => <span className="text-[13px] text-textMuted">{formatDateTime(b.created_at)}</span>,
     },
     {
       header: "Acciones",
       align: "right",
       render: (b) => (
-        <div style={{ display: "inline-flex", gap: 8 }}>
+        <div className="inline-flex gap-2">
           <Button variant="outline" size="sm" onClick={() => openEdit(b)}><Icon name="edit" size={14} /> Editar</Button>
           <Button variant="danger" size="sm" onClick={() => remove(b)}><Icon name="trash" size={14} /></Button>
         </div>
@@ -126,15 +123,15 @@ export function AdminBrandsPage() {
         title="Marca"
         width={560}
         footer={
-          <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
-            {error && <span style={{ fontFamily: font.body, fontSize: 12, color: color.danger, flex: 1 }}>{error}</span>}
+          <div className="flex items-center gap-3 w-full">
+            {error && <span className="font-body text-xs text-danger flex-1">{error}</span>}
             <Button type="submit" form="brand-form" fullWidth disabled={saving}>
               {saving ? "Guardando…" : editing === "new" ? "Crear marca" : "Guardar cambios"}
             </Button>
           </div>
         }
       >
-        <form id="brand-form" onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <form id="brand-form" onSubmit={save} className="flex flex-col gap-3.5">
 
           <CompactField label="Nombre de la marca *">
             <Input
@@ -142,7 +139,7 @@ export function AdminBrandsPage() {
               value={form.name}
               placeholder="Ej. Bosch, NGK, Monroe…"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })}
-              style={inp}
+              className={inpCls}
             />
           </CompactField>
 
@@ -151,34 +148,22 @@ export function AdminBrandsPage() {
               value={form.logo_url ?? ""}
               placeholder="https://ejemplo.com/logo.png"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => { set({ logo_url: e.target.value }); setLogoError(false); }}
-              style={inp}
+              className={inpCls}
             />
           </CompactField>
 
           {/* Logo preview */}
           {form.logo_url && (
-            <div style={{
-              borderRadius: radius.md,
-              border: `1px solid ${color.border}`,
-              background: "#fafafa",
-              padding: 16,
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-            }}>
-              <div style={{
-                width: 64, height: 48, borderRadius: radius.sm,
-                border: `1px solid ${color.border}`, background: "#fff",
-                display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0,
-              }}>
+            <div className="rounded-md border border-border bg-[#fafafa] p-4 flex items-center gap-3.5">
+              <div className="w-16 h-12 rounded-sm border border-border bg-white flex items-center justify-center overflow-hidden shrink-0">
                 {hasLogo
-                  ? <img src={form.logo_url} alt="preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} onError={() => setLogoError(true)} />
-                  : <Icon name="image" size={20} style={{ color: color.textFaint }} />
+                  ? <img src={form.logo_url} alt="preview" className="max-w-full max-h-full object-contain" onError={() => setLogoError(true)} />
+                  : <Icon name="image" size={20} className="text-textFaint" />
                 }
               </div>
               <div>
-                <div style={{ fontFamily: font.mono, fontSize: 10, letterSpacing: ".1em", color: color.textFaint, textTransform: "uppercase", marginBottom: 3 }}>Vista previa</div>
-                <div style={{ fontFamily: font.body, fontSize: 12.5, color: logoError ? color.danger : color.textMuted }}>
+                <div className="font-mono text-[10px] tracking-[.1em] text-textFaint uppercase mb-[3px]">Vista previa</div>
+                <div className={`font-body text-[12.5px] ${logoError ? "text-danger" : "text-textMuted"}`}>
                   {logoError ? "No se pudo cargar la imagen" : "Logo cargado correctamente"}
                 </div>
               </div>
@@ -191,12 +176,10 @@ export function AdminBrandsPage() {
   );
 }
 
-const inp: React.CSSProperties = { height: 36, fontSize: 13 };
-
 function CompactField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ fontFamily: font.mono, fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em", color: color.textFaint, textTransform: "uppercase" }}>{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <span className="font-mono text-[9.5px] font-bold tracking-[.12em] text-textFaint uppercase">{label}</span>
       {children}
     </div>
   );

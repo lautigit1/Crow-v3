@@ -1,99 +1,92 @@
-import type * as React from "react";
 import { forwardRef, type CSSProperties, type ReactNode } from "react";
-import { color, font, radius } from "@/shared/config/theme";
+import clsx from "clsx";
 
 export function Field({ label, children, hint }: { label?: string; children: ReactNode; hint?: string }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <span style={{
-          fontFamily: font.mono,
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: ".14em",
-          color: color.ink700,
-          textTransform: "uppercase",
-        }}>
-          {label}
-        </span>
+        <span className="font-mono text-[10px] font-bold tracking-[0.14em] text-ink700 uppercase">{label}</span>
       )}
       {children}
-      {hint && (
-        <span style={{ fontFamily: font.body, fontSize: 11.5, color: color.textFaint, marginTop: -2 }}>
-          {hint}
-        </span>
-      )}
+      {hint && <span className="font-body text-[11.5px] text-textFaint -mt-0.5">{hint}</span>}
     </div>
   );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type InputProps = { style?: CSSProperties } & Record<string, any>;
+type InputProps = { style?: CSSProperties; className?: string } & Record<string, any>;
 
-const base: CSSProperties = {
-  height: 40,
-  padding: "0 12px",
-  border: `1.5px solid ${color.border}`,
-  borderRadius: radius.sm,
-  fontFamily: font.body,
-  fontSize: 14,
-  color: color.ink900,
-  background: color.surface,
-  outline: "none",
-  width: "100%",
-  transition: "border-color .15s, box-shadow .15s, background .15s",
-  boxSizing: "border-box" as const,
-};
+/**
+ * Each control below writes its own complete Tailwind class list instead of
+ * one shared "base" string with later overrides -- Tailwind resolves
+ * conflicting utilities (e.g. two classes both setting `height`) by their
+ * order in the *generated* stylesheet, not by their order in `className`,
+ * so trying to override `h-10` with `h-auto` via string order would be
+ * unreliable. Writing each control's classes explicitly avoids that trap
+ * entirely. `style`/`onFocus`/`onBlur` used to be handled with
+ * `Object.assign(e.currentTarget.style, ...)` on focus/blur -- that's the
+ * same DOM-mutation antipattern already flagged for the admin table hover
+ * handlers; native `focus:` variants replace it with the same visual result
+ * with no JS needed (removing focus naturally reverts to the base classes).
+ */
+const focusRing = "focus:border-primary focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,87,217,.1)]";
+const transition = "transition-[border-color,box-shadow,background-color] duration-150";
 
-const focus: CSSProperties = {
-  borderColor: color.primary,
-  background: "#fff",
-  boxShadow: `0 0 0 3px rgba(0,87,217,.1)`,
-};
-
-const blur: CSSProperties = {
-  borderColor: color.border,
-  background: color.surface,
-  boxShadow: "none",
-};
-
-export const Input = forwardRef<HTMLInputElement, InputProps>(({ style, onFocus, onBlur, ...rest }, ref) => (
+export const Input = forwardRef<HTMLInputElement, InputProps>(({ style, className, ...rest }, ref) => (
   <input
     ref={ref}
     {...rest}
-    style={{ ...base, ...style }}
-    onFocus={(e) => { Object.assign(e.currentTarget.style, focus); (onFocus as ((e: React.FocusEvent<HTMLInputElement>) => void) | undefined)?.(e); }}
-    onBlur={(e)  => { Object.assign(e.currentTarget.style, blur);  (onBlur  as ((e: React.FocusEvent<HTMLInputElement>) => void) | undefined)?.(e); }}
+    className={clsx(
+      "h-10 px-3 border-[1.5px] border-border rounded-sm font-body text-[14px] text-ink900 bg-surface outline-none w-full box-border",
+      transition,
+      focusRing,
+      className
+    )}
+    style={style}
   />
 ));
 Input.displayName = "Input";
 
-export function Textarea({ style, ...rest }: InputProps) {
+export function Textarea({ style, className, ...rest }: InputProps) {
   return (
     <textarea
       {...rest}
-      style={{ ...base, height: "auto", padding: "10px 12px", lineHeight: 1.55, resize: "vertical", ...style }}
-      onFocus={(e) => Object.assign(e.currentTarget.style, focus)}
-      onBlur={(e)  => Object.assign(e.currentTarget.style, blur)}
+      className={clsx(
+        "h-auto py-2.5 px-3 border-[1.5px] border-border rounded-sm font-body text-[14px] text-ink900 bg-surface outline-none w-full box-border leading-[1.55] resize-y",
+        transition,
+        focusRing,
+        className
+      )}
+      style={style}
     />
   );
 }
 
-export function Select({ style, children, ...rest }: InputProps & { children: ReactNode }) {
+export function Select({ style, className, children, ...rest }: InputProps & { children: ReactNode }) {
   return (
-    <div style={{ position: "relative" }}>
+    <div className="relative">
       <select
         {...rest}
-        style={{ ...base, paddingRight: 32, cursor: "pointer", appearance: "none", WebkitAppearance: "none", ...style }}
-        onFocus={(e) => Object.assign(e.currentTarget.style, focus)}
-        onBlur={(e)  => Object.assign(e.currentTarget.style, blur)}
+        className={clsx(
+          "h-10 pl-3 pr-8 border-[1.5px] border-border rounded-sm font-body text-[14px] text-ink900 bg-surface outline-none w-full box-border cursor-pointer appearance-none",
+          transition,
+          focusRing,
+          className
+        )}
+        style={style}
       >
         {children}
       </select>
       <svg
-        width={12} height={12} viewBox="0 0 24 24" fill="none"
-        stroke={color.textFaint} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+        width={12}
+        height={12}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-textFaint"
       >
         <polyline points="6 9 12 15 18 9" />
       </svg>

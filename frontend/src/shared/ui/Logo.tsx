@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { font, color } from "@/shared/config/theme";
+import clsx from "clsx";
 
 /**
  * Crow Repuestos logo — uses the official crow-head mark from /crow-logo.png.
@@ -13,52 +13,35 @@ export function Logo({
   size?: "sm" | "md";
 }) {
   const imgSize = size === "sm" ? 32 : 38;
-  const titleSize = size === "sm" ? 18 : 20;
-  const subtitleSize = size === "sm" ? 8.5 : 9;
   const onDark = variant === "dark";
 
   return (
-    <Link
-      to="/"
-      aria-label="Crow Repuestos"
-      style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}
-    >
+    <Link to="/" aria-label="Crow Repuestos" className="inline-flex items-center gap-2.5 no-underline">
       {/* Crow head mark */}
       <img
         src="/crow-logo.png"
         alt="Crow"
         width={imgSize}
         height={imgSize}
-        style={{
-          display: "block",
-          borderRadius: 7,
-          objectFit: "cover",
-          flexShrink: 0,
-        }}
+        className="block rounded-[7px] object-cover shrink-0"
       />
 
       {/* Wordmark */}
-      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+      <span className="flex flex-col leading-none">
         <span
-          style={{
-            fontFamily: font.display,
-            fontWeight: 900,
-            fontSize: titleSize,
-            letterSpacing: ".04em",
-            color: onDark ? "#fff" : color.ink900,
-          }}
+          className={clsx(
+            "font-display font-black tracking-[0.04em]",
+            size === "sm" ? "text-[18px]" : "text-[20px]",
+            onDark ? "text-white" : "text-ink900"
+          )}
         >
           CROW
         </span>
         <span
-          style={{
-            fontFamily: font.mono,
-            fontWeight: 500,
-            fontSize: subtitleSize,
-            letterSpacing: ".4em",
-            color: color.primary,
-            marginTop: 3,
-          }}
+          className={clsx(
+            "font-mono font-medium tracking-[0.4em] text-primary mt-[3px]",
+            size === "sm" ? "text-[8.5px]" : "text-[9px]"
+          )}
         >
           REPUESTOS
         </span>

@@ -1,5 +1,4 @@
 import { Icon, type IconName } from "./Icon";
-import { color, font } from "@/shared/config/theme";
 
 const CATEGORY_ICON: Record<string, IconName> = {
   Autos: "wrench",
@@ -22,6 +21,12 @@ function hueOf(seed: string): number {
 /**
  * Real visual for a product: shows the uploaded image when present, otherwise a
  * branded gradient tile with the category icon and SKU — no "[ FOTO ]" mock.
+ *
+ * `ratio`, `radius`, and every hue-derived gradient/color below are runtime
+ * values (per-product aspect ratio, per-instance radius override, a color
+ * hashed from the SKU/name) -- Tailwind can't turn those into static classes,
+ * so they stay as inline style. Everything with a fixed value (positioning,
+ * the grid texture, the SKU label) moved to Tailwind classes.
  */
 export function ProductImage({
   name,
@@ -40,8 +45,8 @@ export function ProductImage({
 }) {
   if (imageUrl) {
     return (
-      <div style={{ position: "relative", aspectRatio: String(ratio), overflow: "hidden", borderRadius: radius }}>
-        <img src={imageUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <div className="relative overflow-hidden" style={{ aspectRatio: String(ratio), borderRadius: radius }}>
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
       </div>
     );
   }
@@ -51,43 +56,20 @@ export function ProductImage({
 
   return (
     <div
+      className="relative overflow-hidden flex items-center justify-center"
       style={{
-        position: "relative",
         aspectRatio: String(ratio),
         borderRadius: radius,
-        overflow: "hidden",
         background: `linear-gradient(135deg, hsl(${hue} 70% 96%), hsl(${(hue + 40) % 360} 65% 92%))`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       {/* subtle grid texture */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(13,23,40,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(13,23,40,.04) 1px, transparent 1px)",
-          backgroundSize: "22px 22px",
-        }}
-      />
-      <span style={{ position: "relative", color: `hsl(${hue} 55% 42%)`, opacity: 0.9 }}>
+      <div className="absolute inset-0 [background-image:linear-gradient(rgba(13,23,40,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(13,23,40,.04)_1px,transparent_1px)] [background-size:22px_22px]" />
+      <span className="relative opacity-90" style={{ color: `hsl(${hue} 55% 42%)` }}>
         <Icon name={icon} size={44} strokeWidth={1.4} />
       </span>
       {sku && (
-        <span
-          style={{
-            position: "absolute",
-            left: 12,
-            bottom: 10,
-            fontFamily: font.mono,
-            fontSize: 10,
-            fontWeight: 600,
-            color: color.textFaint,
-            letterSpacing: ".04em",
-          }}
-        >
+        <span className="absolute left-3 bottom-2.5 font-mono text-[10px] font-semibold text-textFaint tracking-[0.04em]">
           {sku}
         </span>
       )}
@@ -97,24 +79,22 @@ export function ProductImage({
 
 /** Brand monogram tile (replaces "[ LOGO MARCA ]"). */
 export function BrandMark({ name, logoUrl, size = 56 }: { name: string; logoUrl?: string | null; size?: number }) {
-  if (logoUrl) return <img src={logoUrl} alt={name} style={{ maxHeight: size, maxWidth: "70%", objectFit: "contain" }} />;
+  if (logoUrl) {
+    return (
+      <img src={logoUrl} alt={name} className="max-w-[70%] object-contain" style={{ maxHeight: size }} />
+    );
+  }
   const hue = hueOf(name);
   const initials = name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
   return (
     <div
+      className="rounded-lg flex items-center justify-center font-display font-extrabold tracking-[0.02em]"
       style={{
         width: size,
         height: size,
-        borderRadius: 12,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         background: `linear-gradient(135deg, hsl(${hue} 60% 95%), hsl(${(hue + 30) % 360} 55% 90%))`,
         color: `hsl(${hue} 50% 38%)`,
-        fontFamily: font.display,
-        fontWeight: 800,
         fontSize: size * 0.34,
-        letterSpacing: ".02em",
       }}
     >
       {initials || "—"}
