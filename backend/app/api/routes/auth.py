@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from app.core import audit
 from app.core.config import settings
+from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.core.deps import CurrentUser, DbSession, get_user_from_refresh_token
 from app.core.email import build_reset_email, send_email
 from app.core.passwords import validate_password_strength
@@ -18,6 +19,7 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     create_reset_token,
+    decode_refresh_token,
     decode_reset_token,
     hash_password,
     verify_password,
@@ -34,6 +36,12 @@ _register_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600, locko
 _refresh_limiter  = LoginRateLimiter(max_attempts=30, window_seconds=300, lockout_seconds=60)
 _reset_limiter    = LoginRateLimiter(max_attempts=5, window_seconds=3600, lockout_seconds=3600)
 
+# IP-only limiters (sentinel "*" as the email part). The per-(ip, email)
+# limiters above are trivially bypassed on public endpoints by rotating the
+# email — each new email creates a fresh key. These cap total volume per IP.
+_register_ip_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600, lockout_seconds=3600)
+_reset_ip_limiter    = LoginRateLimiter(max_attempts=15, window_seconds=3600, lockout_seconds=3600)
+
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -44,46 +52,17 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
-def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
-    """Set both tokens as HttpOnly cookies. JavaScript cannot read or write these."""
-    secure = settings.is_production
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=secure,
-        samesite="lax",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        path="/",
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=secure,
-        samesite="lax",
-        max_age=settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60,
-        path="/api/auth/refresh",
-    )
-
-
-def _clear_auth_cookies(response: Response) -> None:
-    """Remove both auth cookies from the browser."""
-    response.delete_cookie(key="access_token", path="/", httponly=True, samesite="lax")
-    response.delete_cookie(key="refresh_token", path="/api/auth/refresh", httponly=True, samesite="lax")
-
-
 def _auth_response(user: User, response: Response) -> AuthResponse:
-    access_token = create_access_token(subject=user.id, role=user.role.value)
-    refresh_token = create_refresh_token(subject=user.id)
-    _set_auth_cookies(response, access_token, refresh_token)
+    access_token = create_access_token(subject=user.id, role=user.role.value, token_version=user.token_version)
+    refresh_token = create_refresh_token(subject=user.id, token_version=user.token_version)
+    set_auth_cookies(response, access_token, refresh_token)
     return AuthResponse(user=UserRead.model_validate(user))
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterRequest, db: DbSession, request: Request, response: Response) -> AuthResponse:
     ip = audit.client_ip(request)
-    locked_for = _register_limiter.check(ip, data.email)
+    locked_for = _register_limiter.check(ip, data.email) or _register_ip_limiter.check(ip, "*")
     if locked_for:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -95,7 +74,12 @@ def register(data: RegisterRequest, db: DbSession, request: Request, response: R
     exists = db.scalar(select(User).where(User.email == data.email))
     if exists:
         _register_limiter.register_failure(ip, data.email)
+        _register_ip_limiter.register_failure(ip, "*")
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El email ya esta registrado")
+
+    # Count successful registrations against the per-IP cap too — otherwise
+    # mass account creation with unique emails is never throttled.
+    _register_ip_limiter.register_failure(ip, "*")
 
     user = User(
         full_name=data.full_name,
@@ -152,6 +136,7 @@ def logout(
     db: DbSession,
     request: Request,
     access_token: Annotated[str | None, Cookie()] = None,
+    refresh_token: Annotated[str | None, Cookie()] = None,
 ) -> None:
     if access_token:
         try:
@@ -163,7 +148,17 @@ def logout(
         except Exception:
             pass
 
-    _clear_auth_cookies(response)
+    # Also revoke the refresh token — without this, a stolen refresh token
+    # keeps working after logout until it expires. The refresh cookie is
+    # scoped to /api/auth so the browser sends it here (see core/cookies.py).
+    if refresh_token:
+        try:
+            _, refresh_jti, _, refresh_exp = decode_refresh_token(refresh_token)
+            token_blocklist.block(refresh_jti, refresh_exp)
+        except Exception:
+            pass  # expired/corrupt cookie — nothing to revoke
+
+    clear_auth_cookies(response)
     audit.record(db, action="logout", actor=current_user, request=request)
 
 
@@ -204,13 +199,14 @@ def forgot_password(
 ) -> None:
     """Always returns 204 regardless of whether the email exists (prevents user enumeration)."""
     ip = audit.client_ip(request)
-    locked_for = _reset_limiter.check(ip, data.email)
+    locked_for = _reset_limiter.check(ip, data.email) or _reset_ip_limiter.check(ip, "*")
     if locked_for:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Demasiadas solicitudes. Reintenta en {int(locked_for)} segundos.",
         )
     _reset_limiter.register_failure(ip, data.email)
+    _reset_ip_limiter.register_failure(ip, "*")
 
     user = db.scalar(select(User).where(User.email == data.email, User.is_active.is_(True)))
     if user:
@@ -245,5 +241,7 @@ def reset_password(data: ResetPasswordRequest, db: DbSession, request: Request) 
 
     validate_password_strength(data.new_password)
     user.hashed_password = hash_password(data.new_password)
+    # Invalidate every session issued before this reset (see users.token_version)
+    user.token_version += 1
     db.add(user)
     audit.record(db, action="password.reset_completed", actor=user, entity="user", entity_id=user.id, request=request)

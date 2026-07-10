@@ -28,7 +28,7 @@ class TokenBlocklist:
 
     def block(self, jti: str, expires_at: float) -> None:
         """Revoke a token by JTI. expires_at is a POSIX timestamp."""
-        from app.core.redis_client import get_redis
+        from app.core.redis_client import get_redis, warn_fallback
 
         r = get_redis()
         if r is not None:
@@ -36,8 +36,8 @@ class TokenBlocklist:
             try:
                 r.setex(f"{_KEY_PREFIX}{jti}", ttl, "1")
                 return
-            except Exception:
-                pass  # Redis error — fall through to in-memory
+            except Exception as exc:
+                warn_fallback("token_blocklist.block", exc)  # fall through to in-memory
 
         with self._lock:
             self._entries[jti] = expires_at
@@ -45,14 +45,14 @@ class TokenBlocklist:
 
     def is_blocked(self, jti: str) -> bool:
         """Return True if the JTI has been revoked and the token hasn't expired."""
-        from app.core.redis_client import get_redis
+        from app.core.redis_client import get_redis, warn_fallback
 
         r = get_redis()
         if r is not None:
             try:
                 return bool(r.exists(f"{_KEY_PREFIX}{jti}"))
-            except Exception:
-                pass  # Redis error — fall through to in-memory
+            except Exception as exc:
+                warn_fallback("token_blocklist.is_blocked", exc)  # fall through to in-memory
 
         now = time.time()
         with self._lock:

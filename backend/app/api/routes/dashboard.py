@@ -39,6 +39,26 @@ def _cache_set(key: str, value: str, ttl: int = _CACHE_TTL) -> None:
         pass
 
 
+def invalidate_dashboard_cache() -> None:
+    """Borra el cache de `/dashboard` y `/dashboard/analytics`.
+
+    Sin esto, crear/editar/eliminar un producto (o tocar su stock desde
+    Inventario) no se reflejaba en el dashboard hasta que expiraran los
+    60s de TTL -- el conteo de productos y el "valor de inventario" que
+    se ven ahí quedaban desactualizados. Llamado desde cada endpoint de
+    `routes/products.py` que cambia el set de productos activos o su
+    stock/precio.
+    """
+    from app.core.redis_client import get_redis
+    r = get_redis()
+    if r is None:
+        return
+    try:
+        r.delete("crow:cache:dashboard", "crow:cache:analytics")
+    except Exception:
+        pass
+
+
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=DashboardStats)

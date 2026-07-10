@@ -22,6 +22,10 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
+    # Se incrementa al cambiar/resetear la contraseña. Los JWT llevan este
+    # valor como claim `ver`; un token con `ver` distinto se rechaza, con lo
+    # que un cambio de contraseña invalida todas las sesiones previas.
+    token_version: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

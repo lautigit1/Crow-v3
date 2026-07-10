@@ -41,11 +41,15 @@ def get_current_user(
         if user_id_raw is None:
             raise _CREDENTIALS_EXC
         user_id = int(user_id_raw)
+        token_version = int(payload.get("ver", 0))
     except (JWTError, ValueError, TypeError):
         raise _CREDENTIALS_EXC
 
     user = db.get(User, user_id)
     if user is None or not user.is_active:
+        raise _CREDENTIALS_EXC
+    # Reject tokens issued before the last password change/reset
+    if token_version != user.token_version:
         raise _CREDENTIALS_EXC
     return user
 
@@ -101,7 +105,7 @@ def get_user_from_refresh_token(
             detail="No hay sesion activa",
         )
     try:
-        sub, jti = decode_refresh_token(refresh_token)
+        sub, jti, token_version, _exp = decode_refresh_token(refresh_token)
         user_id = int(sub)
     except (JWTError, ValueError, TypeError):
         raise HTTPException(
@@ -121,6 +125,13 @@ def get_user_from_refresh_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no encontrado o inactivo",
+        )
+
+    # Reject tokens issued before the last password change/reset
+    if token_version != user.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token invalido o expirado",
         )
 
     # Blocklist the used JTI immediately (one-time use rotation).

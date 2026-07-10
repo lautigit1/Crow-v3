@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
+from app.api.routes.dashboard import invalidate_dashboard_cache
 from app.core import audit
 from app.core.deps import AdminUser, DbSession, OptionalAdmin
 from app.crud import crud
@@ -136,6 +137,7 @@ def create_product(data: ProductCreate, db: DbSession, admin: AdminUser, request
     db.refresh(obj)
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.create", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    invalidate_dashboard_cache()
     return _serialize_product(obj, admin)
 
 
@@ -147,6 +149,7 @@ def update_product(product_id: int, data: ProductUpdate, db: DbSession, admin: A
     obj = crud.product.update(db, obj, data)
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.update", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    invalidate_dashboard_cache()
     return _serialize_product(obj, admin)
 
 
@@ -158,6 +161,7 @@ def delete_product(product_id: int, db: DbSession, admin: AdminUser, request: Re
     obj.deleted_at = datetime.now(timezone.utc)
     audit.record(db, action="product.delete", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
     crud.product.delete(db, obj)
+    invalidate_dashboard_cache()
 
 
 @router.patch("/{product_id}/restore", response_model=ProductRead)
@@ -176,4 +180,5 @@ def restore_product(product_id: int, db: DbSession, admin: AdminUser, request: R
     db.flush()
     db.refresh(obj)
     audit.record(db, action="product.restore", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
+    invalidate_dashboard_cache()
     return _serialize_product(obj, admin)

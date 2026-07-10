@@ -50,7 +50,8 @@ export type IconName =
   | "filter"
   | "sparkles"
   | "home"
-  | "more";
+  | "more"
+  | "minus";
 
 const P: Record<IconName, ReactNode> = {
   dashboard: (
@@ -326,6 +327,10 @@ const P: Record<IconName, ReactNode> = {
       <circle cx="19" cy="12" r="1.6" />
     </>
   ),
+  // ── Agregado para el stepper de cantidad del carrito premium
+  // (CartPreview/CartPage) — el set original tenía "plus" pero nunca
+  // necesitó su contraparte hasta ahora.
+  minus: <line x1="5" y1="12" x2="19" y2="12" />,
 };
 
 export function Icon({

@@ -153,6 +153,13 @@ CHECKS: list[tuple[str, str, str, str]] = [
         "ALTER TABLE quotes ADD CONSTRAINT ck_quotes_message_not_blank "
         "CHECK (length(btrim(message)) > 0)",
     ),
+    # --- migracion 012: columna nueva en tabla que ya podia existir ---
+    (
+        "columna", "users.token_version",
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'users' AND column_name = 'token_version'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0",
+    ),
 ]
 
 

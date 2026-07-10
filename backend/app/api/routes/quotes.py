@@ -14,9 +14,19 @@ from app.schemas.quote import QuoteCreate, QuoteList, QuoteRead, QuoteStatusUpda
 
 router = APIRouter()
 
-# Separate rate limiter for public quote submissions (keyed by IP only)
+# Rate limiter for public quote submissions, keyed by (ip, email).
 _quote_limiter = LoginRateLimiter(
     max_attempts=settings.QUOTE_RATE_LIMIT,
+    window_seconds=settings.QUOTE_RATE_WINDOW,
+    lockout_seconds=settings.QUOTE_RATE_WINDOW,
+)
+
+# Second limiter keyed by IP alone (sentinel "*" as the email part).
+# Without this, rotating the customer_email on every request creates a fresh
+# (ip, email) key each time and the limiter above never triggers — unlimited
+# quote spam (and admin-notification emails) from a single IP.
+_quote_ip_limiter = LoginRateLimiter(
+    max_attempts=settings.QUOTE_RATE_LIMIT * 3,
     window_seconds=settings.QUOTE_RATE_WINDOW,
     lockout_seconds=settings.QUOTE_RATE_WINDOW,
 )
@@ -30,7 +40,7 @@ _quote_limiter = LoginRateLimiter(
 def create_quote(data: QuoteCreate, db: DbSession, request: Request, background_tasks: BackgroundTasks) -> Quote:
     """Public endpoint — anyone can request a quote. Rate-limited by IP."""
     ip = audit.client_ip(request)
-    locked_for = _quote_limiter.check(ip, data.customer_email or "anonymous")
+    locked_for = _quote_limiter.check(ip, data.customer_email or "anonymous") or _quote_ip_limiter.check(ip, "*")
     if locked_for:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -42,6 +52,7 @@ def create_quote(data: QuoteCreate, db: DbSession, request: Request, background_
     db.flush()
     db.refresh(quote)
     _quote_limiter.register_failure(ip, data.customer_email or "anonymous")
+    _quote_ip_limiter.register_failure(ip, "*")
     audit.record(
         db,
         action="quote.create_public",

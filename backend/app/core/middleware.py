@@ -2,22 +2,60 @@
 HTTP middleware stack for Crow Repuestos API.
 
 Middlewares (applied bottom-up in FastAPI):
-  1. SecurityHeadersMiddleware  — security + CSP headers on every response
-  2. RequestIDMiddleware        — attaches X-Request-ID to every request/response
-  3. RequestLoggingMiddleware   — structured JSON log per request with timing
+  1. CSRFOriginMiddleware       — rejects mutating cross-origin requests
+  2. SecurityHeadersMiddleware  — security + CSP headers on every response
+  3. RequestIDMiddleware        — attaches X-Request-ID to every request/response
+  4. RequestLoggingMiddleware   — structured JSON log per request with timing
 """
 
 import time
 import uuid
+from urllib.parse import urlsplit
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from app.core.config import settings
 from app.core.logging_config import get_logger
 
 logger = get_logger("crow.http")
+
+# ---------------------------------------------------------------------------
+# CSRF — Origin validation
+# ---------------------------------------------------------------------------
+_MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
+class CSRFOriginMiddleware(BaseHTTPMiddleware):
+    """
+    Second CSRF layer on top of SameSite=lax cookies.
+
+    For mutating methods, if the request carries an Origin header it must be
+    either one of the configured CORS origins or the API's own origin
+    (Origin host == Host header — covers the same-origin nginx proxy and
+    Swagger in dev). Otherwise the request is rejected with 403 even if it
+    carries valid auth cookies.
+
+    Requests WITHOUT an Origin header are allowed: non-browser clients (curl,
+    scripts, tests) don't send it, and modern browsers always attach Origin
+    to cross-site mutating requests — which is exactly the case we block.
+    """
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        origin = request.headers.get("origin")
+        # Note: Origin "null" (sandboxed iframes, some redirects) is validated
+        # like any other value and ends up rejected — that's intentional.
+        if request.method in _MUTATING_METHODS and origin:
+            if origin not in settings.cors_origins:
+                origin_host = urlsplit(origin).netloc
+                request_host = request.headers.get("host", "")
+                if not origin_host or origin_host != request_host:
+                    return JSONResponse(
+                        status_code=403,
+                        content={"detail": "Origen no permitido (posible CSRF)"},
+                    )
+        return await call_next(request)
 
 # ---------------------------------------------------------------------------
 # Security headers

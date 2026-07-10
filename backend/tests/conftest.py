@@ -15,6 +15,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 
 from app.core.database import Base, get_db
+from app.core.ratelimit import LoginRateLimiter
 from app.core.security import hash_password
 from app.core.token_blocklist import token_blocklist
 from app.main import app
@@ -77,8 +78,11 @@ def client(db: Session):
         yield db
 
     app.dependency_overrides[get_db] = _override
-    # Reset in-memory blocklist between tests
+    # Reset in-memory blocklist and rate limiters between tests — the new
+    # IP-only limiters share the key "testclient:*" across the whole suite
+    # and would otherwise lock out later tests.
     token_blocklist._entries.clear()
+    LoginRateLimiter.reset_all_memory_state()
 
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c

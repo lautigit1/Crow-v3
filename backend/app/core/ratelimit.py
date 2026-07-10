@@ -18,6 +18,10 @@ _CNT_PREFIX = "crow:rl:cnt:"
 
 
 class LoginRateLimiter:
+    # Registry of every limiter instance — lets the test suite wipe in-memory
+    # state between tests (see reset_all_memory_state).
+    _instances: list["LoginRateLimiter"] = []
+
     def __init__(
         self,
         max_attempts: int = 5,
@@ -32,6 +36,15 @@ class LoginRateLimiter:
         self._hits: dict[str, list[float]] = defaultdict(list)
         self._locked: dict[str, float] = {}
         self._lock = Lock()
+        LoginRateLimiter._instances.append(self)
+
+    @classmethod
+    def reset_all_memory_state(cls) -> None:
+        """Clear the in-memory state of every limiter (testing only)."""
+        for limiter in cls._instances:
+            with limiter._lock:
+                limiter._hits.clear()
+                limiter._locked.clear()
 
     # ------------------------------------------------------------------
     # Public API
@@ -40,15 +53,15 @@ class LoginRateLimiter:
     def check(self, ip: str | None, email: str) -> float | None:
         """Return remaining lockout seconds if the key is locked, else None."""
         key = self._key(ip, email)
-        from app.core.redis_client import get_redis
+        from app.core.redis_client import get_redis, warn_fallback
 
         r = get_redis()
         if r is not None:
             try:
                 ttl = r.ttl(f"{_LOCK_PREFIX}{key}")
                 return float(ttl) if ttl > 0 else None
-            except Exception:
-                pass  # fall through
+            except Exception as exc:
+                warn_fallback("ratelimit.check", exc)  # fall through
 
         now = time.time()
         with self._lock:
@@ -62,7 +75,7 @@ class LoginRateLimiter:
     def register_failure(self, ip: str | None, email: str) -> None:
         """Record a failed attempt. Triggers lockout when max_attempts is reached."""
         key = self._key(ip, email)
-        from app.core.redis_client import get_redis
+        from app.core.redis_client import get_redis, warn_fallback
 
         r = get_redis()
         if r is not None:
@@ -77,8 +90,8 @@ class LoginRateLimiter:
                     r.setex(lock_key, self.lockout, "1")
                     r.delete(cnt_key)
                 return
-            except Exception:
-                pass  # fall through
+            except Exception as exc:
+                warn_fallback("ratelimit.register_failure", exc)  # fall through
 
         now = time.time()
         with self._lock:
@@ -92,15 +105,15 @@ class LoginRateLimiter:
     def reset(self, ip: str | None, email: str) -> None:
         """Clear all rate-limit state for this key (e.g. after successful login)."""
         key = self._key(ip, email)
-        from app.core.redis_client import get_redis
+        from app.core.redis_client import get_redis, warn_fallback
 
         r = get_redis()
         if r is not None:
             try:
                 r.delete(f"{_CNT_PREFIX}{key}", f"{_LOCK_PREFIX}{key}")
                 return
-            except Exception:
-                pass  # fall through
+            except Exception as exc:
+                warn_fallback("ratelimit.reset", exc)  # fall through
 
         with self._lock:
             self._hits.pop(key, None)

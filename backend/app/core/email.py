@@ -62,11 +62,20 @@ def _render(template_name: str, **context) -> str:
 # Core sender
 # ---------------------------------------------------------------------------
 
+def _sanitize_subject(subject: str) -> str:
+    """Collapse CR/LF — the subject may interpolate user input (e.g. the
+    customer name in quote notifications) and a value with embedded newlines
+    could otherwise inject arbitrary SMTP headers into the message."""
+    return " ".join(subject.splitlines()).strip()
+
+
 def send_email(*, to: str, subject: str, html: str, text: str = "") -> None:
     """
     Send an email synchronously (call from BackgroundTasks so it's off the
     main thread).  Silently skips if SMTP is not configured.
     """
+    subject = _sanitize_subject(subject)
+
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         logger.info(
             "SMTP not configured — skipping email send",

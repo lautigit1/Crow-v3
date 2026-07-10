@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select
 
 from app.core import audit
+from app.core.cookies import set_auth_cookies
 from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.core.passwords import validate_password_strength
-from app.core.security import hash_password, verify_password
+from app.core.security import create_access_token, create_refresh_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import PaginatedUsers, PasswordChange, UserAdminUpdate, UserRead, UserUpdate
 
@@ -37,13 +38,23 @@ def update_profile(data: UserUpdate, current_user: CurrentUser, db: DbSession, r
 
 
 @router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
-def change_password(data: PasswordChange, current_user: CurrentUser, db: DbSession, request: Request) -> None:
+def change_password(
+    data: PasswordChange, current_user: CurrentUser, db: DbSession, request: Request, response: Response
+) -> None:
     if not verify_password(data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Contraseña actual incorrecta")
     validate_password_strength(data.new_password)
     current_user.hashed_password = hash_password(data.new_password)
+    # Invalidate every other session (tokens carry the old `ver` claim) …
+    current_user.token_version += 1
     db.add(current_user)
     db.flush()
+    # … but keep THIS session alive by re-issuing cookies with the new version.
+    set_auth_cookies(
+        response,
+        create_access_token(subject=current_user.id, role=current_user.role.value, token_version=current_user.token_version),
+        create_refresh_token(subject=current_user.id, token_version=current_user.token_version),
+    )
     audit.record(db, action="user.password_change", actor=current_user, entity="user", entity_id=current_user.id, request=request)
 
 

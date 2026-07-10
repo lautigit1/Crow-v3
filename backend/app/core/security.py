@@ -58,10 +58,12 @@ def _derive_secret(purpose: str) -> str:
     return base64.urlsafe_b64encode(derived).decode("utf-8")
 
 
-def create_access_token(subject: str | int, role: str) -> str:
+def create_access_token(subject: str | int, role: str, token_version: int = 0) -> str:
     """
     Issues a signed JWT carrying the user id (sub), role, and a unique jti.
     The jti enables token revocation via the TokenBlocklist.
+    The `ver` claim mirrors users.token_version at issue time — bumping the
+    column (password change/reset) instantly invalidates every older token.
     """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -71,6 +73,7 @@ def create_access_token(subject: str | int, role: str) -> str:
         "sub": str(subject),
         "role": role,
         "type": "access",
+        "ver": token_version,
         "jti": str(uuid.uuid4()),   # unique per token — used for revocation
         "iat": now,
         "exp": expire,
@@ -85,11 +88,12 @@ def create_access_token(subject: str | int, role: str) -> str:
 _REFRESH_SECRET = _derive_secret("refresh")  # HKDF-derived, separate signing secret
 
 
-def create_refresh_token(subject: str | int) -> str:
+def create_refresh_token(subject: str | int, token_version: int = 0) -> str:
     """
     Issues a refresh token. Expires after REFRESH_TOKEN_EXPIRE_MINUTES (default 60).
     Intentionally excludes the role so privilege changes take effect
-    immediately when the access token expires.
+    immediately when the access token expires. Carries `ver` (see
+    create_access_token) so password changes also kill refresh tokens.
     """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
@@ -98,6 +102,7 @@ def create_refresh_token(subject: str | int) -> str:
         "aud": _AUD,
         "sub": str(subject),
         "type": "refresh",
+        "ver": token_version,
         "jti": str(uuid.uuid4()),
         "iat": now,
         "exp": expire,
@@ -105,11 +110,12 @@ def create_refresh_token(subject: str | int) -> str:
     return jwt.encode(payload, _REFRESH_SECRET, algorithm=settings.ALGORITHM)
 
 
-def decode_refresh_token(token: str) -> tuple[str, str]:
+def decode_refresh_token(token: str) -> tuple[str, str, int, float]:
     """
     Validates and decodes a refresh token.
-    Returns (subject, jti) or raises JWTError.
+    Returns (subject, jti, token_version, exp) or raises JWTError.
     The JTI should be blocklisted after rotation to prevent replay attacks.
+    Tokens issued before the `ver` claim existed decode as version 0.
     """
     payload = jwt.decode(token, _REFRESH_SECRET, algorithms=[settings.ALGORITHM], audience=_AUD)
     if payload.get("type") != "refresh":
@@ -118,7 +124,7 @@ def decode_refresh_token(token: str) -> tuple[str, str]:
     jti = payload.get("jti")
     if sub is None or jti is None:
         raise JWTError("Malformed token")
-    return sub, jti
+    return sub, jti, int(payload.get("ver", 0)), float(payload.get("exp", 0))
 
 
 # ---------------------------------------------------------------------------

@@ -213,7 +213,7 @@ export function AdminProductsPage() {
   const productNameCell = (p: Product) => (
     <div className="flex items-center gap-3">
       <div className="w-11 flex-none rounded-md overflow-hidden border border-border">
-        <ProductImage name={p.name} category={p.category?.name} imageUrl={p.image_url} ratio={1} />
+        <ProductImage name={p.name} category={p.category?.name} imageUrl={p.image_url} ratio={1} compact />
       </div>
       <div className="min-w-0">
         <strong className="text-ink900">{p.name}</strong>

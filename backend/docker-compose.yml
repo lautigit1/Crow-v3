@@ -34,6 +34,14 @@ services:
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       SEED_USER_EMAIL: ${SEED_USER_EMAIL:-cliente@crowrepuestos.com}
       SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-cliente1234}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Crow Repuestos <noreply@crowrepuestos.com.ar>}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-ventas@crowrepuestos.com.ar}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      RESET_TOKEN_EXPIRE_MINUTES: ${RESET_TOKEN_EXPIRE_MINUTES:-60}
     ports:
       - "8000:8000"
 

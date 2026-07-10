@@ -1,8 +1,10 @@
-# Unified stack: PostgreSQL + FastAPI backend + React/nginx frontend.
+# Unified stack: PostgreSQL + Redis + FastAPI backend + React/nginx frontend.
 # Run everything with:  docker compose up --build
 #
 #   Frontend (sitio):   http://localhost:8080
 #   API (Swagger):      http://localhost:8000/docs
+#
+# Para producción usar docker-compose.prod.yml (ver DEPLOY.md).
 
 services:
   db:
@@ -11,10 +13,12 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: crow
-      POSTGRES_PASSWORD: crow_dev_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crow_dev_password}
       POSTGRES_DB: crow_repuestos
     volumes:
       - crow_pgdata:/var/lib/postgresql/data
+    networks:
+      - crow_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U crow -d crow_repuestos"]
       interval: 5s
@@ -26,6 +30,8 @@ services:
     container_name: crow_redis
     restart: unless-stopped
     command: redis-server --save "" --appendonly no  # in-memory only, no persistence
+    networks:
+      - crow_net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -42,7 +48,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg2://crow:crow_dev_password@db:5432/crow_repuestos
+      DATABASE_URL: postgresql+psycopg2://crow:${POSTGRES_PASSWORD:-crow_dev_password}@db:5432/crow_repuestos
       SECRET_KEY: ${SECRET_KEY}
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       BACKEND_CORS_ORIGINS: "http://localhost:8080,http://localhost:5173"
@@ -50,21 +56,39 @@ services:
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       SEED_USER_EMAIL: ${SEED_USER_EMAIL:-cliente@crowrepuestos.com}
       SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-cliente1234}
-      # IP del container nginx en la red Docker interna (para X-Forwarded-For seguro).
-      # Obtener con: docker inspect crow_web | grep IPAddress
-      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      # La red crow_net tiene subnet fija (ver abajo), así que confiar en el
+      # rango entero cubre a nginx aunque el contenedor se recree con otra IP.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.28.0.0/16}
       REDIS_URL: redis://crow_redis:6379/0
+    networks:
+      - crow_net
     ports:
       - "8000:8000" # expuesto para ver Swagger en /docs (el front usa el proxy de nginx)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   web:
     build: ./frontend
     container_name: crow_web
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    networks:
+      - crow_net
     ports:
       - "8080:80"
+
+networks:
+  crow_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   crow_pgdata:

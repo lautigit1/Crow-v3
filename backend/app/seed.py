@@ -75,7 +75,12 @@ def _seed_demo_product(db: Session) -> None:
 
 def seed(db: Session) -> None:
     _seed_admin(db)
-    _seed_demo_product(db)
+    # El producto demo es puro andamiaje de desarrollo — en producción el
+    # catálogo arranca vacío y lo carga el admin.
+    if not settings.is_production:
+        _seed_demo_product(db)
+    else:
+        print("→ Producción: no se crea producto demo")
 
 
 def main() -> None:

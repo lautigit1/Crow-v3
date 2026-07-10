@@ -1,53 +1,234 @@
 import { useState, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useCart } from "@/app/providers/CartProvider";
+import { useIsOpenNow } from "@/shared/lib/useIsOpenNow";
 import { formatPrice } from "@/shared/lib/format";
-import { waLink } from "@/shared/config/contact";
+import { contact, waLink } from "@/shared/config/contact";
 import { apiError } from "@/shared/api/client";
 import { orderApi, PAYMENT_METHODS, PAYMENT_METHOD_HINT, type Order, type PaymentMethod } from "@/entities/order";
-import { Container, Button, Textarea, ProductImage, EmptyState } from "@/shared/ui";
+import { Container, Button, Textarea, Icon, ProductImage, type IconName } from "@/shared/ui";
 
-function PaymentMethodPicker({
-  value,
-  onChange,
-}: {
-  value: PaymentMethod | null;
-  onChange: (v: PaymentMethod) => void;
-}) {
+/**
+ * Rediseño premium del checkout -- ver openspec/changes/2026-07-08-cart-checkout-premium
+ * y la nota equivalente en CartPage.tsx. Layout de dos columnas en
+ * desktop (revisión + panel de resumen fijo `ink900`), selector de
+ * método de pago con ícono + estado seleccionado, estado de éxito con
+ * más presencia (número de pedido tipo "sello" mono). Segunda vuelta:
+ * misma corrección de escala que CartPage.tsx (todo se sentía chico) --
+ * imágenes, tipografía y contenedor subieron de tamaño para que el flujo
+ * completo carrito → checkout se sienta consistente.
+ */
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// Asociación por sensación, no literal (no hay íconos de medios de pago
+// en el set del sitio): refresh = intercambio de fondos entre cuentas,
+// sparkles = billetera digital, lock = pago con tarjeta (seguridad),
+// mapPin = retiro físico en el local.
+const PAYMENT_ICON: Record<PaymentMethod, IconName> = {
+  Transferencia: "refresh",
+  "Mercado Pago": "sparkles",
+  Tarjeta: "lock",
+  "Retiro en local (efectivo)": "mapPin",
+};
+
+// ── Selector de método de pago ───────────────────────────────────────────────
+function PaymentMethodPicker({ value, onChange }: { value: PaymentMethod | null; onChange: (v: PaymentMethod) => void }) {
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-2.5">
-        {PAYMENT_METHODS.map((method) => {
-          const selected = value === method;
-          return (
-            <button
-              key={method}
-              type="button"
-              onClick={() => onChange(method)}
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {PAYMENT_METHODS.map((method, i) => {
+        const selected = value === method;
+        return (
+          <button
+            key={method}
+            type="button"
+            onClick={() => onChange(method)}
+            className={clsx(
+              "relative flex items-start gap-3.5 rounded-xl border-[1.5px] p-4 text-left outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+              selected ? "border-primary bg-primarySoft" : "border-border bg-white hover:border-borderStrong"
+            )}
+          >
+            <span className="mt-1 font-mono text-[11px] font-bold text-ink900/25">{pad(i + 1)}</span>
+            <span
               className={clsx(
-                "text-left py-3 px-3.5 cursor-pointer rounded-md border-[1.5px] font-body text-[13.5px] font-bold transition-[border-color,background] duration-150",
-                selected ? "border-primary bg-primarySoft text-primary" : "border-border bg-white text-ink800",
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors duration-150",
+                selected ? "bg-primary text-white" : "bg-surface text-textFaint"
               )}
             >
-              {method}
-            </button>
-          );
-        })}
-      </div>
-      {value && (
-        <p className="font-body text-[12.5px] text-textFaint mt-2.5 mb-0">
-          {PAYMENT_METHOD_HINT[value]}
-        </p>
-      )}
+              <Icon name={PAYMENT_ICON[method]} size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-body text-[15px] font-bold text-ink900">{method}</span>
+              <span className="mt-0.5 block font-body text-[12.5px] leading-snug text-textFaint">
+                {PAYMENT_METHOD_HINT[method]}
+              </span>
+            </span>
+            {selected && (
+              <span className="absolute right-3.5 top-3.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">
+                <Icon name="check" size={13} strokeWidth={2.4} />
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+// ── Fila de revisión (solo lectura) ──────────────────────────────────────────
+function ReviewRow({ item, index }: { item: { productId: number; name: string; sku: string; imageUrl: string | null; price: number | null; quantity: number }; index: number }) {
+  return (
+    <div className="flex items-center gap-4 border-b border-border py-4 last:border-b-0">
+      <span className="hidden w-6 shrink-0 font-mono text-[11.5px] font-bold text-ink900/25 sm:block">{pad(index + 1)}</span>
+      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border">
+        <ProductImage name={item.name} sku={item.sku} imageUrl={item.imageUrl} ratio={1} radius={0} compact />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-body text-[15px] font-bold text-ink900">{item.name}</div>
+        <div className="mt-0.5 font-mono text-[11.5px] text-textFaint">{item.sku} · x{item.quantity}</div>
+      </div>
+      <div className="shrink-0 font-display text-[16px] font-extrabold text-ink900">
+        {formatPrice((item.price ?? 0) * item.quantity)}
+      </div>
+    </div>
+  );
+}
+
+// ── Panel de resumen (sticky en desktop) ─────────────────────────────────────
+function SummaryPanel({
+  subtotal, count, disabled, submitting, onConfirm,
+}: {
+  subtotal: number; count: number; disabled: boolean; submitting: boolean; onConfirm: () => void;
+}) {
+  const open = useIsOpenNow();
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-ink900 p-7 lg:sticky lg:top-24">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(520px 340px at 100% 0%, rgba(0,87,217,.24), transparent 65%)" }}
+      />
+
+      <div className="relative">
+        <div className="font-mono text-[11.5px] font-bold uppercase tracking-[.1em] text-[#5C7891]">Resumen</div>
+
+        <div className="mt-5 flex items-center justify-between border-t border-[rgba(255,255,255,.08)] pt-5">
+          <span className="font-body text-[14px] text-[#8AA3BC]">Subtotal · {count} {count === 1 ? "ítem" : "ítems"}</span>
+          <span className="font-display text-[18px] font-bold text-white">{formatPrice(subtotal)}</span>
+        </div>
+        <div className="mt-2.5 flex items-center justify-between">
+          <span className="font-body text-[14px] text-[#8AA3BC]">Envío / retiro</span>
+          <span className="font-mono text-[13px] text-[#5C7891]">A coordinar</span>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between border-t border-[rgba(255,255,255,.08)] pt-5">
+          <span className="font-display text-[15px] font-bold text-white">Total</span>
+          <span className="font-display text-[32px] font-black text-white">{formatPrice(subtotal)}</span>
+        </div>
+
+        <motion.button
+          type="button"
+          onClick={onConfirm}
+          disabled={disabled || submitting}
+          whileHover={disabled || submitting ? undefined : { y: -2, boxShadow: "0 16px 36px rgba(0,87,217,.4)" }}
+          whileTap={disabled || submitting ? undefined : { scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 420, damping: 26 }}
+          className={clsx(
+            "mt-6 flex h-[58px] w-full items-center justify-center gap-2.5 rounded-full font-display text-[16px] font-bold outline-none transition-colors duration-150",
+            disabled || submitting ? "cursor-not-allowed bg-white/10 text-white/40" : "cursor-pointer bg-primary text-white"
+          )}
+        >
+          {submitting ? "Confirmando…" : "Confirmar pedido"}
+        </motion.button>
+
+        <p className="mt-3.5 text-center font-body text-[12.5px] leading-snug text-[#5C7891]">
+          Sin cobro online acá — el pago y la entrega se coordinan después.
+        </p>
+
+        <div className="mt-6 flex items-center justify-between border-t border-[rgba(255,255,255,.08)] pt-5">
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[.06em] text-[#5C7891]">
+            <Icon name="shieldCheck" size={13} className="text-[#4ADE80]" /> Garantía de fábrica
+          </span>
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[.06em] text-[#5C7891]">
+            <span className={clsx("h-[6px] w-[6px] rounded-full", open ? "bg-[#4ADE80]" : "bg-[rgba(255,255,255,.3)]")} />
+            {contact.city.split(",")[0]}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Empty state a medida (acceso directo a /checkout sin carrito) ───────────
+function EmptyCheckout() {
+  return (
+    <div className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-borderStrong bg-white px-6 py-24 text-center">
+      <span className="flex h-20 w-20 items-center justify-center rounded-full bg-surface text-textFaint">
+        <Icon name="cart" size={32} />
+      </span>
+      <div>
+        <h2 className="mb-2 font-display text-[24px] font-black text-ink900">Tu carrito está vacío</h2>
+        <p className="mx-auto max-w-[360px] font-body text-[15px] leading-relaxed text-textMuted">
+          Agregá productos desde el catálogo antes de confirmar un pedido.
+        </p>
+      </div>
+      <Button as={Link} to="/catalogo" size="lg">Ir al catálogo</Button>
+    </div>
+  );
+}
+
+// ── Éxito ─────────────────────────────────────────────────────────────────────
+function OrderSuccess({ order }: { order: Order }) {
+  const waMsg = `Hola Crow! Acabo de hacer el Pedido #${order.id}. ¿Cómo seguimos con el pago y la entrega?`;
+  const steps = [
+    "Un asesor real revisa tu pedido y confirma stock y precio.",
+    order.payment_method ? <>Coordinamos el pago por <strong className="text-ink900">{order.payment_method}</strong>.</> : "Coordinamos el método de pago.",
+    "Acordamos entrega en Mendoza o retiro en el local.",
+  ];
+
+  return (
+    <section className="flex min-h-[70vh] items-center bg-surface">
+      <Container maxWidth={620}>
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-8 text-center shadow-[0_1px_3px_rgba(13,23,40,.05)] md:p-12">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-successSoft text-success">
+            <Icon name="check" size={28} strokeWidth={2.6} />
+          </div>
+
+          <div className="mb-2 font-mono text-[12px] font-bold uppercase tracking-[.14em] text-textFaint">
+            Pedido confirmado
+          </div>
+          <h1 className="mb-7 font-display text-[46px] font-black leading-none tracking-[-.02em] text-ink900">
+            N.º {String(order.id).padStart(5, "0")}
+          </h1>
+
+          <div className="mb-8 flex flex-col gap-4 border-y border-border py-6 text-left">
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-start gap-3.5">
+                <span className="mt-0.5 font-mono text-[11.5px] font-bold text-primary">{pad(i + 1)}</span>
+                <p className="m-0 font-body text-[15px] leading-snug text-textMuted">{step}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-3.5">
+            <Button as="a" href={waLink(waMsg)} target="_blank" rel="noreferrer" variant="whatsapp" size="lg">
+              Coordinar por WhatsApp
+            </Button>
+            <Button as={Link} to="/cuenta/pedidos" variant="outline" size="lg">
+              Ver mis pedidos
+            </Button>
+          </div>
+        </div>
+      </Container>
+    </section>
   );
 }
 
 export function CheckoutPage() {
   usePageMeta("Confirmar pedido", "Revisá y confirmá tu pedido en Crow Repuestos.");
-  const { items, subtotal, clear } = useCart();
+  const { items, count, subtotal, clear } = useCart();
 
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -78,116 +259,83 @@ export function CheckoutPage() {
   };
 
   // Éxito -- se muestra incluso con el carrito ya vacío
-  if (order) {
-    const waMsg = `Hola Crow! Acabo de hacer el Pedido #${order.id}. ¿Cómo seguimos con el pago y la entrega?`;
-    return (
-      <section className="bg-surface min-h-[70vh] flex items-center">
-        <Container maxWidth={560}>
-          <div className="bg-white border border-border rounded-lg shadow-sm p-7 md:p-10 text-center">
-            <div className="w-14 h-14 rounded-full bg-successSoft text-success flex items-center justify-center mx-auto mb-5 text-[26px]">
-              ✓
-            </div>
-            <h1 className="font-display font-black text-2xl text-ink900 m-0 mb-2">
-              ¡Pedido #{order.id} creado!
-            </h1>
-            <p className="font-body text-[14.5px] text-textMuted leading-[1.6] m-0 mb-7">
-              Nuestro equipo va a coordinar con vos el pago
-              {order.payment_method ? <> por <strong>{order.payment_method}</strong></> : ""} y la entrega.
-              También podés escribirnos directamente por WhatsApp para acelerar el proceso.
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Button as="a" href={waLink(waMsg)} target="_blank" rel="noreferrer" variant="whatsapp">
-                Coordinar por WhatsApp
-              </Button>
-              <Button as={Link} to="/cuenta/pedidos" variant="outline">
-                Ver mis pedidos
-              </Button>
-            </div>
-          </div>
-        </Container>
-      </section>
-    );
-  }
+  if (order) return <OrderSuccess order={order} />;
 
   // Carrito vacío (ej. alguien entra directo a /checkout sin haber agregado nada)
   if (items.length === 0) {
     return (
-      <Container className="py-20 px-4">
-        <EmptyState
-          title="Tu carrito está vacío"
-          message="Agregá productos desde el catálogo antes de confirmar un pedido."
-          action={<Button as={Link} to="/catalogo">Ir al catálogo</Button>}
-        />
+      <Container maxWidth={880} className="px-4 py-20">
+        <EmptyCheckout />
       </Container>
     );
   }
 
   return (
-    <section className="bg-surface min-h-[70vh]">
-      <Container maxWidth={640} className="pt-5 pb-[60px] md:pt-8 md:pb-20">
-        <h1 className="font-display font-black text-2xl md:text-[30px] text-ink900 m-0 mb-6">
-          Confirmar pedido
-        </h1>
+    <section className="min-h-[70vh] bg-surface">
+      <Container maxWidth={1080} className="pb-[70px] pt-8 md:pb-28 md:pt-12">
+        <div className="mb-9">
+          <div className="mb-2 font-mono text-[12px] font-bold uppercase tracking-[.14em] text-primary">
+            Último paso
+          </div>
+          <h1 className="font-display text-[34px] font-black tracking-[-.02em] text-ink900 md:text-[42px]">
+            Confirmar pedido
+          </h1>
+        </div>
 
-        {/* Resumen (solo lectura) */}
-        <div className="bg-white border border-border rounded-lg shadow-sm py-1.5 px-[18px] mb-5">
-          {items.map((item) => (
-            <div key={item.productId} className="flex items-center gap-3 py-3 border-b border-border">
-              <div className="w-12 h-12 shrink-0 rounded-sm overflow-hidden border border-border">
-                <ProductImage name={item.name} sku={item.sku} imageUrl={item.imageUrl} ratio={1} radius={0} />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px] lg:items-start lg:gap-9">
+          {/* ── Columna izquierda: revisión + pago + notas ── */}
+          <div className="flex flex-col gap-8">
+            <div>
+              <div className="mb-3 font-mono text-[11.5px] font-bold uppercase tracking-[.08em] text-textFaint">
+                Tu pedido
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-body font-bold text-[13.5px] text-ink900">{item.name}</div>
-                <div className="font-mono text-[11px] text-textFaint">{item.sku} · x{item.quantity}</div>
-              </div>
-              <div className="font-display font-extrabold text-sm text-ink900 shrink-0">
-                {formatPrice((item.price ?? 0) * item.quantity)}
+              <div className="rounded-2xl border border-border bg-white px-5 shadow-[0_1px_3px_rgba(13,23,40,.05)] sm:px-6">
+                {items.map((item, i) => (
+                  <ReviewRow key={item.productId} item={item} index={i} />
+                ))}
               </div>
             </div>
-          ))}
-          <div className="flex justify-between items-center py-3.5">
-            <span className="font-mono text-[11px] tracking-[.08em] text-textFaint uppercase">Subtotal</span>
-            <span className="font-display font-black text-xl text-primary">{formatPrice(subtotal)}</span>
+
+            <div>
+              <div className="mb-3 font-mono text-[11.5px] font-bold uppercase tracking-[.08em] text-textFaint">
+                Método de pago
+              </div>
+              <PaymentMethodPicker value={paymentMethod} onChange={setPaymentMethod} />
+            </div>
+
+            <div>
+              <div className="mb-3 font-mono text-[11.5px] font-bold uppercase tracking-[.08em] text-textFaint">
+                Notas (opcional)
+              </div>
+              <Textarea
+                rows={3}
+                value={notes}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
+                placeholder="Ej: preferencia de horario de entrega, aclaraciones del vehículo, etc."
+                className="box-border w-full"
+              />
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2.5 border-l-[3px] border-danger py-1 pl-3">
+                <Icon name="alert" size={15} className="mt-0.5 shrink-0 text-danger" />
+                <p className="m-0 font-body text-[14px] leading-snug text-ink900">{error}</p>
+              </div>
+            )}
+
+            <Link to="/carrito" className="font-body text-[13.5px] font-semibold text-textFaint no-underline transition-colors hover:text-ink900">
+              ← Volver al carrito
+            </Link>
           </div>
-        </div>
 
-        {/* Método de pago */}
-        <label className="block font-body text-[13px] font-semibold text-ink700 mb-1.5">
-          Método de pago
-        </label>
-        <div className="mb-5">
-          <PaymentMethodPicker value={paymentMethod} onChange={setPaymentMethod} />
-        </div>
-
-        {/* Notas */}
-        <label className="block font-body text-[13px] font-semibold text-ink700 mb-1.5">
-          Notas para el pedido (opcional)
-        </label>
-        <Textarea
-          rows={3}
-          value={notes}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
-          placeholder="Ej: preferencia de horario de entrega, aclaraciones del vehículo, etc."
-          className="w-full box-border mb-4"
-        />
-
-        <p className="font-body text-[12.5px] text-textFaint mb-5">
-          El pago y la entrega se coordinan después de confirmar -- no se realiza ningún cobro online acá.
-        </p>
-
-        {error && (
-          <div className="font-body text-[13px] text-danger mb-4">
-            {error}
-          </div>
-        )}
-
-        <div className="flex gap-3 flex-wrap">
-          <Button onClick={handleConfirm} disabled={submitting || !paymentMethod}>
-            {submitting ? "Confirmando…" : "Confirmar pedido"}
-          </Button>
-          <Button as={Link} to="/carrito" variant="ghost">
-            Volver al carrito
-          </Button>
+          {/* ── Columna derecha: resumen ── */}
+          <SummaryPanel
+            subtotal={subtotal}
+            count={count}
+            disabled={!paymentMethod}
+            submitting={submitting}
+            onConfirm={handleConfirm}
+          />
         </div>
       </Container>
     </section>

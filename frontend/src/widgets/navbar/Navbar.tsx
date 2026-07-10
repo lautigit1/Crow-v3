@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Container, Logo, Icon, Avatar, Button } from "@/shared/ui";
 import { AccountMenu } from "@/features/auth/AccountMenu";
+import { CartPreview } from "@/features/cart/CartPreview";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useCart } from "@/app/providers/CartProvider";
 import { useScrolled } from "@/shared/lib/useScrolled";
@@ -233,29 +234,10 @@ function ActionRow({ onSearchOpen }: { onSearchOpen: () => void }) {
         <Icon name="search" size={16} />
       </button>
 
-      <CartButton />
+      <CartPreview />
 
       <AccountMenu />
     </div>
-  );
-}
-
-// ── Cart button ───────────────────────────────────────────────────────────────
-function CartButton() {
-  const { count } = useCart();
-  return (
-    <Link
-      to="/carrito"
-      aria-label="Ver carrito"
-      className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[rgba(255,255,255,.7)] no-underline outline-none [transition:background-color_.14s,color_.14s] hover:bg-[rgba(255,255,255,.08)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7FB0FF]"
-    >
-      <Icon name="cart" size={16} />
-      {count > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-[16px] min-w-[16px] items-center justify-center rounded-full border-2 border-ink900 bg-primary px-[3px] font-mono text-[9px] font-bold text-white">
-          {count > 99 ? "99+" : count}
-        </span>
-      )}
-    </Link>
   );
 }
 

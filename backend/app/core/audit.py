@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 
 from fastapi import Request
@@ -11,18 +12,32 @@ from app.models.user import User
 _logger = logging.getLogger("crow.audit")
 
 
+def _peer_is_trusted_proxy(peer: str) -> bool:
+    """True si el peer directo cae dentro de alguna red de TRUSTED_PROXIES.
+
+    Acepta IPs sueltas y rangos CIDR (ej. la subnet fija del compose,
+    172.28.0.0/16) — así recrear el contenedor nginx no rompe nada.
+    """
+    try:
+        addr = ipaddress.ip_address(peer)
+    except ValueError:
+        return False  # peer no es una IP (ej. "testclient" en tests)
+    return any(addr in network for network in settings.trusted_proxy_networks)
+
+
 def client_ip(request: Request) -> str | None:
     """
     Returns the real client IP.
 
     Only trusts X-Forwarded-For when the direct peer (request.client.host)
-    is in settings.TRUSTED_PROXIES — prevents IP spoofing via forged headers.
+    is inside one of the settings.TRUSTED_PROXIES networks — prevents IP
+    spoofing via forged headers.
 
     In local dev (TRUSTED_PROXIES is empty), falls back to request.client.host
     directly so rate limiting still works without any extra configuration.
     """
     peer = request.client.host if request.client else None
-    if peer and peer in settings.trusted_proxy_set:
+    if peer and _peer_is_trusted_proxy(peer):
         fwd = request.headers.get("x-forwarded-for")
         if fwd:
             return fwd.split(",")[0].strip()

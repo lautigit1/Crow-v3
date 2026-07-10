@@ -23,7 +23,12 @@ from app.core.config import settings
 from app.core.database import Base, check_db_connection, engine
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, get_logger
-from app.core.middleware import RequestIDMiddleware, RequestLoggingMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import (
+    CSRFOriginMiddleware,
+    RequestIDMiddleware,
+    RequestLoggingMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 logger = get_logger("crow.startup")
 
@@ -62,7 +67,27 @@ async def lifespan(app: FastAPI):
             "antes de iniciar (ej: https://crowrepuestos.com)."
         )
 
+    if settings.is_production and not settings.REDIS_URL:
+        # Sin Redis, la blocklist de tokens y los rate limits viven en memoria
+        # por proceso: con más de un worker/instancia la revocación de sesiones
+        # deja de ser consistente en silencio. Mejor no arrancar.
+        raise RuntimeError(
+            "REDIS_URL no está configurada con ENVIRONMENT=production. "
+            "La revocación de tokens y el rate limiting requieren Redis para "
+            "ser consistentes entre workers (ej: redis://:password@redis:6379/0)."
+        )
+
     configure_logging(level="DEBUG" if not settings.is_production else "INFO")
+
+    if settings.is_production and not settings.trusted_proxy_networks:
+        # No es fatal (un deploy sin proxy reverso es legítimo), pero detrás de
+        # nginx/Caddy sin esto todas las requests aparecen con la IP del proxy:
+        # audit logs inútiles y rate limiting agrupando a todos los usuarios.
+        logger.warning(
+            "TRUSTED_PROXIES está vacía en producción — si el API corre detrás "
+            "de un proxy reverso, seteala (ej: 172.28.0.0/16) para ver las IPs "
+            "reales de los clientes."
+        )
     logger.info(
         "Starting Crow Repuestos API",
         extra={
@@ -120,10 +145,11 @@ app = FastAPI(
 )
 
 # Middleware (applied in reverse order -- last added = outermost)
-# Outermost -> innermost: CORS -> Security headers -> Request ID -> Request logging
+# Outermost -> innermost: CORS -> CSRF origin check -> Security headers -> Request ID -> Request logging
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CSRFOriginMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

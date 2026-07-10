@@ -35,6 +35,7 @@ export function ProductImage({
   imageUrl,
   ratio = 1.4,
   radius = 0,
+  compact = false,
 }: {
   name: string;
   sku?: string;
@@ -42,6 +43,14 @@ export function ProductImage({
   imageUrl?: string | null;
   ratio?: number;
   radius?: number;
+  /**
+   * El tile de reemplazo (ícono + label de SKU) está pensado para tiles
+   * grandes (cards de catálogo, imagen de detalle, ~90px+). En miniaturas
+   * chicas (carrito, checkout, filas de tabla) el ícono de 44px y el
+   * label de SKU absoluto se pisan y se ven amontonados/rotos. `compact`
+   * baja el ícono, saca la grilla de textura y el label de SKU.
+   */
+  compact?: boolean;
 }) {
   if (imageUrl) {
     return (
@@ -63,12 +72,14 @@ export function ProductImage({
         background: `linear-gradient(135deg, hsl(${hue} 70% 96%), hsl(${(hue + 40) % 360} 65% 92%))`,
       }}
     >
-      {/* subtle grid texture */}
-      <div className="absolute inset-0 [background-image:linear-gradient(rgba(13,23,40,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(13,23,40,.04)_1px,transparent_1px)] [background-size:22px_22px]" />
+      {/* subtle grid texture -- solo en tiles grandes, en chicos se ve como ruido */}
+      {!compact && (
+        <div className="absolute inset-0 [background-image:linear-gradient(rgba(13,23,40,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(13,23,40,.04)_1px,transparent_1px)] [background-size:22px_22px]" />
+      )}
       <span className="relative opacity-90" style={{ color: `hsl(${hue} 55% 42%)` }}>
-        <Icon name={icon} size={44} strokeWidth={1.4} />
+        <Icon name={icon} size={compact ? 20 : 44} strokeWidth={compact ? 1.6 : 1.4} />
       </span>
-      {sku && (
+      {sku && !compact && (
         <span className="absolute left-3 bottom-2.5 font-mono text-[10px] font-semibold text-textFaint tracking-[0.04em]">
           {sku}
         </span>

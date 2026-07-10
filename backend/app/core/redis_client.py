@@ -57,6 +57,37 @@ def get_redis() -> "_redis_lib.Redis | None":
     return _client
 
 
+# ---------------------------------------------------------------------------
+# Fallback warning (throttled)
+# ---------------------------------------------------------------------------
+_WARN_EVERY_SECONDS = 60.0
+_last_fallback_warn = 0.0
+
+
+def warn_fallback(store: str, exc: Exception | None = None) -> None:
+    """
+    Log (throttled a 1/min) que una operación Redis falló y el store cayó a
+    su implementación en memoria. Antes esto era un `pass` silencioso: con
+    Redis caído y varios workers, la blocklist y los rate limits divergían
+    entre procesos sin dejar ningún rastro.
+
+    Solo aplica cuando Redis ESTABA configurado y falló en runtime — el modo
+    sin REDIS_URL (dev) no pasa por acá.
+    """
+    global _last_fallback_warn
+    import time
+
+    now = time.time()
+    if now - _last_fallback_warn >= _WARN_EVERY_SECONDS:
+        _last_fallback_warn = now
+        logger.warning(
+            "Redis falló en %s (%s) — usando fallback en memoria. "
+            "Con múltiples workers este estado no es consistente entre procesos.",
+            store,
+            exc,
+        )
+
+
 def redis_is_up() -> bool:
     """Quick health probe — returns False if Redis is disabled or unreachable."""
     r = _client

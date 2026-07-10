@@ -1,6 +1,10 @@
+import ipaddress
+import logging
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_logger = logging.getLogger("crow.config")
 
 
 class Settings(BaseSettings):
@@ -25,8 +29,10 @@ class Settings(BaseSettings):
     # ── Auth / JWT ────────────────────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production-please"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30    # short-lived access token
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60   # how long the refresh token lives
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30      # short-lived access token
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 días — el refresh es one-time-use
+    # (rotación + blocklist), revocable en logout e invalidable en masa por
+    # token_version, así que una vida larga no amplía la superficie de ataque.
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     BACKEND_CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
@@ -44,8 +50,10 @@ class Settings(BaseSettings):
 
     # ── Security / Proxy ─────────────────────────────────────────────────────
     TRUSTED_PROXIES: str = ""
-    # Comma-separated IPs of trusted reverse proxies (e.g. nginx container).
-    # Example: "172.18.0.3,10.0.0.1"
+    # Comma-separated IPs or CIDR ranges of trusted reverse proxies.
+    # Examples: "172.18.0.3", "172.28.0.0/16", "10.0.0.1,172.28.0.0/16"
+    # The docker-compose stack pins its network to 172.28.0.0/16 and passes
+    # that subnet by default, so container recreation never breaks this.
     # Leave empty in local dev — X-Forwarded-For is ignored when list is empty.
 
     # ── Rate limiting ─────────────────────────────────────────────────────────
@@ -84,8 +92,19 @@ class Settings(BaseSettings):
         return any(marker in origin for origin in self.cors_origins for marker in markers)
 
     @property
-    def trusted_proxy_set(self) -> frozenset[str]:
-        return frozenset(ip.strip() for ip in self.TRUSTED_PROXIES.split(",") if ip.strip())
+    def trusted_proxy_networks(self) -> tuple["ipaddress.IPv4Network | ipaddress.IPv6Network", ...]:
+        """Parsed TRUSTED_PROXIES entries. Accepts single IPs (→ /32) and CIDRs.
+        Invalid entries are skipped with a warning instead of crashing startup."""
+        networks = []
+        for raw in self.TRUSTED_PROXIES.split(","):
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                networks.append(ipaddress.ip_network(raw, strict=False))
+            except ValueError:
+                _logger.warning("TRUSTED_PROXIES: entrada inválida ignorada: %r", raw)
+        return tuple(networks)
 
     @property
     def is_production(self) -> bool:

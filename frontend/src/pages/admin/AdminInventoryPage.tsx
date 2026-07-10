@@ -7,6 +7,24 @@ import { productApi, type Product } from "@/entities/product";
 import { formatPrice } from "@/shared/lib/format";
 
 const LOW = 5;
+// Tope real del backend en GET /products (`le=100` en products.py) --
+// pedir más de esto en una sola llamada devuelve 422 y el catch de abajo
+// lo silenciaba dejando la página vacía sin importar cuántos productos
+// hubiera. Se pagina en bloques de este tamaño hasta traer el catálogo
+// completo, en vez de asumir que siempre entra en una sola página.
+const FETCH_PAGE = 100;
+
+async function fetchAllProducts(): Promise<Product[]> {
+  const all: Product[] = [];
+  let skip = 0;
+  for (;;) {
+    const r = await productApi.list({ limit: FETCH_PAGE, skip });
+    all.push(...r.items);
+    skip += r.items.length;
+    if (r.items.length === 0 || skip >= r.total) break;
+  }
+  return all;
+}
 
 export function AdminInventoryPage() {
   const [items, setItems] = useState<Product[] | null>(null);
@@ -14,7 +32,7 @@ export function AdminInventoryPage() {
   const [draft, setDraft] = useState<Record<number, number>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
 
-  const load = () => productApi.list({ limit: 200 }).then((r) => setItems(r.items)).catch(() => setItems([]));
+  const load = () => fetchAllProducts().then(setItems).catch(() => setItems([]));
   useEffect(() => void load(), []);
 
   const rows = useMemo(() => {
