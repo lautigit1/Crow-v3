@@ -3,8 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
-import { useAuth } from "@/app/providers/AuthProvider";
-import { apiError } from "@/shared/api/client";
+import { useAuth } from "@/entities/session";
+import { apiError } from "@/shared/api";
 import { AuthShell, MobileTopStrip, MetricTile } from "./AuthShell";
 import { AuthError, FieldRow, PasswordStrengthMeter, StampButton, type FieldDef } from "./AuthFormKit";
 
@@ -174,7 +174,7 @@ export function AuthPanel() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE }}
-                style={{ overflow: "hidden" }}
+                className="overflow-hidden"
               >
                 <FieldRow
                   def={{
@@ -207,7 +207,7 @@ export function AuthPanel() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE }}
-                style={{ overflow: "hidden" }}
+                className="overflow-hidden"
               >
                 <p className="mt-5 font-body text-[11.5px] leading-[1.6] text-ink900/45">
                   Al registrarte aceptás nuestros{" "}

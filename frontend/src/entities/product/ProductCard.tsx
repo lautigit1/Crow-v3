@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { Badge, Icon, ProductImage } from "@/shared/ui";
 import { formatPrice } from "@/shared/lib/format";
 import { useFavorites } from "@/shared/lib/useFavorites";
-import { waLink } from "@/shared/config/contact";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 import type { Product } from ".";
 
 function WaIcon() {
@@ -23,10 +24,19 @@ function WaIcon() {
  * static, this now uses native `hover:`/`group-hover:` CSS instead -- same
  * visual result, no re-render on hover, no DOM mutation.
  */
-export function ProductCard({ product, onQuote }: { product: Product; onQuote: (p: Product) => void }) {
+// React.memo -- hallazgo de "necesidad media" de la auditoría técnica del
+// 2026-07-13: el catálogo renderiza hasta 48 de estas cards por página, y
+// sin memo cada una se re-renderiza en cada render de CatalogPage (ej. al
+// tipear en el buscador antes del debounce, o al abrir el drawer de
+// filtros), no solo cuando cambian sus propios props. Para que el memo
+// evite renders de verdad (no solo lo parezca), `onQuote` tiene que llegar
+// con la misma referencia entre renders -- los call sites (CatalogPage,
+// FavoritesPage) usan useCallback para eso.
+export const ProductCard = memo(function ProductCard({ product, onQuote }: { product: Product; onQuote: (p: Product) => void }) {
   const inStock = product.stock > 0;
   const { isFavorite, toggle } = useFavorites();
   const fav = isFavorite(product.id);
+  const waLink = useWaLink();
 
   const waMsg = `Hola Crow! Me interesa este producto: ${product.name} (SKU: ${product.sku}). ¿Tienen disponibilidad?`;
   const detailUrl = `/producto/${product.id}`;
@@ -124,4 +134,4 @@ export function ProductCard({ product, onQuote }: { product: Product; onQuote: (
       </div>
     </div>
   );
-}
+});

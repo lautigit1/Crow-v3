@@ -5,13 +5,13 @@ import {
   Button, DataTable, Modal, Drawer, Field, Input, Select,
   Badge, CenteredSpinner, Icon, ConfirmModal, type Column,
 } from "@/shared/ui";
-import { useConfirm } from "@/shared/hooks/useConfirm";
+import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { userApi, type User, type Role } from "@/entities/user";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 import { formatDate, formatDateTime } from "@/shared/lib/format";
-import { apiError } from "@/shared/api/client";
-import { color } from "@/shared/config/theme";
+import { apiError } from "@/shared/api";
+import { color } from "@/shared/config";
 
 const ROLES: Role[] = ["USER", "ADMIN"];
 const ROLE_META: Record<Role, { label: string; tone: "primary" | "success" | "neutral" }> = {
@@ -50,9 +50,14 @@ export function AdminUsersPage() {
   const [form, setForm] = useState<EditForm>({ full_name: "", phone: "", role: "USER", is_active: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const load = () => userApi.list().then(setItems).catch(() => setItems([]));
+  const load = () => userApi.list().then(setItems).catch((err) => {
+    console.error("[AdminUsersPage] no se pudieron cargar los usuarios:", err);
+    setItems([]);
+    setLoadError(true);
+  });
   useEffect(() => { void load(); }, []);
 
   const rows = useMemo(() => {
@@ -201,7 +206,7 @@ export function AdminUsersPage() {
             >
               {u.is_active ? "Desactivar" : "Activar"}
             </Button>
-            <Button variant="danger" size="sm" onClick={() => remove(u)}>
+            <Button variant="danger" size="sm" onClick={() => remove(u)} aria-label="Eliminar usuario">
               <Icon name="trash" size={14} />
             </Button>
           </div>
@@ -252,7 +257,13 @@ export function AdminUsersPage() {
       {items === null ? (
         <CenteredSpinner />
       ) : (
-        <DataTable columns={columns} rows={rows} getKey={(u) => u.id} empty="No hay usuarios." onRowClick={setDetail} />
+        <DataTable
+          columns={columns}
+          rows={rows}
+          getKey={(u) => u.id}
+          empty={loadError ? "No se pudieron cargar los usuarios. Recargá la página." : "No hay usuarios."}
+          onRowClick={setDetail}
+        />
       )}
 
       {/* Detail drawer */}
@@ -264,7 +275,7 @@ export function AdminUsersPage() {
         footer={detail && !isMe(detail) && (
           <>
             <Button onClick={() => openEdit(detail)} fullWidth><Icon name="edit" size={15} /> Editar usuario</Button>
-            <Button variant="danger" onClick={() => remove(detail)}><Icon name="trash" size={15} /></Button>
+            <Button variant="danger" onClick={() => remove(detail)} aria-label="Eliminar usuario"><Icon name="trash" size={15} /></Button>
           </>
         )}
       >

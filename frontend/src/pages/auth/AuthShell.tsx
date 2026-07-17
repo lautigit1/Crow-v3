@@ -38,7 +38,7 @@ export function AuthShell({ info, children }: { info: ReactNode; children: React
           <Logo variant="dark" />
           <Link
             to="/"
-            className="font-mono text-[11px] tracking-[.08em] text-[#4E6B82] no-underline transition-colors duration-150 hover:text-[#7FB0FF]"
+            className="font-mono text-[11px] tracking-[.08em] text-[#5E819D] no-underline transition-colors duration-150 hover:text-[#7FB0FF]"
           >
             ← VOLVER AL SITIO
           </Link>
@@ -81,7 +81,7 @@ export function StatusStrip({ dark = true }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
       <span className={`h-[7px] w-[7px] rounded-full ${open ? "bg-[#4ADE80]" : dark ? "bg-[rgba(255,255,255,.3)]" : "bg-textFaint"}`} />
-      <span className={`font-mono text-[10.5px] tracking-[.06em] ${dark ? "text-[#4E6B82]" : "text-textMuted"}`}>
+      <span className={`font-mono text-[10.5px] tracking-[.06em] ${dark ? "text-[#5E819D]" : "text-textMuted"}`}>
         {open ? "ABIERTO AHORA" : "FUERA DE HORARIO"}
       </span>
     </span>
@@ -96,7 +96,7 @@ export function MetricTile({ value, label, accent }: { value: string; label: str
       <div className={`font-display text-[26px] font-black leading-none tracking-[-.02em] ${accent ? "text-[#F2A93B]" : "text-white"}`}>
         {value}
       </div>
-      <div className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[.06em] text-[#5C7891]">{label}</div>
+      <div className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[.06em] text-[#63819C]">{label}</div>
     </div>
   );
 }

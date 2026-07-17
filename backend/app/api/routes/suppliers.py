@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
 
 from app.core import audit
 from app.core.deps import AdminUser, DbSession
@@ -48,7 +47,7 @@ def list_suppliers(
             .where(Product.supplier_id.in_(ids))
             .group_by(Product.supplier_id)
         ).all()
-        counts = {sid: cnt for sid, cnt in rows}
+        counts = dict(rows)
 
     items = [
         SupplierRead.model_validate(s, from_attributes=True).model_copy(update={"product_count": counts.get(s.id, 0)})

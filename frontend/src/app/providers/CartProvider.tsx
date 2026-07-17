@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Product } from "@/entities/product";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 
 const GUEST_KEY = "crow_cart_guest_v1";
 const userKey = (userId: number) => `crow_cart_user_${userId}_v1`;

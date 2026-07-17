@@ -7,12 +7,13 @@ Strategy:
 - Fixtures for regular user, admin user, auth cookies, and domain objects
 """
 import os
+
 os.environ["TESTING"] = "1"  # must be set before importing app
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base, get_db
 from app.core.ratelimit import LoginRateLimiter

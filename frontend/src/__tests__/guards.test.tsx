@@ -3,9 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { AuthProvider } from "@/app/providers/AuthProvider";
+import { AuthProvider } from "@/entities/session";
 import { RequireAuth, RequireAdmin, GuestOnly } from "@/app/router/guards";
-import type { User } from "@/entities/session/model";
+import type { User } from "@/entities/session";
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 

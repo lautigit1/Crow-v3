@@ -18,7 +18,7 @@ export function NotFoundPage() {
         <h1 className="font-display text-2xl font-extrabold text-white mb-3 tracking-[-.01em]">
           Página no encontrada
         </h1>
-        <p className="font-body text-[15px] text-[#4E6B82] mb-9 max-w-[340px] mx-auto">
+        <p className="font-body text-[15px] text-[#5E819D] mb-9 max-w-[340px] mx-auto">
           La URL no existe o fue movida. Podés volver al inicio y seguir navegando.
         </p>
 

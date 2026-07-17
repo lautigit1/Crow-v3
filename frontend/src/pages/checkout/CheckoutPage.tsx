@@ -6,8 +6,8 @@ import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useCart } from "@/app/providers/CartProvider";
 import { useIsOpenNow } from "@/shared/lib/useIsOpenNow";
 import { formatPrice } from "@/shared/lib/format";
-import { contact, waLink } from "@/shared/config/contact";
-import { apiError } from "@/shared/api/client";
+import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings";
+import { apiError } from "@/shared/api";
 import { orderApi, PAYMENT_METHODS, PAYMENT_METHOD_HINT, type Order, type PaymentMethod } from "@/entities/order";
 import { Container, Button, Textarea, Icon, ProductImage, type IconName } from "@/shared/ui";
 
@@ -104,15 +104,13 @@ function SummaryPanel({
   subtotal: number; count: number; disabled: boolean; submitting: boolean; onConfirm: () => void;
 }) {
   const open = useIsOpenNow();
+  const contact = useSiteSettings();
   return (
     <div className="relative overflow-hidden rounded-2xl bg-ink900 p-7 lg:sticky lg:top-24">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(520px 340px at 100% 0%, rgba(0,87,217,.24), transparent 65%)" }}
-      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(520px_340px_at_100%_0%,rgba(0,87,217,.24),transparent_65%)]" />
 
       <div className="relative">
-        <div className="font-mono text-[11.5px] font-bold uppercase tracking-[.1em] text-[#5C7891]">Resumen</div>
+        <div className="font-mono text-[11.5px] font-bold uppercase tracking-[.1em] text-[#63819C]">Resumen</div>
 
         <div className="mt-5 flex items-center justify-between border-t border-[rgba(255,255,255,.08)] pt-5">
           <span className="font-body text-[14px] text-[#8AA3BC]">Subtotal · {count} {count === 1 ? "ítem" : "ítems"}</span>
@@ -120,7 +118,7 @@ function SummaryPanel({
         </div>
         <div className="mt-2.5 flex items-center justify-between">
           <span className="font-body text-[14px] text-[#8AA3BC]">Envío / retiro</span>
-          <span className="font-mono text-[13px] text-[#5C7891]">A coordinar</span>
+          <span className="font-mono text-[13px] text-[#63819C]">A coordinar</span>
         </div>
 
         <div className="mt-5 flex items-center justify-between border-t border-[rgba(255,255,255,.08)] pt-5">
@@ -143,17 +141,17 @@ function SummaryPanel({
           {submitting ? "Confirmando…" : "Confirmar pedido"}
         </motion.button>
 
-        <p className="mt-3.5 text-center font-body text-[12.5px] leading-snug text-[#5C7891]">
+        <p className="mt-3.5 text-center font-body text-[12.5px] leading-snug text-[#63819C]">
           Sin cobro online acá — el pago y la entrega se coordinan después.
         </p>
 
         <div className="mt-6 flex items-center justify-between border-t border-[rgba(255,255,255,.08)] pt-5">
-          <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[.06em] text-[#5C7891]">
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[.06em] text-[#63819C]">
             <Icon name="shieldCheck" size={13} className="text-[#4ADE80]" /> Garantía de fábrica
           </span>
-          <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[.06em] text-[#5C7891]">
+          <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[.06em] text-[#63819C]">
             <span className={clsx("h-[6px] w-[6px] rounded-full", open ? "bg-[#4ADE80]" : "bg-[rgba(255,255,255,.3)]")} />
-            {contact.city.split(",")[0]}
+            {contact.address.split(",")[0]}
           </span>
         </div>
       </div>
@@ -181,6 +179,7 @@ function EmptyCheckout() {
 
 // ── Éxito ─────────────────────────────────────────────────────────────────────
 function OrderSuccess({ order }: { order: Order }) {
+  const waLink = useWaLink();
   const waMsg = `Hola Crow! Acabo de hacer el Pedido #${order.id}. ¿Cómo seguimos con el pago y la entrega?`;
   const steps = [
     "Un asesor real revisa tu pedido y confirma stock y precio.",

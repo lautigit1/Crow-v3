@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { favoriteApi } from "@/entities/favorite";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 
 /**
  * Favoritos respaldados por la API cuando hay sesión iniciada.
@@ -73,8 +73,20 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   const isFavorite = useCallback((id: number) => ids.includes(id), [ids]);
 
+  // Sin memoizar, este objeto es literal nuevo en cada render de
+  // FavoritesProvider -- cualquier componente que use `useFavorites()` (y
+  // via useContext) re-renderiza aunque `ids`/`loading` no hayan cambiado,
+  // cada vez que el provider se re-renderiza por cualquier motivo (ej. un
+  // cambio de estado en AuthProvider, que está arriba en el árbol). Con
+  // useMemo, la referencia del value solo cambia cuando alguna de sus
+  // dependencias reales cambia.
+  const value = useMemo(
+    () => ({ ids, toggle, isFavorite, loading, refresh: fetchFavorites }),
+    [ids, toggle, isFavorite, loading, fetchFavorites],
+  );
+
   return (
-    <FavoritesContext.Provider value={{ ids, toggle, isFavorite, loading, refresh: fetchFavorites }}>
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   );

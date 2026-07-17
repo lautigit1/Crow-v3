@@ -2,7 +2,7 @@ import { useState } from "react";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Container, Button, Card } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
-import { contact, waLink } from "@/shared/config/contact";
+import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings";
 
 const FAQ = [
   { q: "¿Hacen envíos?", a: "Sí. Despachamos a todo el país; coordinamos por WhatsApp según tu ubicación." },
@@ -14,6 +14,8 @@ const FAQ = [
 export function ContactPage() {
   usePageMeta("Contacto", "Contactá a Crow Repuestos por WhatsApp o cotización online. Mendoza ciudad, respuesta en menos de 1 hora.");
   const [open, setOpen] = useState(false);
+  const contact = useSiteSettings();
+  const waLink = useWaLink();
 
   return (
     <>
@@ -33,10 +35,10 @@ export function ContactPage() {
             <Card>
               <div className="font-mono text-[11px] tracking-[.14em] text-primary mb-[18px]">DATOS DE CONTACTO</div>
               {[
-                ["Teléfono", contact.phoneDisplay],
+                ["Teléfono", contact.phone_display],
                 ["Correo", contact.email],
                 ["Horario", contact.hours],
-                ["Ubicación", contact.city],
+                ["Ubicación", contact.address],
               ].map(([label, value], i, arr) => (
                 <div key={label}>
                   <div className="flex flex-col gap-1">

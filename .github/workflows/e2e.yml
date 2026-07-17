@@ -1,0 +1,100 @@
+name: E2E (Playwright)
+
+# Corre los 12 tests E2E contra el stack completo real (docker compose: Postgres +
+# Redis + API + nginx/frontend), no un mock -- hallazgo "Alta" #12 de la
+# auditoría técnica del 2026-07-13. Bloqueante en CI.
+#
+# Se dispara en push/PR a master igual que los otros workflows, pero además
+# solo cuando cambia código que puede afectar el flujo E2E (frontend,
+# backend, o los specs mismos) para no correr un job de ~5-10 min en cada
+# cambio de documentación.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "docker-compose.yml"
+      - ".github/workflows/e2e.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "docker-compose.yml"
+      - ".github/workflows/e2e.yml"
+
+jobs:
+  e2e:
+    name: Playwright E2E (stack completo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        # Solo Chromium -- es el único proyecto configurado en playwright.config.ts.
+        run: npx playwright install --with-deps chromium
+
+      - name: Levantar stack completo (docker compose)
+        env:
+          # Mismas variables que .env.example -- las credenciales del admin
+          # seedeado tienen que coincidir con los defaults que usan los
+          # specs E2E (ver frontend/e2e/helpers.ts).
+          SECRET_KEY: "ci-e2e-secret-key-not-used-in-production"
+          POSTGRES_PASSWORD: "ci-e2e-postgres-password"
+          SEED_ADMIN_EMAIL: "admin@crowrepuestos.com"
+          SEED_ADMIN_PASSWORD: "AdminCrow2026!"
+          SEED_USER_EMAIL: "cliente@crowrepuestos.com"
+          SEED_USER_PASSWORD: "cliente1234"
+        run: docker compose up --build -d
+
+      - name: Esperar a que la API esté healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/health > /dev/null; then
+              echo "API healthy"
+              exit 0
+            fi
+            echo "Esperando API... ($i/30)"
+            sleep 5
+          done
+          echo "API nunca quedó healthy -- logs:"
+          docker compose logs api
+          exit 1
+
+      - name: Correr tests E2E
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: "http://localhost:8080"
+          E2E_ADMIN_PASSWORD: "AdminCrow2026!"
+        run: npm run e2e
+
+      - name: Subir reporte de Playwright (si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      - name: Logs del stack (si falla)
+        if: failure()
+        run: docker compose logs
+
+      - name: Apagar stack
+        if: always()
+        run: docker compose down -v

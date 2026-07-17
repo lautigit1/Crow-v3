@@ -1,0 +1,43 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# Set conservador para una primera adopción sobre un repo ya existente:
+# errores reales (pyflakes), estilo pycodestyle, imports (isort), bugs
+# comunes (flake8-bugbear) y comprehensions. No se suma todo lo que ruff
+# ofrece (ej. flake8-annotations, pandas-vet) para no generar cientos de
+# hallazgos de estilo puro en el primer pase -- el objetivo de este
+# hallazgo de auditoría es tener un gate real bloqueante en CI, no
+# reescribir el repo entero de una sola vez.
+select = ["E", "F", "I", "B", "C4", "UP"]
+ignore = [
+  "E501",  # line-length ya la controla `line-length` de arriba con margen (120); no duplicar el chequeo como error de estilo
+  # UP042/UP046 sugieren sintaxis que requiere Python 3.11+ (`enum.StrEnum`)
+  # o 3.12+ (parámetros de tipo genéricos estilo PEP 695). El Dockerfile de
+  # producción y el CI (`backend.yml`) usan Python 3.12, pero el entorno de
+  # verificación local usado para correr los tests de este cambio es 3.10 --
+  # adoptar esa sintaxis rompería la posibilidad de verificar localmente sin
+  # aportar ningún beneficio funcional. Se puede revisar cuando se confirme
+  # que todo el equipo/CI está en 3.11+ de forma consistente.
+  "UP042",
+  "UP046",
+  # UP017 sugiere `datetime.UTC` en vez de `datetime.timezone.utc` -- ese
+  # alias tampoco existe antes de Python 3.11 (mismo problema de fondo que
+  # UP042/UP046 de arriba). Se detectó porque `--fix` lo aplicó automáticamente
+  # y rompió la suite de tests corriendo en el Python 3.10 del entorno de
+  # verificación local (`ImportError: cannot import name 'UTC'`).
+  "UP017",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Los tests usan fixtures/imports de pytest que ruff no siempre puede
+# resolver como "usados", y repiten arrange/act/assert con nombres cortos
+# a propósito por legibilidad -- de acuerdo al criterio común de proyectos
+# FastAPI, se relaja `B008` (llamadas en defaults, patrón normal de
+# `Depends(...)`) en toda la app, no solo en tests.
+"**/*.py" = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

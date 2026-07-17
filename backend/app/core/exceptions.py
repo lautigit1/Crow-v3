@@ -71,7 +71,7 @@ async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JS
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     # Flatten Pydantic's nested errors into a readable list
     errors = [
-        f"{' → '.join(str(l) for l in e['loc'])}: {e['msg']}"
+        f"{' → '.join(str(part) for part in e['loc'])}: {e['msg']}"
         for e in exc.errors()
     ]
     logger.info(

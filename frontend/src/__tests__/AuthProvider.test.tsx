@@ -3,8 +3,7 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import { AuthProvider, useAuth } from "@/app/providers/AuthProvider";
-import type { User } from "@/entities/session/model";
+import { AuthProvider, useAuth, type User } from "@/entities/session";
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 

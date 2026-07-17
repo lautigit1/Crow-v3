@@ -1,15 +1,9 @@
 import { useRef, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { Button, Container, Icon, Reveal, type IconName } from "@/shared/ui";
-import { contact, waLink } from "@/shared/config/contact";
+import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings";
 
 const WA_MSG = "Hola Crow Repuestos, quiero consultar disponibilidad de un repuesto.";
-
-const CONTACT_ITEMS: { icon: IconName; label: string; href?: string; iconBg: string; iconText: string }[] = [
-  { icon: "phone", label: contact.phoneDisplay, href: `tel:${contact.phoneTel}`, iconBg: "bg-[#EEF4FF]", iconText: "text-primary" },
-  { icon: "mail",  label: contact.email,        href: `mailto:${contact.email}`, iconBg: "bg-[#F5F3FF]", iconText: "text-[#7C3AED]" },
-  { icon: "clock", label: contact.hours,                                        iconBg: "bg-[#FFFBEB]", iconText: "text-[#D97706]" },
-];
 
 // T10e/T10f/T10g/T10h fueron iterando color y composición pero todas
 // compartían la misma premisa: un panel separado (con borde, sombra y/o
@@ -26,6 +20,14 @@ const CONTACT_ITEMS: { icon: IconName; label: string; href?: string; iconBg: str
 export function CtaFinal({ onQuote }: { onQuote: () => void }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [spot, setSpot] = useState({ x: 30, y: 30 });
+  const contact = useSiteSettings();
+  const waLink = useWaLink();
+
+  const CONTACT_ITEMS: { icon: IconName; label: string; href?: string; iconBg: string; iconText: string }[] = [
+    { icon: "phone", label: contact.phone_display, href: `tel:+${contact.whatsapp_number}`, iconBg: "bg-[#EEF4FF]", iconText: "text-primary" },
+    { icon: "mail",  label: contact.email,          href: `mailto:${contact.email}`,          iconBg: "bg-[#F5F3FF]", iconText: "text-[#7C3AED]" },
+    { icon: "clock", label: contact.hours,                                                     iconBg: "bg-[#FFFBEB]", iconText: "text-[#D97706]" },
+  ];
 
   const handleMouseMove = (e: MouseEvent<HTMLElement>) => {
     const rect = sectionRef.current?.getBoundingClientRect();

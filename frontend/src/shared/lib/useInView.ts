@@ -25,6 +25,11 @@ export function useInView(options?: IntersectionObserverInit): [React.RefObject<
 
     obs.observe(el);
     return () => obs.disconnect();
+    // Intencional: corre una sola vez al montar. Los consumidores suelen
+    // pasar un objeto `options` literal inline en cada render -- si
+    // `options` estuviera en las deps, el observer se recrearía en cada
+    // render de esos consumidores en vez de una sola vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [ref, inView];

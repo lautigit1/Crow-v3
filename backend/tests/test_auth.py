@@ -9,17 +9,11 @@ Tests for authentication flows:
   - Forgot-password (always 204, rate limit)
   - Reset-password (success, invalid token, reuse rejected)
 """
-import time
 
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from app.core.security import create_reset_token, hash_password
-from app.core.token_blocklist import token_blocklist
 from app.models.user import User, UserRole
-from tests.conftest import login_as
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -61,6 +55,28 @@ class TestRegister:
 
     def test_register_weak_password(self, client, db):
         r = _register(client, password="123")
+        assert r.status_code == 422
+
+    def test_register_oversized_full_name_rejected(self, client, db):
+        # Sin max_length en el schema, esto pasaba la validación de Pydantic
+        # y recién fallaba en el INSERT contra VARCHAR(120) de Postgres con
+        # un 503 en vez de un 422 -- ver RegisterRequest en schemas/auth.py.
+        r = client.post(
+            "/api/auth/register",
+            json={"full_name": "A" * 121, "email": "toolong@test.com", "password": "Password1!"},
+        )
+        assert r.status_code == 422
+
+    def test_register_oversized_phone_rejected(self, client, db):
+        r = client.post(
+            "/api/auth/register",
+            json={
+                "full_name": "New User",
+                "email": "toolongphone@test.com",
+                "password": "Password1!",
+                "phone": "1" * 41,
+            },
+        )
         assert r.status_code == 422
 
 

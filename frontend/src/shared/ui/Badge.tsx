@@ -11,7 +11,12 @@ const toneClasses: Record<Tone, string> = {
   primary: "bg-primarySoft text-primaryDark border border-[#C7DBFB]",
   success: "bg-successSoft text-success border border-[#BBF7D0]",
   warning: "bg-warningSoft text-warning border border-[#FDE68A]",
-  danger: "bg-dangerSoft text-danger border border-[#FECACA]",
+  // text-danger (#DC2626) sobre bg-dangerSoft daba 3.95:1 -- por debajo del
+  // mínimo WCAG AA de 4.5:1 para texto normal (el badge usa 11px, no
+  // califica como "texto grande"). #C92020 es el mismo rojo oscurecido
+  // apenas lo necesario para pasar (4.63:1); en cualquier otro contexto
+  // (botones, texto sobre blanco) sigue usándose `danger` sin cambios.
+  danger: "bg-dangerSoft text-[#C92020] border border-[#FECACA]",
 };
 
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: Tone }) {

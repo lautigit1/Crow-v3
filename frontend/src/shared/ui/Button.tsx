@@ -7,9 +7,9 @@ type Size = "sm" | "md" | "lg";
 // Tailwind classes below are a 1:1 translation of the previous CSSProperties
 // objects (see git history) -- exact px/hex values, not Tailwind's default
 // scale, so there is zero visual diff. Colors use the custom tokens defined
-// in tailwind.config.js (generated from shared/config/theme.ts); the two
-// one-off whatsapp hover colors aren't tokens, so they stay as arbitrary
-// values.
+// in tailwind.config.ts (imported directly from shared/config/theme.ts, the
+// single source of truth for the palette); the two one-off whatsapp hover
+// colors aren't tokens, so they stay as arbitrary values.
 const sizeClasses: Record<Size, string> = {
   sm: "h-[38px] px-4 text-[13px]",
   md: "h-[44px] px-5 text-[14px]",

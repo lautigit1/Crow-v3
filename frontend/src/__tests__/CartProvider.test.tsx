@@ -10,7 +10,7 @@ import type { Product } from "@/entities/product";
 // login/logout paso a paso.
 
 const mockUseAuth = vi.fn();
-vi.mock("@/app/providers/AuthProvider", () => ({
+vi.mock("@/entities/session", () => ({
   useAuth: () => mockUseAuth(),
 }));
 

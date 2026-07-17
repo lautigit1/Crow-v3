@@ -1,6 +1,7 @@
 # Stack de PRODUCCIÓN — ver DEPLOY.md para el procedimiento completo.
 #
-#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
 #
 # Diferencias con el compose de desarrollo:
 #   - Ningún servicio interno publica puertos al host: solo Caddy (80/443).
@@ -8,6 +9,12 @@
 #   - POSTGRES_PASSWORD y REDIS_PASSWORD son OBLIGATORIAS (compose falla si faltan).
 #   - ENVIRONMENT=production: el API corre `alembic upgrade head` al arrancar,
 #     exige SECRET_KEY/REDIS_URL/CORS reales, apaga Swagger y no crea datos demo.
+#   - `api`/`web` usan `image:` (imágenes ya construidas y publicadas en GHCR
+#     por .github/workflows/release.yml al pushear un tag `vX.Y.Z`), no
+#     `build:` -- ver la sección "Versionado y rollback" de DEPLOY.md. Esto es
+#     lo que hace posible un rollback real: volver a una versión anterior es
+#     cambiar `IMAGE_TAG` en `.env` y `pull` + `up -d`, sin rebuildear nada en
+#     el servidor (que además borraría la imagen vieja del cache local).
 
 services:
   db:
@@ -45,8 +52,41 @@ services:
       timeout: 3s
       retries: 5
 
+  # Connection pooler externo -- hallazgo de "necesidad media" de la
+  # auditoría técnica del 2026-07-13. Hoy el API corre un solo proceso
+  # uvicorn, así que el pool de SQLAlchemy (DB_POOL_SIZE=5 + overflow=10)
+  # nunca satura Postgres por sí solo -- pero escalar el API a más de una
+  # réplica (o a `uvicorn --workers N`) multiplicaría ese pool por cada
+  # instancia, y Postgres tiene un límite fijo de conexiones. pgbouncer en
+  # modo transacción multiplexa muchas conexiones de cliente sobre pocas
+  # conexiones reales a Postgres, así que escalar el API más adelante no
+  # requiere tocar esto de nuevo. Modo transacción es seguro acá: cada
+  # request abre una única transacción de principio a fin (`get_db()` en
+  # database.py) y el código no usa features de sesión (LISTEN/NOTIFY,
+  # advisory locks, temp tables) que ese modo no soporta.
+  pgbouncer:
+    image: edoburu/pgbouncer:1.24.1-p1
+    container_name: crow_pgbouncer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://crow:${POSTGRES_PASSWORD}@db:5432/crow_repuestos
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+      AUTH_TYPE: scram-sha-256
+    networks:
+      - crow_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432 -U crow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
-    build: ./backend
+    image: ghcr.io/lautigit1/crow-v3-api:${IMAGE_TAG:-latest}
     container_name: crow_api
     restart: unless-stopped
     depends_on:
@@ -54,9 +94,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
     environment:
       ENVIRONMENT: production
-      DATABASE_URL: postgresql+psycopg2://crow:${POSTGRES_PASSWORD}@db:5432/crow_repuestos
+      # El API pega a pgbouncer, no directo a Postgres -- ver el comentario
+      # en el servicio `pgbouncer` de arriba. Las migraciones (Alembic, ver
+      # ALEMBIC_DATABASE_URL) siguen yendo directo a `db`.
+      DATABASE_URL: postgresql+psycopg2://crow:${POSTGRES_PASSWORD}@pgbouncer:6432/crow_repuestos
+      ALEMBIC_DATABASE_URL: postgresql+psycopg2://crow:${POSTGRES_PASSWORD}@db:5432/crow_repuestos
       SECRET_KEY: ${SECRET_KEY:?Definí SECRET_KEY en .env (openssl rand -hex 32)}
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       BACKEND_CORS_ORIGINS: https://${DOMAIN:?Definí DOMAIN en .env (ej. crowrepuestos.com)}
@@ -73,6 +119,13 @@ services:
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # Procesos uvicorn -- ver el comentario en backend/Dockerfile. 4 por
+      # default para producción; pgbouncer (DEFAULT_POOL_SIZE=20,
+      # MAX_CLIENT_CONN=200) ya soporta esto sin cambios. Ajustar según
+      # cores disponibles en el servidor (regla general: 2×cores, sin pasar
+      # el límite de conexiones de pgbouncer).
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
     networks:
       - crow_net
     healthcheck:
@@ -83,7 +136,10 @@ services:
       start_period: 30s
 
   web:
-    build: ./frontend
+    # VITE_SENTRY_DSN ya quedó compilado dentro de este bundle en el momento
+    # del build en CI (.github/workflows/release.yml, build-arg) -- no es un
+    # env var de runtime, así que no hay nada que pasarle acá.
+    image: ghcr.io/lautigit1/crow-v3-web:${IMAGE_TAG:-latest}
     container_name: crow_web
     restart: unless-stopped
     depends_on:

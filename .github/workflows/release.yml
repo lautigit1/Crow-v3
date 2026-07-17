@@ -1,0 +1,69 @@
+name: Release (build + publish imágenes Docker)
+
+# Hallazgo "Alta" #16 de la auditoría técnica del 2026-07-13: versionado de
+# imágenes Docker + soporte real de rollback. Se dispara al pushear un tag
+# `vX.Y.Z` (el mismo esquema SemVer que ya documenta CONTRIBUTING.md) --
+# construye las imágenes de `api` y `web` y las publica en GitHub Container
+# Registry (GHCR) taggeadas con esa versión y con `latest`. `DEPLOY.md`
+# documenta cómo usar esos tags para desplegar una versión específica y
+# cómo volver a una anterior (rollback) sin rebuildear nada en el servidor.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: lautigit1
+  IMAGE_PREFIX: crow-v3
+
+jobs:
+  build-and-push:
+    name: Build + push (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [api, web]
+        include:
+          - service: api
+            context: ./backend
+          - service: web
+            context: ./frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extraer versión del tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Login en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build + push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          # VITE_SENTRY_DSN solo aplica al build de `web` (Vite lo inyecta en
+          # tiempo de build, ver frontend/Dockerfile) -- ignorado sin efecto
+          # en el build de `api`. Secret opcional: si no está seteado en el
+          # repo, el build-arg llega vacío y Sentry queda deshabilitado en
+          # la imagen (mismo comportamiento default que en local).
+          build-args: |
+            VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

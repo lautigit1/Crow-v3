@@ -3,6 +3,7 @@ import { formatPrice, formatNumber, formatDate, formatDateTime } from "@/shared/
 
 describe("formatPrice", () => {
   it("formatea un número como pesos argentinos sin decimales", () => {
+    // eslint-disable-next-line no-irregular-whitespace -- el espacio no separable de la linea de abajo es intencional, es justo lo que ese comentario explica
     // Intl usa espacios no separables ( ) entre el símbolo y el número
     expect(formatPrice(1500)).toBe(formatPrice(1500));
     expect(formatPrice(1500)).toContain("1.500");

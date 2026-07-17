@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useCart, type CartItem } from "@/app/providers/CartProvider";
-import { useConfirm } from "@/shared/hooks/useConfirm";
+import { useConfirm } from "@/shared/lib/useConfirm";
 import { formatPrice } from "@/shared/lib/format";
 import { Container, Button, Icon, ProductImage, ConfirmModal } from "@/shared/ui";
 
@@ -63,7 +63,7 @@ function CartRow({ item, index }: { item: CartItem; index: number }) {
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.28, ease: EASE }}
-      style={{ overflow: "hidden" }}
+      className="overflow-hidden"
     >
       <div className="flex items-center gap-5 border-b border-border py-5 last:border-b-0">
         <span className="hidden w-7 shrink-0 font-mono text-[12.5px] font-bold text-ink900/25 sm:block">
@@ -125,19 +125,16 @@ function EmptyCart() {
 function SummaryPanel({ count, subtotal, onContinue }: { count: number; subtotal: number; onContinue: () => void }) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-ink900 p-7 md:p-9">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(560px 340px at 100% 0%, rgba(0,87,217,.24), transparent 65%)" }}
-      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(560px_340px_at_100%_0%,rgba(0,87,217,.24),transparent_65%)]" />
       <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-2 font-mono text-[11.5px] uppercase tracking-[.08em] text-[#5C7891]">
+          <div className="mb-2 font-mono text-[11.5px] uppercase tracking-[.08em] text-[#63819C]">
             Subtotal · {count} {count === 1 ? "ítem" : "ítems"}
           </div>
           <div className="font-display text-[36px] font-black leading-none text-white sm:text-[42px]">
             {formatPrice(subtotal)}
           </div>
-          <div className="mt-2.5 font-body text-[13.5px] text-[#5C7891]">
+          <div className="mt-2.5 font-body text-[13.5px] text-[#63819C]">
             El pago y la entrega se coordinan al confirmar el pedido.
           </div>
         </div>

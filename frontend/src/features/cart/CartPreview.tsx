@@ -19,7 +19,7 @@ import { formatPrice } from "@/shared/lib/format";
 
 // ── Trigger ───────────────────────────────────────────────────────────────────
 // `bg-transparent` es obligatorio acá: Preflight está apagado en este
-// proyecto (tailwind.config.js), así que un <button> sin fondo propio
+// proyecto (tailwind.config.ts), así que un <button> sin fondo propio
 // muestra el fondo por defecto del navegador (blanco/gris) en vez de
 // quedar transparente -- exactamente el bug que reportó el usuario
 // ("el boton del carrito esta blanco"). Mismo problema, mismo fix que ya
@@ -52,7 +52,7 @@ function PreviewRow({ item, onRemove, onNavigate }: { item: CartItem; onRemove: 
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      style={{ overflow: "hidden" }}
+      className="overflow-hidden"
     >
       <div className="flex items-center gap-3.5 py-3.5">
         <Link

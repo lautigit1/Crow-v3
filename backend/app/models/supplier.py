@@ -25,4 +25,4 @@ class Supplier(Base):
     )
 
     # back-ref so we can count products per supplier
-    products: Mapped[list["Product"]] = relationship("Product", back_populates="supplier")  # type: ignore[name-defined]
+    products: Mapped[list["Product"]] = relationship("Product", back_populates="supplier")  # type: ignore[name-defined]  # noqa: F821 -- forward ref resuelta por el mapper registry de SQLAlchemy en runtime

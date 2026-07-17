@@ -20,6 +20,17 @@ class Settings(BaseSettings):
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+psycopg2://crow:crow_dev_password@localhost:5432/crow_repuestos"
 
+    # En producción DATABASE_URL apunta a pgbouncer (pooling en modo
+    # transacción, ver docker-compose.prod.yml), no directo a Postgres --
+    # necesario para que escalar a más de un worker/réplica del API no
+    # agote max_connections de Postgres. Pero las migraciones de Alembic son
+    # DDL corrida fuera del ciclo request/response normal, así que corren
+    # aparte contra Postgres directo en vez de a través del pool de
+    # transacciones (más simple y evita cualquier incompatibilidad futura
+    # entre DDL y el modo transacción de pgbouncer). Vacío en dev (sin
+    # pgbouncer en el compose de desarrollo) y cae a DATABASE_URL.
+    ALEMBIC_DATABASE_URL: str = ""
+
     # SQLAlchemy connection pool
     DB_POOL_SIZE: int = 5        # persistent connections kept open
     DB_MAX_OVERFLOW: int = 10    # extra connections allowed under burst
@@ -77,6 +88,13 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"   # override in production
     RESET_TOKEN_EXPIRE_MINUTES: int = 60
 
+    # ── Error tracking (Sentry) ──────────────────────────────────────────────
+    # Dejar vacío deshabilita Sentry por completo (no se importa el SDK, no se
+    # manda nada a ningún lado) -- útil en dev y obligatorio en tests. Conseguí
+    # el DSN creando un proyecto en sentry.io (o en un Sentry self-hosted).
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.BACKEND_CORS_ORIGINS.split(",") if o.strip()]
@@ -105,6 +123,13 @@ class Settings(BaseSettings):
             except ValueError:
                 _logger.warning("TRUSTED_PROXIES: entrada inválida ignorada: %r", raw)
         return tuple(networks)
+
+    @property
+    def alembic_database_url(self) -> str:
+        """URL que usan las migraciones -- direct-to-Postgres si está
+        configurada, si no cae a DATABASE_URL (mismo comportamiento de
+        siempre en dev, donde no hay pgbouncer de por medio)."""
+        return self.ALEMBIC_DATABASE_URL or self.DATABASE_URL
 
     @property
     def is_production(self) -> bool:

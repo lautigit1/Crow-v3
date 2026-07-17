@@ -1,5 +1,5 @@
 import { LegalLayout, H2, P, UL, InfoBox, Divider } from "./LegalLayout";
-import { contact } from "@/shared/config/contact";
+import { useSiteSettings } from "@/entities/settings/useSiteSettings";
 
 const CHECKS = [
   { ok: true, label: "Contraste de color", desc: "Todos los textos cumplen ratio mínimo WCAG AA (4.5:1 en texto normal, 3:1 en texto grande)." },
@@ -12,6 +12,7 @@ const CHECKS = [
 ];
 
 export function AccesibilidadPage() {
+  const contact = useSiteSettings();
   return (
     <LegalLayout title="Accesibilidad" updated="1 de junio de 2026">
       <InfoBox>
@@ -69,7 +70,7 @@ export function AccesibilidadPage() {
       </P>
       <UL>
         <li>Email: <a href={`mailto:${contact.email}`} className="text-primary">{contact.email}</a></li>
-        <li>WhatsApp: <a href={`https://wa.me/${contact.whatsappNumber}`} target="_blank" rel="noreferrer" className="text-primary">{contact.phoneDisplay}</a></li>
+        <li>WhatsApp: <a href={`https://wa.me/${contact.whatsapp_number}`} target="_blank" rel="noreferrer" className="text-primary">{contact.phone_display}</a></li>
       </UL>
       <P>
         Intentamos responder en un plazo de 5 días hábiles y trabajar en una solución dentro de los 30 días siguientes.

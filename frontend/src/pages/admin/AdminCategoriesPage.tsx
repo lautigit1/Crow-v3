@@ -1,10 +1,10 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, DataTable, Modal, Input, Textarea, CenteredSpinner, Icon, ConfirmModal, type Column } from "@/shared/ui";
-import { useConfirm } from "@/shared/hooks/useConfirm";
+import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { categoryApi, type Category, type CategoryInput } from "@/entities/category";
-import { apiError } from "@/shared/api/client";
+import { apiError } from "@/shared/api";
 import { slugify } from "@/shared/lib/slug";
 
 const empty: CategoryInput = { name: "", slug: "", description: "" };
@@ -19,9 +19,14 @@ export function AdminCategoriesPage() {
   const [form, setForm] = useState<CategoryInput>(empty);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const load = () => categoryApi.list().then(setItems).catch(() => setItems([]));
+  const load = () => categoryApi.list().then(setItems).catch((err) => {
+    console.error("[AdminCategoriesPage] no se pudieron cargar las categorías:", err);
+    setItems([]);
+    setLoadError(true);
+  });
   useEffect(() => void load(), []);
 
   const openNew = () => { setForm(empty); setEditing("new"); setError(""); };
@@ -87,7 +92,7 @@ export function AdminCategoriesPage() {
       render: (c) => (
         <div className="inline-flex gap-2">
           <Button variant="outline" size="sm" onClick={() => openEdit(c)}><Icon name="edit" size={14} /> Editar</Button>
-          <Button variant="danger" size="sm" onClick={() => remove(c)}><Icon name="trash" size={14} /></Button>
+          <Button variant="danger" size="sm" onClick={() => remove(c)} aria-label="Eliminar categoría"><Icon name="trash" size={14} /></Button>
         </div>
       ),
     },
@@ -102,7 +107,12 @@ export function AdminCategoriesPage() {
         action={<Button onClick={openNew}><Icon name="plus" size={16} /> Nueva categoría</Button>}
       />
       {items === null ? <CenteredSpinner /> : (
-        <DataTable columns={columns} rows={items} getKey={(c) => c.id} empty="No hay categorías." />
+        <DataTable
+          columns={columns}
+          rows={items}
+          getKey={(c) => c.id}
+          empty={loadError ? "No se pudieron cargar las categorías. Recargá la página." : "No hay categorías."}
+        />
       )}
 
       <ConfirmModal {...confirmProps} />

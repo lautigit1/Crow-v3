@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
-import { api as apiClient, apiError } from "@/shared/api/client";
+import { api as apiClient, apiError } from "@/shared/api";
 import { Icon } from "@/shared/ui";
 import { AuthShell, InfoBlock, MobileTopStrip } from "./AuthShell";
 import { AuthError, FieldRow, StampButton, type FieldDef } from "./AuthFormKit";

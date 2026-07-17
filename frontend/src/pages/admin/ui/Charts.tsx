@@ -1,4 +1,4 @@
-import { color } from "@/shared/config/theme";
+import { color } from "@/shared/config";
 import type { NamedCount } from "@/entities/dashboard";
 
 const PALETTE = ["#0057D9", "#3B82F6", "#0EA5E9", "#1E293B", "#64748B", "#0D9488", "#7C3AED", "#B45309"];

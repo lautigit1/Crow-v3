@@ -8,13 +8,9 @@ Tests for product endpoints:
   - Admin can create, update, delete (soft)
   - Non-admin cannot mutate
 """
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from app.models.category import Category
 from app.models.product import Product
-
 
 BASE = "/api/products"
 

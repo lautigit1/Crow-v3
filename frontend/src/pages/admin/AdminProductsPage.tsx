@@ -5,16 +5,16 @@ import {
   Button, DataTable, Modal, Drawer, Input, Textarea, Select, Badge, CenteredSpinner, Icon, Pagination,
   ProductImage, ConfirmModal, type Column, type SortState,
 } from "@/shared/ui";
-import { useConfirm } from "@/shared/hooks/useConfirm";
+import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { productApi, type Product, type ProductInput, type ProductSort } from "@/entities/product";
 import { categoryApi, type Category } from "@/entities/category";
 import { brandApi, type Brand } from "@/entities/brand";
 import { supplierApi, type Supplier } from "@/entities/supplier";
-import { uploadApi } from "@/entities/upload/api";
-import { apiError } from "@/shared/api/client";
+import { uploadApi } from "@/entities/upload";
+import { apiError } from "@/shared/api";
 import { formatPrice, formatDateTime } from "@/shared/lib/format";
-import { VEHICLE_TYPES } from "@/shared/config/categories";
+import { VEHICLE_TYPES } from "@/shared/config";
 
 const PAGE = 10;
 
@@ -63,16 +63,30 @@ export function AdminProductsPage() {
 
   // drawer (detail)
   const [detail, setDetail] = useState<Product | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
   useEffect(() => {
-    categoryApi.list().then(setCategories).catch(() => setCategories([]));
-    brandApi.list().then(setBrands).catch(() => setBrands([]));
-    supplierApi.list({ active_only: true, limit: 500 }).then((r) => setSuppliers(r.items)).catch(() => setSuppliers([]));
+    // Datos de soporte para los selects de filtro/formulario -- si alguno
+    // falla, el select correspondiente queda vacío pero el resto de la
+    // página sigue siendo usable, así que solo se loguea (no bloquea).
+    categoryApi.list().then(setCategories).catch((err) => {
+      console.error("[AdminProductsPage] no se pudieron cargar las categorías para el filtro:", err);
+      setCategories([]);
+    });
+    brandApi.list().then(setBrands).catch((err) => {
+      console.error("[AdminProductsPage] no se pudieron cargar las marcas para el filtro:", err);
+      setBrands([]);
+    });
+    supplierApi.list({ active_only: true, limit: 500 }).then((r) => setSuppliers(r.items)).catch((err) => {
+      console.error("[AdminProductsPage] no se pudieron cargar los proveedores para el filtro:", err);
+      setSuppliers([]);
+    });
   }, []);
 
   const reload = () => {
     setItems(null);
+    setLoadError(false);
     const promise =
       tab === "deleted"
         ? productApi.listDeleted({ skip: page * PAGE, limit: PAGE })
@@ -91,9 +105,11 @@ export function AdminProductsPage() {
         setItems(r.items);
         setTotal(r.total);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[AdminProductsPage] no se pudieron cargar los productos:", err);
         setItems([]);
         setTotal(0);
+        setLoadError(true);
       });
   };
 
@@ -249,7 +265,7 @@ export function AdminProductsPage() {
       render: (p) => (
         <div className="inline-flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button variant="outline" size="sm" onClick={() => openEdit(p)}><Icon name="edit" size={14} /> Editar</Button>
-          <Button variant="danger" size="sm" onClick={() => remove(p)}><Icon name="trash" size={14} /></Button>
+          <Button variant="danger" size="sm" onClick={() => remove(p)} aria-label="Eliminar producto"><Icon name="trash" size={14} /></Button>
         </div>
       ),
     },
@@ -348,14 +364,22 @@ export function AdminProductsPage() {
             columns={deletedColumns}
             rows={items}
             getKey={(p) => p.id}
-            empty="No hay productos eliminados."
+            empty={loadError ? "No se pudieron cargar los productos eliminados. Recargá la página." : "No hay productos eliminados."}
             onRowClick={setDetail}
           />
           <Pagination page={page} pageSize={PAGE} total={total} onPage={setPage} />
         </>
       ) : (
         <>
-          <DataTable columns={columns} rows={items} getKey={(p) => p.id} empty="No hay productos." sort={sort} onSort={onSort} onRowClick={setDetail} />
+          <DataTable
+            columns={columns}
+            rows={items}
+            getKey={(p) => p.id}
+            empty={loadError ? "No se pudieron cargar los productos. Recargá la página." : "No hay productos."}
+            sort={sort}
+            onSort={onSort}
+            onRowClick={setDetail}
+          />
           <Pagination page={page} pageSize={PAGE} total={total} onPage={setPage} />
         </>
       )}
@@ -374,7 +398,7 @@ export function AdminProductsPage() {
           ) : (
             <>
               <Button onClick={() => openEdit(detail)} fullWidth><Icon name="edit" size={15} /> Editar</Button>
-              <Button variant="danger" onClick={() => remove(detail)}><Icon name="trash" size={15} /></Button>
+              <Button variant="danger" onClick={() => remove(detail)} aria-label="Eliminar producto"><Icon name="trash" size={15} /></Button>
             </>
           )
         )}

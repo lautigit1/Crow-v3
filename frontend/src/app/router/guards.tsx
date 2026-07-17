@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 import { CenteredSpinner } from "@/shared/ui";
 
 /** Requires any authenticated user. Redirects to /login otherwise. */

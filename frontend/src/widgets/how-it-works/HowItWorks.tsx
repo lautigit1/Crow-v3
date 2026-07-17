@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Container } from "@/shared/ui";
 import { useInView } from "@/shared/lib/useInView";
-import { waLink } from "@/shared/config/contact";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 
 const STEPS = [
   {
@@ -30,6 +30,7 @@ const STEPS = [
 
 export function HowItWorks() {
   const [ref, inView] = useInView();
+  const waLink = useWaLink();
 
   return (
     <section ref={ref as React.RefObject<HTMLElement>} className="bg-ink900 py-[60px] md:py-24 relative overflow-hidden">

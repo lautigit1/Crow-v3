@@ -22,7 +22,7 @@ def build_signature(params: dict[str, str], api_secret: str) -> str:
     included here -- never api_key, never the file itself.
     """
     to_sign = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
-    return hashlib.sha1(f"{to_sign}{api_secret}".encode("utf-8")).hexdigest()
+    return hashlib.sha1(f"{to_sign}{api_secret}".encode()).hexdigest()
 
 
 def new_signed_upload(*, cloud_name: str, api_key: str, api_secret: str, folder: str) -> dict:

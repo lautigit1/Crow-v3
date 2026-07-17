@@ -1,10 +1,10 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal, Field, Input, Textarea, Button } from "@/shared/ui";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 import { quoteApi } from "@/entities/quote";
-import { apiError } from "@/shared/api/client";
-import { waLink } from "@/shared/config/contact";
+import { apiError } from "@/shared/api";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 
 type QuoteModalProps = {
   open: boolean;
@@ -16,6 +16,7 @@ type QuoteModalProps = {
 
 export function QuoteModal({ open, onClose, initialMessage = "", productId = null }: QuoteModalProps) {
   const { user } = useAuth();
+  const waLink = useWaLink();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [vehicle, setVehicle] = useState("");

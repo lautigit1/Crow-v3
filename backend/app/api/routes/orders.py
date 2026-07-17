@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 
 from app.core import audit
 from app.core.deps import AdminUser, CurrentUser, DbSession
@@ -56,7 +57,13 @@ def my_orders(
     """Devuelve los pedidos del usuario autenticado."""
     base = select(Order).where(Order.user_id == current_user.id)
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
-    rows = db.scalars(base.order_by(Order.created_at.desc()).offset(skip).limit(limit)).all()
+    # selectinload evita N+1: sin esto, serializar `OrderRead.items` para
+    # cada pedido de la página dispara una query extra por pedido (hasta
+    # 101 queries con limit=100). Con selectinload son 2 queries totales
+    # sin importar cuántos pedidos haya en la página.
+    rows = db.scalars(
+        base.options(selectinload(Order.items)).order_by(Order.created_at.desc()).offset(skip).limit(limit)
+    ).all()
     return OrderList(items=list(rows), total=total)
 
 
@@ -165,7 +172,9 @@ def admin_list_orders(
     if user_id is not None:
         base = base.where(Order.user_id == user_id)
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
-    rows = db.scalars(base.order_by(Order.created_at.desc()).offset(skip).limit(limit)).all()
+    rows = db.scalars(
+        base.options(selectinload(Order.items)).order_by(Order.created_at.desc()).offset(skip).limit(limit)
+    ).all()
     return OrderList(items=list(rows), total=total)
 
 

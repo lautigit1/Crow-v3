@@ -1,16 +1,20 @@
 from pydantic import BaseModel
 
-# Default site configuration (Argentina). Stored rows override these.
+# Default site configuration -- valores reales del negocio (antes vivían
+# hardcodeados en frontend/src/shared/config/contact.ts). Sirven de valor
+# efectivo cuando todavía no hay filas en la tabla `settings` (instalación
+# nueva) y cualquier clave sin fila propia sigue cayendo acá. Se pueden
+# editar desde el panel admin (Configuración) sin tocar código.
 DEFAULT_SETTINGS: dict[str, str] = {
     "company_name": "Crow Repuestos",
-    "phone_display": "+54 11 2345-6789",
-    "whatsapp_number": "5491123456789",
+    "phone_display": "261 660-0569",
+    "whatsapp_number": "5492616600569",
     "email": "ventas@crowrepuestos.com.ar",
-    "address": "Av. Corrientes 1234 · CABA, Argentina",
+    "address": "Mendoza, Argentina",
     "hours": "Lun–Sáb · 8:00–18:00",
     "instagram": "https://instagram.com/crowrepuestos",
     "facebook": "https://facebook.com/crowrepuestos",
-    "tiktok": "https://tiktok.com/@crowrepuestos",
+    "tiktok": "",
 }
 
 

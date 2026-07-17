@@ -3,12 +3,13 @@ Upsert the admin user with a known password.
 Run inside the API container:
     docker exec -it crow_api python scripts/reset_admin.py
 """
-import sys
 import os
+import sys
 
 sys.path.insert(0, "/app")
 
 from sqlalchemy.orm import Session
+
 from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.models.user import User, UserRole

@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -16,6 +16,16 @@ class QuoteStatus(str, enum.Enum):
 
 class Quote(Base):
     __tablename__ = "quotes"
+
+    # Replica la CHECK constraint de la migración 011 -- ver comentario
+    # equivalente en app/models/product.py. Usa trim() en vez de btrim()
+    # (la función que usa la migración real en Postgres) porque este texto
+    # también se ejecuta contra SQLite en los tests, que no tiene btrim();
+    # trim() sin argumentos es SQL estándar y se comporta igual en ambos
+    # motores (recorta espacios en blanco de los dos extremos).
+    __table_args__ = (
+        CheckConstraint("length(trim(message)) > 0", name="ck_quotes_message_not_blank"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     customer_name: Mapped[str] = mapped_column(String(120))

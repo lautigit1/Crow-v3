@@ -1,4 +1,4 @@
-import { api } from "@/shared/api/client";
+import { api } from "@/shared/api";
 import type { Category } from "@/entities/category";
 import type { Brand } from "@/entities/brand";
 

@@ -1,4 +1,4 @@
-import { api } from "@/shared/api/client";
+import { api } from "@/shared/api";
 import type { User } from "./model";
 
 /** Login — server sets HttpOnly cookies, returns the User object only. */

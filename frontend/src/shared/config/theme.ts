@@ -1,6 +1,17 @@
 /**
- * Design tokens for Crow Repuestos. Inline styles reference these so the
- * corporate palette / typography stay consistent across every component.
+ * Design tokens for Crow Repuestos.
+ *
+ * `color` es la única fuente real de la paleta: tailwind.config.ts la
+ * importa directo (ver comentario ahí) para generar las clases `bg-primary`,
+ * `text-danger`, etc., y un puñado de componentes siguen importándola acá
+ * para casos que una clase estática de Tailwind no puede cubrir --
+ * colores calculados en runtime (hue por hash de nombre, transparencia
+ * `${color}18`) o valores por default de props dinámicas (`stroke` de
+ * Spinner, `accent` de AccountMenu). `font`/`radius`/`shadow`/`layout` ya
+ * no tienen consumidores en JS (el último, AccountMenu.tsx, se migró a
+ * clases Tailwind) -- quedan acá documentados por si hace falta un valor
+ * puntual en runtime más adelante, pero tailwind.config.ts define los suyos
+ * de forma independiente.
  */
 export const color = {
   // Brand

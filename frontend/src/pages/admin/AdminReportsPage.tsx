@@ -6,7 +6,7 @@ import { StatCard } from "./ui/StatCard";
 import { BarChart, DonutChart } from "./ui/Charts";
 import { dashboardApi, type Analytics } from "@/entities/dashboard";
 import { formatPrice } from "@/shared/lib/format";
-import { color } from "@/shared/config/theme";
+import { color } from "@/shared/config";
 import type { IconName } from "@/shared/ui";
 
 export function AdminReportsPage() {
@@ -14,7 +14,10 @@ export function AdminReportsPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    dashboardApi.analytics().then(setData).catch(() => setError(true));
+    dashboardApi.analytics().then(setData).catch((err) => {
+      console.error("[AdminReportsPage] no se pudieron cargar las métricas:", err);
+      setError(true);
+    });
   }, []);
 
   if (error) return <AdminHeader title="Reportes" icon="reports" subtitle="No se pudieron cargar las métricas." />;

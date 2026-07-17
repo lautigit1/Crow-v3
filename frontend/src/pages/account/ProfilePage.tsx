@@ -1,9 +1,9 @@
 import { useState, type FormEvent, type ChangeEvent } from "react";
 import clsx from "clsx";
 import { Field, Input, Button, Avatar, Icon } from "@/shared/ui";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 import { userApi } from "@/entities/user";
-import { apiError } from "@/shared/api/client";
+import { apiError } from "@/shared/api";
 import { formatDate } from "@/shared/lib/format";
 
 // ── Section card ──────────────────────────────────────────────────────────────

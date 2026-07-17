@@ -41,7 +41,7 @@ class Order(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     items: Mapped[list["OrderItem"]] = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
-    user: Mapped["User"] = relationship("User")  # type: ignore[name-defined]
+    user: Mapped["User"] = relationship("User")  # type: ignore[name-defined]  # noqa: F821 -- forward ref resuelta por el mapper registry de SQLAlchemy en runtime
 
 
 class OrderItem(Base):
@@ -58,4 +58,4 @@ class OrderItem(Base):
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     order: Mapped["Order"] = relationship("Order", back_populates="items")
-    product: Mapped["Product"] = relationship("Product")  # type: ignore[name-defined]
+    product: Mapped["Product"] = relationship("Product")  # type: ignore[name-defined]  # noqa: F821 -- forward ref resuelta por el mapper registry de SQLAlchemy en runtime

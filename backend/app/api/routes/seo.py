@@ -14,6 +14,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.deps import DbSession
 from app.models.category import Category
+from app.models.product import Product
 
 router = APIRouter(tags=["seo"])
 
@@ -65,6 +66,32 @@ def sitemap(db: DbSession) -> str:
             today,
             "daily",
             "0.7",
+        ))
+
+    # Dynamic product detail pages — /producto/<id>. Hallazgo "Alta" #17 de
+    # la auditoría técnica del 2026-07-13: el sitemap no incluía ninguna URL
+    # de producto individual, así que Google nunca las descubría por acá
+    # (solo por links internos, mucho más lento e incompleto). Sin límite de
+    # resultados a propósito -- a diferencia del endpoint público
+    # GET /api/products (que sí pagina, `limit<=100`), acá se necesita el
+    # catálogo completo en una sola pasada. Se incluyen todos los productos
+    # no eliminados, sin filtrar por stock: GET /api/products/{id} sirve la
+    # página de detalle igual esté agotado o no (ver products.py,
+    # get_product no filtra por stock, solo por is_deleted), así que la URL
+    # sigue siendo válida y vale la pena que Google la indexe.
+    products = list(db.execute(
+        select(Product.id, Product.updated_at)
+        .where(Product.is_deleted.is_(False))
+        .order_by(Product.id)
+    ).all())
+
+    for product_id, updated_at in products:
+        lastmod = str(updated_at.date()) if updated_at else today
+        entries.append(_url_entry(
+            f"{base}/producto/{product_id}",
+            lastmod,
+            "weekly",
+            "0.6",
         ))
 
     xml = (

@@ -2,7 +2,7 @@ import type * as React from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { Container, Logo } from "@/shared/ui";
-import { contact, waLink } from "@/shared/config/contact";
+import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings";
 
 // FLink / InfoRow links used a `Hoverable` (JS onMouseEnter/Leave) wrapper
 // purely to swap a static text color on hover -- that's exactly what
@@ -62,6 +62,8 @@ function SocialBtn({ href, label, children }: { href: string; label: string; chi
 }
 
 export function Footer() {
+  const contact = useSiteSettings();
+  const waLink = useWaLink();
   return (
     <footer className="bg-ink900 relative overflow-hidden">
       {/* Top accent line */}
@@ -96,8 +98,8 @@ export function Footer() {
 
             {/* Socials */}
             <div className="flex gap-2">
-              <SocialBtn href={contact.social.instagram} label="Instagram"><IgIcon /></SocialBtn>
-              <SocialBtn href={contact.social.facebook} label="Facebook"><FbIcon /></SocialBtn>
+              <SocialBtn href={contact.instagram} label="Instagram"><IgIcon /></SocialBtn>
+              <SocialBtn href={contact.facebook} label="Facebook"><FbIcon /></SocialBtn>
               <SocialBtn href={waLink()} label="WhatsApp"><WaIcon /></SocialBtn>
             </div>
           </div>
@@ -121,10 +123,10 @@ export function Footer() {
             <div className="border-l-0 md:border-l md:border-[rgba(255,255,255,.07)] pl-0 md:pl-12">
               <ColTitle>Contacto</ColTitle>
               <div className="flex flex-col gap-[18px]">
-                <InfoRow label="WhatsApp" value={contact.phoneDisplay} href={waLink()} />
+                <InfoRow label="WhatsApp" value={contact.phone_display} href={waLink()} />
                 <InfoRow label="Email" value={contact.email} href={`mailto:${contact.email}`} />
                 <InfoRow label="Horario" value={contact.hours} />
-                <InfoRow label="Ubicación" value={contact.city} />
+                <InfoRow label="Ubicación" value={contact.address} />
               </div>
             </div>
           </div>

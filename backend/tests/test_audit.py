@@ -16,12 +16,12 @@ def _log(db, **overrides) -> AuditLog:
     # created_at explícito -- server_default=func.now() tiene resolución de
     # segundo en SQLite, así que dos inserts rápidos podrían empatar y el
     # test de orden quedaría flaky si dependiéramos del default.
-    defaults = dict(
-        action="product.create",
-        entity="product",
-        entity_id="1",
-        created_at=datetime.now(timezone.utc),
-    )
+    defaults = {
+        "action": "product.create",
+        "entity": "product",
+        "entity_id": "1",
+        "created_at": datetime.now(timezone.utc),
+    }
     defaults.update(overrides)
     entry = AuditLog(**defaults)
     db.add(entry)

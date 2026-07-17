@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { Container, SectionHeading, BrandMark } from "@/shared/ui";
-import { brandApi, type Brand } from "@/entities/brand";
+import { type Brand } from "@/entities/brand";
+import { useBrandsQuery } from "@/entities/brand/queries";
 import { useInView } from "@/shared/lib/useInView";
 
 // `hovered` used to only toggle static colors/transform -- now native `hover:`.
@@ -14,12 +14,8 @@ function BrandPill({ brand }: { brand: Brand }) {
 }
 
 export function BrandStrip() {
-  const [brands, setBrands] = useState<Brand[] | null>(null);
+  const { data: brands, isPending } = useBrandsQuery();
   const [ref, inView] = useInView();
-
-  useEffect(() => {
-    brandApi.list().then(setBrands).catch(() => setBrands([]));
-  }, []);
 
   // Need at least a few brands to make marquee look good; fallback to static
   const items = brands ?? [];
@@ -56,7 +52,7 @@ export function BrandStrip() {
       )}
 
       {/* Fallback: static grid when brands haven't loaded yet */}
-      {items.length === 0 && brands !== null && (
+      {items.length === 0 && !isPending && (
         <Container>
           <p className="text-center text-textMuted mt-8 font-body">No hay marcas configuradas aún.</p>
         </Container>

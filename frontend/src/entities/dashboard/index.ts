@@ -1,4 +1,4 @@
-import { api } from "@/shared/api/client";
+import { api } from "@/shared/api";
 import type { Quote } from "@/entities/quote";
 
 export type DashboardStats = {

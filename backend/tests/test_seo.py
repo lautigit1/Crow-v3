@@ -6,6 +6,7 @@ Tests for SEO endpoints:
 from urllib.parse import quote
 
 from app.models.category import Category
+from app.models.product import Product
 
 BASE_SITEMAP = "/sitemap.xml"
 BASE_ROBOTS = "/robots.txt"
@@ -39,6 +40,38 @@ class TestSitemap:
     def test_sitemap_does_not_require_auth(self, client):
         r = client.get(BASE_SITEMAP)
         assert r.status_code == 200
+
+    # ── URLs de producto -- hallazgo "Alta" #17 de la auditoría técnica
+    # del 2026-07-13: el sitemap no traía ninguna URL de producto
+    # individual, así que Google solo podía descubrirlas por links
+    # internos en vez de por acá. ──────────────────────────────────────
+    def test_sitemap_includes_active_product_url(self, client, product: Product):
+        r = client.get(BASE_SITEMAP)
+        assert f"<loc>http://localhost:5173/producto/{product.id}</loc>" in r.text
+
+    def test_sitemap_excludes_soft_deleted_product(self, client, deleted_product: Product):
+        r = client.get(BASE_SITEMAP)
+        assert f"/producto/{deleted_product.id}</loc>" not in r.text
+
+    def test_sitemap_includes_out_of_stock_product(self, client, db, category, brand):
+        # GET /api/products/{id} sirve el detalle igual esté agotado o no
+        # (products.py: get_product solo filtra por is_deleted) -- la URL
+        # sigue siendo válida y debe aparecer en el sitemap.
+        p = Product(
+            name="Sin stock", sku="NOSTOCK-001", stock=0,
+            category_id=category.id, brand_id=brand.id, is_deleted=False,
+        )
+        db.add(p)
+        db.flush()
+        r = client.get(BASE_SITEMAP)
+        assert f"<loc>http://localhost:5173/producto/{p.id}</loc>" in r.text
+
+    def test_sitemap_product_url_has_lastmod(self, client, product: Product):
+        r = client.get(BASE_SITEMAP)
+        idx = r.text.index(f"/producto/{product.id}</loc>")
+        chunk = r.text[idx:idx + 200]
+        assert "<lastmod>" in chunk
+        assert "<changefreq>weekly</changefreq>" in chunk
 
 
 class TestRobots:

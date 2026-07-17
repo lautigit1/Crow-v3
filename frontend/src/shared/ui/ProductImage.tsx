@@ -1,4 +1,5 @@
 import { Icon, type IconName } from "./Icon";
+import { cloudinaryTransform } from "@/shared/lib/cloudinaryUrl";
 
 const CATEGORY_ICON: Record<string, IconName> = {
   Autos: "wrench",
@@ -36,6 +37,7 @@ export function ProductImage({
   ratio = 1.4,
   radius = 0,
   compact = false,
+  priority = false,
 }: {
   name: string;
   sku?: string;
@@ -48,14 +50,38 @@ export function ProductImage({
    * grandes (cards de catálogo, imagen de detalle, ~90px+). En miniaturas
    * chicas (carrito, checkout, filas de tabla) el ícono de 44px y el
    * label de SKU absoluto se pisan y se ven amontonados/rotos. `compact`
-   * baja el ícono, saca la grilla de textura y el label de SKU.
+   * baja el ícono, saca la grilla de textura y el label de SKU. También se
+   * usa para elegir el ancho pedido a Cloudinary (miniatura vs. tile
+   * grande) -- ver `cloudinaryTransform`.
    */
   compact?: boolean;
+  /**
+   * `false` (default) -- la imagen carga lazy (`loading="lazy"`), correcto
+   * para catálogo/carrito/checkout/admin, donde nunca es la primera cosa
+   * que el browser tiene que pintar. `true` -- carga eager + prioridad alta,
+   * para la imagen principal de ProductDetailPage, que sí suele ser el
+   * elemento más grande del viewport inicial (candidato a LCP) -- lazy-
+   * loadearla ahí sería contraproducente.
+   */
+  priority?: boolean;
 }) {
   if (imageUrl) {
+    // Miniaturas (compact) piden un ancho chico a Cloudinary -- de sobra
+    // para el tile más grande en ese modo (80px, carrito) incluso en
+    // pantallas retina. Tiles grandes (catálogo, detalle) piden más
+    // resolución -- el contenedor más ancho en ese modo es ~440px
+    // (ProductDetailPage), así que 900 cubre retina 2x con margen.
+    const src = cloudinaryTransform(imageUrl, { width: compact ? 240 : 900 });
     return (
       <div className="relative overflow-hidden" style={{ aspectRatio: String(ratio), borderRadius: radius }}>
-        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+        <img
+          src={src}
+          alt={name}
+          className="w-full h-full object-cover"
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={priority ? "high" : "auto"}
+        />
       </div>
     );
   }
@@ -91,8 +117,11 @@ export function ProductImage({
 /** Brand monogram tile (replaces "[ LOGO MARCA ]"). */
 export function BrandMark({ name, logoUrl, size = 56 }: { name: string; logoUrl?: string | null; size?: number }) {
   if (logoUrl) {
+    // `size` ya es el ancho máximo real en px -- se le pide justo eso (×2
+    // para pantallas retina) a Cloudinary en vez de un valor fijo genérico.
+    const src = cloudinaryTransform(logoUrl, { width: size * 2 });
     return (
-      <img src={logoUrl} alt={name} className="max-w-[70%] object-contain" style={{ maxHeight: size }} />
+      <img src={src} alt={name} className="max-w-[70%] object-contain" style={{ maxHeight: size }} loading="lazy" decoding="async" />
     );
   }
   const hue = hueOf(name);

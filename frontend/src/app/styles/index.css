@@ -19,7 +19,7 @@
 }
 
 /*
- * Tailwind Preflight is off on purpose (see tailwind.config.js) to avoid
+ * Tailwind Preflight is off on purpose (see tailwind.config.ts) to avoid
  * resetting the default look of headings/buttons/lists/forms. But Preflight
  * is also what normally sets `border-style: solid` on every element -- the
  * `border`/`border-t`/`border-b`/etc. utilities used throughout this app

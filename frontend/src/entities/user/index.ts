@@ -1,5 +1,5 @@
-import { api } from "@/shared/api/client";
-import type { Role, User } from "@/entities/session/model";
+import { api } from "@/shared/api";
+import type { Role, User } from "@/entities/session";
 
 export type { User, Role };
 

@@ -5,12 +5,12 @@ import {
   Button, DataTable, Modal, Drawer, Field, Input, Textarea,
   Badge, CenteredSpinner, Icon, Pagination, ConfirmModal, type Column, type SortState,
 } from "@/shared/ui";
-import { useConfirm } from "@/shared/hooks/useConfirm";
+import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { supplierApi, type Supplier, type SupplierInput } from "@/entities/supplier";
-import { apiError } from "@/shared/api/client";
+import { apiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib/format";
-import { color } from "@/shared/config/theme";
+import { color } from "@/shared/config";
 
 const PAGE = 15;
 
@@ -39,14 +39,21 @@ export function AdminSuppliersPage() {
   const [saving, setSaving] = useState(false);
 
   const [detail, setDetail] = useState<Supplier | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
   const reload = () => {
     setItems(null);
+    setLoadError(false);
     return supplierApi
       .list({ q: q || undefined, active_only: activeOnly || undefined, skip: page * PAGE, limit: PAGE })
       .then((r) => { setItems(r.items); setTotal(r.total); })
-      .catch(() => { setItems([]); setTotal(0); });
+      .catch((err) => {
+        console.error("[AdminSuppliersPage] no se pudieron cargar los proveedores:", err);
+        setItems([]);
+        setTotal(0);
+        setLoadError(true);
+      });
   };
 
   useEffect(() => {
@@ -198,7 +205,7 @@ export function AdminSuppliersPage() {
           >
             {s.is_active ? "Desactivar" : "Activar"}
           </Button>
-          <Button variant="danger" size="sm" onClick={() => remove(s)}>
+          <Button variant="danger" size="sm" onClick={() => remove(s)} aria-label="Eliminar proveedor">
             <Icon name="trash" size={14} />
           </Button>
         </div>
@@ -254,7 +261,7 @@ export function AdminSuppliersPage() {
             columns={columns}
             rows={sortedItems}
             getKey={(s) => s.id}
-            empty="No hay proveedores registrados."
+            empty={loadError ? "No se pudieron cargar los proveedores. Recargá la página." : "No hay proveedores registrados."}
             sort={sort}
             onSort={onSort}
             onRowClick={setDetail}
@@ -273,7 +280,7 @@ export function AdminSuppliersPage() {
           detail && (
             <>
               <Button onClick={() => openEdit(detail)} fullWidth><Icon name="edit" size={15} /> Editar</Button>
-              <Button variant="danger" onClick={() => remove(detail)}><Icon name="trash" size={15} /></Button>
+              <Button variant="danger" onClick={() => remove(detail)} aria-label="Eliminar proveedor"><Icon name="trash" size={15} /></Button>
             </>
           )
         }

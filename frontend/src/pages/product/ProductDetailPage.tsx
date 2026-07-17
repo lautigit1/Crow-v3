@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useFavorites } from "@/shared/lib/useFavorites";
 import { useCart } from "@/app/providers/CartProvider";
 import { formatPrice } from "@/shared/lib/format";
-import { waLink } from "@/shared/config/contact";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 import { Container, Badge, Button, Icon, ProductImage, CenteredSpinner, EmptyState } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
-import { productApi, type Product } from "@/entities/product";
+import { useProductQuery } from "@/entities/product/queries";
 
 function QuantityStepper({ value, max, onChange }: { value: number; max: number; onChange: (v: number) => void }) {
   const btnClass = "w-[34px] h-[34px] border-none bg-none text-ink700 cursor-pointer flex items-center justify-center font-body text-base font-bold";
@@ -32,28 +32,22 @@ export function ProductDetailPage() {
   const { isFavorite, toggle } = useFavorites();
   const { addItem } = useCart();
   const navigate = useNavigate();
+  const waLink = useWaLink();
 
-  // undefined = cargando · null = no encontrado · Product = ok
-  const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
-  useEffect(() => {
-    if (!id || !/^\d+$/.test(id)) {
-      setProduct(null);
-      return;
-    }
-    setProduct(undefined);
-    productApi.get(Number(id)).then(setProduct).catch(() => setProduct(null));
-  }, [id]);
+  const validId = id && /^\d+$/.test(id) ? Number(id) : undefined;
+  const { data: product, isPending, isError } = useProductQuery(validId);
+  const notFound = validId === undefined || isError;
 
   usePageMeta(
     product ? product.name : "Producto",
     product?.description ?? "Detalle del producto en Crow Repuestos.",
   );
 
-  if (product === undefined) {
+  if (isPending && !notFound) {
     return (
       <Container className="py-[120px] px-4">
         <CenteredSpinner />
@@ -61,7 +55,7 @@ export function ProductDetailPage() {
     );
   }
 
-  if (product === null) {
+  if (notFound || !product) {
     return (
       <Container className="py-20 px-4">
         <EmptyState
@@ -113,6 +107,7 @@ export function ProductDetailPage() {
                   imageUrl={product.image_url}
                   ratio={1}
                   radius={0}
+                  priority
                 />
               </div>
               <button

@@ -2,7 +2,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Container } from "@/shared/ui";
-import { waLink } from "@/shared/config/contact";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 
 const FAQS = [
   {
@@ -110,6 +110,7 @@ export function FaqPage() {
     "Preguntas frecuentes",
     "Respondemos las dudas más comunes sobre pedidos, envíos, garantías y atención en Crow Repuestos.",
   );
+  const waLink = useWaLink();
 
   return (
     <>

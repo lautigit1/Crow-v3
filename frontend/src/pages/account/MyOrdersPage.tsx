@@ -9,7 +9,8 @@ import {
   Pagination,
   ConfirmModal,
 } from "@/shared/ui";
-import { orderApi, type Order, type OrderCreate } from "@/entities/order";
+import { type Order, type OrderCreate } from "@/entities/order";
+import { useMyOrdersQuery, useCreateOrderMutation, useCancelOrderMutation } from "@/entities/order/queries";
 import { productApi, type Product } from "@/entities/product";
 import { formatPrice } from "@/shared/lib/format";
 
@@ -188,13 +189,10 @@ const PAGE_SIZE = 10;
 const inputCls = "w-full py-[9px] px-3 border border-border rounded-sm font-body text-sm text-ink900 outline-none bg-white box-border";
 
 export function MyOrdersPage() {
-  const [orders, setOrders] = useState<Order[] | null>(null);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Order | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
 
   // State for create modal to drive its footer
   const [createNotes, setCreateNotes] = useState("");
@@ -202,21 +200,17 @@ export function MyOrdersPage() {
   const [createSearch, setCreateSearch] = useState("");
   const [createSearchResults, setCreateSearchResults] = useState<Product[]>([]);
   const [createSearching, setCreateSearching] = useState(false);
-  const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(async (p: number) => {
-    setOrders(null);
-    try {
-      const data = await orderApi.mine({ skip: p * PAGE_SIZE, limit: PAGE_SIZE });
-      setOrders(data.items);
-      setTotal(data.total);
-    } catch {
-      setOrders([]);
-    }
-  }, []);
-
-  useEffect(() => { fetchOrders(page); }, [fetchOrders, page]);
+  // Listado de pedidos vía TanStack Query -- crear/cancelar invalidan esta
+  // query automáticamente (ver entities/order/queries.ts), así que no hace
+  // falta un `fetchOrders` manual ni pasar `page` a mano después de cada
+  // mutación.
+  const { data, isPending } = useMyOrdersQuery({ skip: page * PAGE_SIZE, limit: PAGE_SIZE });
+  const orders = data?.items ?? null;
+  const total = data?.total ?? 0;
+  const createOrderMutation = useCreateOrderMutation();
+  const cancelOrderMutation = useCancelOrderMutation();
 
   // Debounced product search
   const doSearch = useCallback(async (q: string) => {
@@ -257,38 +251,30 @@ export function MyOrdersPage() {
 
   const handleCreate = async () => {
     if (createItems.length === 0) { setCreateError("Agregá al menos un producto"); return; }
-    setCreateSubmitting(true);
     setCreateError(null);
     try {
       const payload: OrderCreate = {
         notes: createNotes.trim() || null,
         items: createItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
       };
-      await orderApi.create(payload);
+      await createOrderMutation.mutateAsync(payload);
       setShowCreate(false);
       setCreateItems([]);
       setCreateNotes("");
-      fetchOrders(0);
       setPage(0);
     } catch {
       setCreateError("No se pudo crear el pedido. Intentá de nuevo.");
-    } finally {
-      setCreateSubmitting(false);
     }
   };
 
   const handleCancel = async () => {
     if (!selected) return;
-    setCancelling(true);
     try {
-      const updated = await orderApi.cancelMine(selected.id);
+      const updated = await cancelOrderMutation.mutateAsync(selected.id);
       setSelected(updated);
       setConfirmCancel(false);
-      fetchOrders(page);
     } catch {
       setConfirmCancel(false);
-    } finally {
-      setCancelling(false);
     }
   };
 
@@ -303,9 +289,9 @@ export function MyOrdersPage() {
       </div>
 
       {/* List */}
-      {orders === null ? (
+      {isPending ? (
         <CenteredSpinner label="Cargando pedidos…" />
-      ) : orders.length === 0 ? (
+      ) : !orders || orders.length === 0 ? (
         <EmptyState
           title="No tenés pedidos todavía"
           message="Creá tu primer pedido para solicitar productos directamente a nuestro equipo."
@@ -348,7 +334,7 @@ export function MyOrdersPage() {
         message={`¿Confirmás que querés cancelar el Pedido #${selected?.id}? Esta acción no se puede deshacer.`}
         confirmLabel="Sí, cancelar"
         danger
-        loading={cancelling}
+        loading={cancelOrderMutation.isPending}
         onConfirm={handleCancel}
         onCancel={() => setConfirmCancel(false)}
       />
@@ -362,11 +348,11 @@ export function MyOrdersPage() {
         width={520}
         footer={
           <div className="flex gap-2.5 justify-end">
-            <Button variant="ghost" onClick={() => { setShowCreate(false); setCreateItems([]); setCreateNotes(""); setCreateError(null); }} disabled={createSubmitting}>
+            <Button variant="ghost" onClick={() => { setShowCreate(false); setCreateItems([]); setCreateNotes(""); setCreateError(null); }} disabled={createOrderMutation.isPending}>
               Cancelar
             </Button>
-            <Button onClick={handleCreate} disabled={createSubmitting || createItems.length === 0}>
-              {createSubmitting ? "Enviando…" : "Crear pedido"}
+            <Button onClick={handleCreate} disabled={createOrderMutation.isPending || createItems.length === 0}>
+              {createOrderMutation.isPending ? "Enviando…" : "Crear pedido"}
             </Button>
           </div>
         }

@@ -2,8 +2,9 @@
 #
 # Caddy emite y renueva solo los certificados de Let's Encrypt para $DOMAIN.
 # Requisitos: el DNS del dominio apuntando al servidor, y los puertos 80/443
-# abiertos. Todo el tráfico se proxya al nginx del frontend (web:80), que a
-# su vez proxya /api al backend.
+# abiertos. Todo el tráfico se proxya al nginx del frontend (web:8080 --
+# nginx-unprivileged, sin root dentro del contenedor), que a su vez proxya
+# /api al backend.
 #
 # Caddy agrega X-Forwarded-For con la IP real del cliente; nginx la encadena
 # con $proxy_add_x_forwarded_for, y el backend (client_ip() en audit.py) toma
@@ -12,5 +13,5 @@
 
 {$DOMAIN} {
 	encode gzip
-	reverse_proxy web:80
+	reverse_proxy web:8080
 }

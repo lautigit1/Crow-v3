@@ -59,15 +59,24 @@ export function MyQuotesPage() {
   const [total, setTotal] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     setInitialLoading(true);
+    setLoadError(false);
     quoteApi
       .mine({ skip: 0, limit: LIMIT })
       .then((r) => { setQuotes(r.items); setTotal(r.total); })
-      .catch(() => { setQuotes([]); setTotal(0); })
+      .catch((err) => {
+        console.error("[MyQuotesPage] no se pudieron cargar las cotizaciones:", err);
+        setQuotes([]);
+        setTotal(0);
+        setLoadError(true);
+      })
       .finally(() => setInitialLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const loadMore = async () => {
     setLoadingMore(true);
@@ -115,6 +124,12 @@ export function MyQuotesPage() {
       {/* ── List ── */}
       {initialLoading ? (
         <CenteredSpinner label="Cargando…" />
+      ) : loadError ? (
+        <EmptyState
+          title="No se pudieron cargar tus cotizaciones"
+          message="Ocurrió un error de conexión. Probá de nuevo."
+          action={<Button onClick={load}>Reintentar</Button>}
+        />
       ) : quotes.length === 0 ? (
         <EmptyState
           title="Todavía no tenés cotizaciones"

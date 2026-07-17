@@ -40,8 +40,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Lint (ruff)
+        # Bloqueante -- hallazgo "Alta" #11 de la auditoría técnica del
+        # 2026-07-13. Config en pyproject.toml (set conservador: pyflakes,
+        # pycodestyle, isort, flake8-bugbear, comprehensions).
+        run: ruff check .
+
       - name: Run tests
         env:
           TESTING: "1"
           SECRET_KEY: "ci-test-secret-key-not-used-in-production"
         run: pytest
+
+      - name: Audit dependencies for known CVEs
+        # No falla el build (--strict lo haría): por ahora es informativo,
+        # para que una CVE nueva en una dependencia aparezca en los logs de
+        # CI sin bloquear cada push mientras se evalúa el fix/upgrade. Se
+        # puede endurecer a bloqueante más adelante si el ruido es bajo.
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt || true

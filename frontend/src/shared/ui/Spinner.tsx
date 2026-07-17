@@ -1,4 +1,4 @@
-import { color } from "@/shared/config/theme";
+import { color } from "@/shared/config";
 
 /**
  * `size` and `stroke` stay dynamic (inline style): callers pass different

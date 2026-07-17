@@ -1,13 +1,14 @@
 import time
 from typing import Annotated
 
+import jwt
 from fastapi import Cookie, Depends, HTTPException, status
-from jose import JWTError, jwt
+from jwt import PyJWTError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import decode_refresh_token
+from app.core.security import TOKEN_AUDIENCE, decode_refresh_token
 from app.core.token_blocklist import token_blocklist
 from app.models.user import User, UserRole
 
@@ -26,7 +27,7 @@ def get_current_user(
     if not access_token:
         raise _CREDENTIALS_EXC
     try:
-        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], audience="crow-api")
+        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], audience=TOKEN_AUDIENCE)
 
         # Reject refresh tokens or any non-access token
         if payload.get("type") != "access":
@@ -42,8 +43,10 @@ def get_current_user(
             raise _CREDENTIALS_EXC
         user_id = int(user_id_raw)
         token_version = int(payload.get("ver", 0))
-    except (JWTError, ValueError, TypeError):
-        raise _CREDENTIALS_EXC
+    except (PyJWTError, ValueError, TypeError):
+        # `from None` intencional -- no filtramos detalles internos del JWT
+        # invalido al cliente, solo el 401 genérico.
+        raise _CREDENTIALS_EXC from None
 
     user = db.get(User, user_id)
     if user is None or not user.is_active:
@@ -107,11 +110,13 @@ def get_user_from_refresh_token(
     try:
         sub, jti, token_version, _exp = decode_refresh_token(refresh_token)
         user_id = int(sub)
-    except (JWTError, ValueError, TypeError):
+    except (PyJWTError, ValueError, TypeError):
+        # `from None` intencional -- no filtramos detalles internos del JWT
+        # invalido al cliente, solo el 401 genérico.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token invalido o expirado",
-        )
+        ) from None
 
     # Reject already-rotated tokens (prevents replay if refresh token is stolen)
     if token_blocklist.is_blocked(jti):

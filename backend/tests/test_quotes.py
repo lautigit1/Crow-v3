@@ -7,12 +7,8 @@ Tests for quote endpoints:
   - Admin can update status
   - Non-admin cannot list all or update status
 """
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from app.models.quote import Quote, QuoteStatus
-
 
 BASE = "/api/quotes"
 

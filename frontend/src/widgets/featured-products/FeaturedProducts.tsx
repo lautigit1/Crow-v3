@@ -1,20 +1,16 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Container, SectionHeading, Button, CenteredSpinner, EmptyState } from "@/shared/ui";
-import { productApi, type Product } from "@/entities/product";
+import { type Product } from "@/entities/product";
+import { useProductsQuery } from "@/entities/product/queries";
 import { ProductCard } from "@/entities/product/ProductCard";
 import { useInView } from "@/shared/lib/useInView";
 
-export function FeaturedProducts({ onQuote }: { onQuote: (p: Product) => void }) {
-  const [products, setProducts] = useState<Product[] | null>(null);
-  const [ref, inView] = useInView();
+const FEATURED_PARAMS = { featured: true, limit: 8 };
 
-  useEffect(() => {
-    productApi
-      .list({ featured: true, limit: 8 })
-      .then((r) => setProducts(r.items))
-      .catch(() => setProducts([]));
-  }, []);
+export function FeaturedProducts({ onQuote }: { onQuote: (p: Product) => void }) {
+  const { data, isPending } = useProductsQuery(FEATURED_PARAMS);
+  const products = data?.items;
+  const [ref, inView] = useInView();
 
   return (
     <section
@@ -39,9 +35,9 @@ export function FeaturedProducts({ onQuote }: { onQuote: (p: Product) => void })
           </Button>
         </div>
 
-        {products === null ? (
+        {isPending ? (
           <CenteredSpinner label="Cargando productos…" />
-        ) : products.length === 0 ? (
+        ) : !products || products.length === 0 ? (
           <EmptyState
             title="Aún no hay productos destacados"
             message="Marca productos como destacados desde el panel de administración."

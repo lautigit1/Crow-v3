@@ -14,7 +14,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
 const mockUseAuth = vi.fn();
-vi.mock("@/app/providers/AuthProvider", () => ({
+vi.mock("@/entities/session", () => ({
   useAuth: () => mockUseAuth(),
 }));
 

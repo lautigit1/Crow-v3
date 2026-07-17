@@ -1,9 +1,9 @@
 import { useState, type ElementType } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 import { Dropdown, Avatar, Button, Icon, type IconName } from "@/shared/ui";
-import { color, font, radius } from "@/shared/config/theme";
+import { color } from "@/shared/config";
 
 type MenuLink = { to: string; label: string; icon: IconName; accent: string };
 
@@ -121,41 +121,19 @@ function PremiumMenuItem({
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "100%",
-        padding: "8px 10px",
-        border: "none",
-        background: hov ? (danger ? "#FEF2F2" : color.primarySoft) : "transparent",
-        borderRadius: radius.sm,
-        cursor: "pointer",
-        textDecoration: "none",
-        transition: "background .12s",
-      }}
+      className="flex w-full items-center gap-2.5 border-none rounded-sm py-2 px-2.5 cursor-pointer no-underline transition-[background] duration-[120ms]"
+      style={{ background: hov ? (danger ? "#FEF2F2" : color.primarySoft) : "transparent" }}
     >
-      <span style={{
-        width: 28,
-        height: 28,
-        borderRadius: 7,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: hov ? `${fg}18` : color.surface,
-        color: hov ? fg : color.textFaint,
-        transition: "background .12s, color .12s",
-        flexShrink: 0,
-      }}>
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] transition-[background,color] duration-[120ms]"
+        style={{ background: hov ? `${fg}18` : color.surface, color: hov ? fg : color.textFaint }}
+      >
         <Icon name={icon} size={14} />
       </span>
-      <span style={{
-        fontFamily: font.body,
-        fontSize: 13.5,
-        fontWeight: 500,
-        color: danger ? color.danger : hov ? color.ink900 : color.text,
-        letterSpacing: "-.01em",
-      }}>
+      <span
+        className="font-body text-[13.5px] font-medium tracking-[-0.01em]"
+        style={{ color: danger ? color.danger : hov ? color.ink900 : color.text }}
+      >
         {label}
       </span>
     </As>

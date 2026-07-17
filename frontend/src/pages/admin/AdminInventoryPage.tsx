@@ -31,8 +31,13 @@ export function AdminInventoryPage() {
   const [onlyLow, setOnlyLow] = useState(false);
   const [draft, setDraft] = useState<Record<number, number>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  const load = () => fetchAllProducts().then(setItems).catch(() => setItems([]));
+  const load = () => fetchAllProducts().then(setItems).catch((err) => {
+    console.error("[AdminInventoryPage] no se pudo cargar el inventario:", err);
+    setItems([]);
+    setLoadError(true);
+  });
   useEffect(() => void load(), []);
 
   const rows = useMemo(() => {
@@ -132,7 +137,14 @@ export function AdminInventoryPage() {
         <StatCard icon="trendingUp" label="Valor de inventario" value={formatPrice(summary.value)} tone="primary" />
       </div>
 
-      {items === null ? <CenteredSpinner /> : <DataTable columns={columns} rows={rows} getKey={(p) => p.id} empty="No hay productos." />}
+      {items === null ? <CenteredSpinner /> : (
+        <DataTable
+          columns={columns}
+          rows={rows}
+          getKey={(p) => p.id}
+          empty={loadError ? "No se pudo cargar el inventario. Recargá la página." : "No hay productos."}
+        />
+      )}
     </div>
   );
 }

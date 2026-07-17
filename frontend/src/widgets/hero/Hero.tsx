@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { waLink } from "@/shared/config/contact";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 import { Container, Icon, type IconName } from "@/shared/ui";
 
 // Spring compartido por los dos CTAs — mismo "peso" de rebote en ambos.
@@ -24,6 +24,7 @@ const DOT_ANIM = [
 
 export function Hero({ onQuote }: { onQuote: () => void }) {
   const reduceMotion = useReducedMotion();
+  const waLink = useWaLink();
 
   return (
     <section className="bg-ink900 relative overflow-hidden">

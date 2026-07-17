@@ -13,7 +13,6 @@ Usage:
 import json
 import logging
 import sys
-import time
 from typing import Any
 
 

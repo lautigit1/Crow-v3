@@ -5,13 +5,13 @@ import clsx from "clsx";
 import { Container, Logo, Icon, Avatar, Button } from "@/shared/ui";
 import { AccountMenu } from "@/features/auth/AccountMenu";
 import { CartPreview } from "@/features/cart/CartPreview";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 import { useCart } from "@/app/providers/CartProvider";
 import { useScrolled } from "@/shared/lib/useScrolled";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 import { useIsOpenNow } from "@/shared/lib/useIsOpenNow";
-import { CATEGORIES } from "@/shared/config/categories";
-import { waLink } from "@/shared/config/contact";
+import { CATEGORIES } from "@/shared/config";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 
 const LINKS = [
   { to: "/", label: "Inicio", end: true },
@@ -21,7 +21,8 @@ const LINKS = [
 ];
 
 // ── Status chip ───────────────────────────────────────────────────────────────
-// Dato real, no decorativo: calculado desde contact.hours vía useIsOpenNow().
+// Dato real, no decorativo: calculado vía useIsOpenNow() (ver ese archivo --
+// usa un horario fijo lun-sáb 8-18, no el texto libre de Configuración).
 // Sin borde/fondo propio a propósito (ver feedback de usuario en tasks.md,
 // N7): un punto + texto flotando junto al logo, no una "caja" más en la
 // barra.
@@ -219,7 +220,7 @@ function SearchPalette({ open, onClose }: { open: boolean; onClose: () => void }
 // Sin caja/borde que los agrupe, cada uno con su propio hover sutil.
 //
 // El botón de buscar necesita `bg-transparent` explícito: Preflight está
-// apagado en este proyecto (tailwind.config.js), así que un `<button>` sin
+// apagado en este proyecto (tailwind.config.ts), así que un `<button>` sin
 // fondo propio muestra el fondo por defecto del navegador (gris/blanco) en
 // vez de quedar transparente -- el mismo motivo por el que la navbar vieja
 // ya ponía `bg-transparent` a mano en sus botones (hamburguesa, cerrar).
@@ -302,6 +303,48 @@ function MobileDock({ onSearch, onMore }: { onSearch: () => void; onMore: () => 
 function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const waLink = useWaLink();
+
+  // Foco/Escape/trap -- hallazgo de accesibilidad de la auditoría técnica
+  // del 2026-07-13. Antes esta hoja no tenía ninguna semántica de diálogo:
+  // el foco del teclado se quedaba en el botón "Menú" de atrás al abrir,
+  // Escape no la cerraba, y Tab podía escaparse hacia el contenido de la
+  // página debajo del overlay. Ahora se comporta como un diálogo modal
+  // real: el foco entra al panel al abrir, Escape cierra, Tab/Shift+Tab
+  // quedan atrapados adentro mientras está abierta, y el foco vuelve al
+  // botón "Menú" que la abrió al cerrarse.
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    sheetRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !sheetRef.current) return;
+      const focusables = sheetRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -315,7 +358,14 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
     <div className="fixed inset-0 z-[250] flex flex-col justify-end">
       <div onClick={onClose} aria-hidden="true" className="absolute inset-0 bg-[rgba(7,17,31,.55)] [backdrop-filter:blur(2px)]" />
 
-      <div className="relative animate-[slideUp_.22s_ease_both] rounded-t-2xl bg-white px-5 pt-3 pb-[max(20px,env(safe-area-inset-bottom))]">
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Más opciones"
+        tabIndex={-1}
+        className="relative animate-[slideUp_.22s_ease_both] rounded-t-2xl bg-white px-5 pt-3 pb-[max(20px,env(safe-area-inset-bottom))] outline-none"
+      >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
 
         <div className="mb-4 flex flex-col">

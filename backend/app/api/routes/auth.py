@@ -2,9 +2,10 @@ import time
 from datetime import datetime, timezone
 from typing import Annotated
 
+import jwt
 from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from jwt import PyJWTError
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 
@@ -14,8 +15,9 @@ from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.core.deps import CurrentUser, DbSession, get_user_from_refresh_token
 from app.core.email import build_reset_email, send_email
 from app.core.passwords import validate_password_strength
-from app.core.ratelimit import login_limiter
+from app.core.ratelimit import LoginRateLimiter, login_limiter
 from app.core.security import (
+    TOKEN_AUDIENCE,
     create_access_token,
     create_refresh_token,
     create_reset_token,
@@ -31,7 +33,6 @@ from app.schemas.user import UserRead
 
 router = APIRouter()
 
-from app.core.ratelimit import LoginRateLimiter
 _register_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600, lockout_seconds=3600)
 _refresh_limiter  = LoginRateLimiter(max_attempts=30, window_seconds=300, lockout_seconds=60)
 _reset_limiter    = LoginRateLimiter(max_attempts=5, window_seconds=3600, lockout_seconds=3600)
@@ -140,7 +141,13 @@ def logout(
 ) -> None:
     if access_token:
         try:
-            payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            # `audience` explícito -- sin esto, PyJWT rechaza cualquier token
+            # que traiga un claim `aud` (todos los nuestros lo traen) si no
+            # se le pasa el valor esperado, a diferencia de python-jose que
+            # lo dejaba pasar en silencio. Sin este fix, ningún access token
+            # se blocklistea al hacer logout bajo PyJWT (el `except Exception`
+            # de abajo se comía el error sin que se notara).
+            payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], audience=TOKEN_AUDIENCE)
             jti = payload.get("jti")
             exp = payload.get("exp")
             if jti and exp:
@@ -228,8 +235,10 @@ def reset_password(data: ResetPasswordRequest, db: DbSession, request: Request) 
     )
     try:
         user_id, jti = decode_reset_token(data.token)
-    except (JWTError, ValueError):
-        raise invalid_exc
+    except (PyJWTError, ValueError):
+        # `from None` intencional -- no queremos filtrar detalles internos
+        # del token invalido/expirado al cliente, solo el mensaje genérico.
+        raise invalid_exc from None
 
     if token_blocklist.is_blocked(jti):
         raise invalid_exc

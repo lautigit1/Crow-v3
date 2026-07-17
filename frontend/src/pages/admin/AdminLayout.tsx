@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import { AnimatedOutlet } from "@/shared/ui/AnimatedOutlet";
 import { Logo, Icon, type IconName } from "@/shared/ui";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 
 type Item = { to: string; label: string; icon: IconName; end?: boolean };
 type Group = { title: string; items: Item[] };
@@ -83,6 +84,18 @@ export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const breadcrumb = useBreadcrumb();
+
+  // Las páginas públicas actualizan <title> vía usePageMeta(), pero ninguna
+  // página del admin lo hacía -- la pestaña del navegador se quedaba
+  // pegada en lo último que se hubiera seteado antes de entrar acá (típico:
+  // "Iniciar sesión"), sin importar en qué sección del admin estuvieras.
+  // No se usa usePageMeta() completo acá a propósito: ese hook también
+  // toca meta description/OG/canonical, pensados para páginas públicas
+  // indexables -- el admin no necesita nada de eso, solo el título de la
+  // pestaña.
+  useEffect(() => {
+    document.title = `${breadcrumb} · Admin · Crow Repuestos`;
+  }, [breadcrumb]);
 
   const initials = (user?.full_name ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const hue = user ? (user.full_name.charCodeAt(0) * 17) % 360 : 210;

@@ -4,7 +4,6 @@ from pydantic import BaseModel, field_validator
 
 from app.models.order import OrderStatus, PaymentMethod
 
-
 MAX_ITEM_QUANTITY = 999
 MAX_ORDER_ITEMS = 50
 

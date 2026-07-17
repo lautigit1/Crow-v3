@@ -1,7 +1,8 @@
 import { LegalLayout, H2, P, UL, InfoBox, Divider } from "./LegalLayout";
-import { contact } from "@/shared/config/contact";
+import { useSiteSettings } from "@/entities/settings/useSiteSettings";
 
 export function TerminosPage() {
+  const contact = useSiteSettings();
   return (
     <LegalLayout title="Términos y condiciones" updated="1 de junio de 2026">
       <InfoBox>
@@ -10,7 +11,7 @@ export function TerminosPage() {
 
       <H2>1. Identificación</H2>
       <P>
-        Crow Repuestos es una distribuidora automotriz con sede en Mendoza, Argentina. Podés contactarnos en <strong>{contact.email}</strong> o por WhatsApp al <strong>{contact.phoneDisplay}</strong>.
+        Crow Repuestos es una distribuidora automotriz con sede en Mendoza, Argentina. Podés contactarnos en <strong>{contact.email}</strong> o por WhatsApp al <strong>{contact.phone_display}</strong>.
       </P>
 
       <H2>2. Objeto del sitio</H2>

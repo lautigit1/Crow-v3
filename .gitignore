@@ -1,3 +1,6 @@
+# ─── Raíz (husky/commitlint) ───────────────────────────────────────────────────
+/node_modules/
+
 # ─── Frontend ─────────────────────────────────────────────────────────────────
 frontend/node_modules/
 frontend/dist/
@@ -32,6 +35,9 @@ postgres-data/
 pgdata/
 *.sql.bak
 *.dump
+
+# Salida de deploy/backup-postgres.sh -- nunca commitear un dump de la DB.
+deploy/backups/
 
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log

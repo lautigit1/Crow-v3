@@ -4,10 +4,20 @@ sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 pydantic==2.10.3
 pydantic-settings==2.6.1
-python-jose[cryptography]==3.3.0
+pyjwt==2.13.0
+# python-jose (sin mantenimiento activo desde 2021) reemplazado por PyJWT --
+# hallazgo "Alta" de la auditoría del 2026-07-13. `cryptography` quedaba
+# instalada de forma transitiva vía `python-jose[cryptography]`; ahora que
+# se fue esa dependencia, se declara explícita porque `core/security.py` la
+# importa directamente (HKDF para derivar secretos de firma por propósito).
+cryptography==48.0.0
 bcrypt==4.2.1
 python-multipart==0.0.12
 email-validator==2.2.0
 alembic==1.14.0
 redis>=5.0,<6.0
 jinja2==3.1.4
+# Opcional -- solo se activa si SENTRY_DSN está configurada (ver
+# core/error_tracking.py). No-op sin esa variable, pero queda instalada
+# para no tener que reconstruir la imagen cuando se agregue el DSN real.
+sentry-sdk[fastapi]>=2.0,<3.0

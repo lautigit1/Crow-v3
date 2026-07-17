@@ -1,4 +1,4 @@
-import { api } from "@/shared/api/client";
+import { api } from "@/shared/api";
 
 type CloudinarySignature = {
   cloud_name: string;

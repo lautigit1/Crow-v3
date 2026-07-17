@@ -60,6 +60,9 @@ services:
       # rango entero cubre a nginx aunque el contenedor se recree con otra IP.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.28.0.0/16}
       REDIS_URL: redis://crow_redis:6379/0
+      # 2 en dev (suficiente para probar el comportamiento multi-worker sin
+      # gastar de más en la máquina local) -- ver backend/Dockerfile.
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
     networks:
       - crow_net
     ports:
@@ -81,7 +84,7 @@ services:
     networks:
       - crow_net
     ports:
-      - "8080:80"
+      - "8080:8080"
 
 networks:
   crow_net:

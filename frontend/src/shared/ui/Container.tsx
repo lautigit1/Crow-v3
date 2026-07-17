@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import clsx from "clsx";
-import { layout } from "@/shared/config/theme";
+import { layout } from "@/shared/config";
 
 /**
  * Centered content column with the standard max width and side padding.

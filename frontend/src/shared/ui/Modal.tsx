@@ -46,6 +46,7 @@ export function Modal({ open, onClose, title, eyebrow, children, footer, width =
             </div>
             <button
               onClick={onClose}
+              aria-label="Cerrar"
               className="w-7 h-7 flex-none border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.06)] text-[rgba(255,255,255,.5)] text-[16px] leading-none cursor-pointer rounded-[7px] flex items-center justify-center transition-[background-color,color] duration-150 hover:bg-[rgba(255,255,255,.14)] hover:text-white"
             >
               ×

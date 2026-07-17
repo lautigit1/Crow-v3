@@ -1,16 +1,11 @@
-import { useEffect, useState } from "react";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Link } from "react-router-dom";
 import { Container, Button, CenteredSpinner, EmptyState } from "@/shared/ui";
-import { brandApi, type Brand } from "@/entities/brand";
+import { useBrandsQuery } from "@/entities/brand/queries";
 
 export function BrandsPage() {
   usePageMeta("Marcas", "Todas las marcas de repuestos disponibles en Crow Repuestos — Mendoza.");
-  const [brands, setBrands] = useState<Brand[] | null>(null);
-
-  useEffect(() => {
-    brandApi.list().then(setBrands).catch(() => setBrands([]));
-  }, []);
+  const { data: brands, isPending } = useBrandsQuery();
 
   return (
     <>
@@ -28,9 +23,9 @@ export function BrandsPage() {
 
       <section className="bg-surface pt-[60px] pb-[90px] min-h-[50vh]">
         <Container>
-          {brands === null ? (
+          {isPending ? (
             <CenteredSpinner label="Cargando marcas…" />
-          ) : brands.length === 0 ? (
+          ) : !brands || brands.length === 0 ? (
             <EmptyState title="Aún no hay marcas cargadas" message="Agregá marcas desde el panel de administración." />
           ) : (
             <div className="grid grid-cols-4 gap-4">

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_client: "_redis_lib.Redis | None" = None
+_client: _redis_lib.Redis | None = None
 
 
 def init_redis(url: str) -> bool:
@@ -52,7 +52,7 @@ def init_redis(url: str) -> bool:
         return False
 
 
-def get_redis() -> "_redis_lib.Redis | None":
+def get_redis() -> _redis_lib.Redis | None:
     """Return the active Redis client, or None if not connected."""
     return _client
 

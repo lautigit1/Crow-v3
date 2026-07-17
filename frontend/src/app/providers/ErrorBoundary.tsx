@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Sentry } from "@/shared/lib/sentry";
 
 interface Props {
   children: ReactNode;
@@ -33,8 +34,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // En el futuro se puede enviar a Sentry aquí:
-    // Sentry.captureException(error, { extra: info });
+    // Sin VITE_SENTRY_DSN configurado, Sentry.captureException es un no-op
+    // seguro (ver shared/lib/sentry.ts) -- no hace falta un if acá.
+    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
     console.error("[ErrorBoundary]", error, info.componentStack);
   }
 

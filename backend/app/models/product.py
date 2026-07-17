@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -8,6 +8,16 @@ from app.core.database import Base
 
 class Product(Base):
     __tablename__ = "products"
+
+    # Replican las CHECK constraints agregadas en la migración 005. Antes
+    # solo existían a nivel de base de datos (Postgres) y no en el modelo,
+    # por lo que create_all() (usado por la suite de tests con SQLite) no
+    # las conocía y un bug que dejara stock negativo o precio <= 0 hubiera
+    # pasado los tests silenciosamente sin tocar Postgres real.
+    __table_args__ = (
+        CheckConstraint("stock >= 0", name="ck_products_stock_nonnegative"),
+        CheckConstraint("price IS NULL OR price > 0", name="ck_products_price_positive"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(160), index=True)

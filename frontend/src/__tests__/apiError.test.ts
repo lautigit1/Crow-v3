@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import axios from "axios";
-import { apiError } from "@/shared/api/client";
+import { apiError } from "@/shared/api";
 
 describe("apiError", () => {
   it("devuelve el detail string del error axios", () => {

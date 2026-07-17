@@ -5,7 +5,7 @@ import { Button, DataTable, Select, CenteredSpinner, type Column } from "@/share
 import { AdminHeader } from "./ui/AdminHeader";
 import { quoteApi, QUOTE_STATUSES, type Quote, type QuoteStatus } from "@/entities/quote";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
-import { waLink } from "@/shared/config/contact";
+import { useWaLink } from "@/entities/settings/useSiteSettings";
 import { formatDate } from "@/shared/lib/format";
 
 type Filter = "Todas" | QuoteStatus;
@@ -13,8 +13,14 @@ type Filter = "Todas" | QuoteStatus;
 export function AdminQuotesPage() {
   const [items, setItems] = useState<Quote[] | null>(null);
   const [filter, setFilter] = useState<Filter>("Todas");
+  const [loadError, setLoadError] = useState(false);
+  const waLink = useWaLink();
 
-  const load = () => quoteApi.listAll().then(setItems).catch(() => setItems([]));
+  const load = () => quoteApi.listAll().then(setItems).catch((err) => {
+    console.error("[AdminQuotesPage] no se pudieron cargar las cotizaciones:", err);
+    setItems([]);
+    setLoadError(true);
+  });
   useEffect(() => void load(), []);
 
   const changeStatus = async (q: Quote, status: QuoteStatus) => {
@@ -102,7 +108,14 @@ export function AdminQuotesPage() {
         })}
       </div>
 
-      {items === null ? <CenteredSpinner /> : <DataTable columns={columns} rows={rows} getKey={(q) => q.id} empty="No hay cotizaciones en este estado." />}
+      {items === null ? <CenteredSpinner /> : (
+        <DataTable
+          columns={columns}
+          rows={rows}
+          getKey={(q) => q.id}
+          empty={loadError ? "No se pudieron cargar las cotizaciones. Recargá la página." : "No hay cotizaciones en este estado."}
+        />
+      )}
     </div>
   );
 }

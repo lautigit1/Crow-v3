@@ -61,10 +61,7 @@ export function Testimonials() {
               )}
             >
               {/* Decorative quote mark */}
-              <div
-                className="absolute top-4 right-6 text-[96px] leading-none text-primarySoft select-none pointer-events-none"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
+              <div className="absolute top-4 right-6 text-[96px] leading-none text-primarySoft select-none pointer-events-none font-[Georgia,serif]">
                 "
               </div>
 

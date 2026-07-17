@@ -121,27 +121,27 @@ def build_quote_notification(
     """Returns kwargs for send_email() — admin notification of a new quote."""
     subject = f"[Crow] Nueva cotización #{quote_id} — {customer_name}"
 
-    ctx = dict(
-        quote_id=quote_id,
-        customer_name=customer_name,
-        customer_email=customer_email,
-        customer_phone=customer_phone,
-        vehicle=vehicle,
-        message=message,
-        frontend_url=settings.FRONTEND_URL,
-    )
+    ctx = {
+        "quote_id": quote_id,
+        "customer_name": customer_name,
+        "customer_email": customer_email,
+        "customer_phone": customer_phone,
+        "vehicle": vehicle,
+        "message": message,
+        "frontend_url": settings.FRONTEND_URL,
+    }
     html = _render("quote_notification.html.jinja", **ctx)
     text = _render("quote_notification.txt.jinja", **ctx)
 
-    return dict(to=settings.ADMIN_EMAIL, subject=subject, html=html, text=text)
+    return {"to": settings.ADMIN_EMAIL, "subject": subject, "html": html, "text": text}
 
 
 def build_reset_email(*, to: str, reset_url: str, name: str) -> dict:
     """Returns kwargs for send_email() — password reset link."""
     subject = "Crow Repuestos — Recuperación de contraseña"
 
-    ctx = dict(name=name, reset_url=reset_url)
+    ctx = {"name": name, "reset_url": reset_url}
     html = _render("reset_password.html.jinja", **ctx)
     text = _render("reset_password.txt.jinja", **ctx)
 
-    return dict(to=to, subject=subject, html=html, text=text)
+    return {"to": to, "subject": subject, "html": html, "text": text}

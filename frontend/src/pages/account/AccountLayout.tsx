@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import clsx from "clsx";
 import { Container, Avatar, Icon, type IconName } from "@/shared/ui";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/entities/session";
 
 type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
 

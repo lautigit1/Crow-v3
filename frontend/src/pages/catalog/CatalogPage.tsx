@@ -1,16 +1,20 @@
 import type * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useSearchParams } from "react-router-dom";
-import { Container, Select, EmptyState, Button, Icon } from "@/shared/ui";
+import { Container, Select, EmptyState, Button, Icon, Pagination } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
 import { ProductCard } from "@/entities/product/ProductCard";
-import { productApi, type Product } from "@/entities/product";
-import { categoryApi, type Category } from "@/entities/category";
-import { brandApi, type Brand } from "@/entities/brand";
-import { VEHICLE_TYPES } from "@/shared/config/categories";
+import { type Product } from "@/entities/product";
+import { useProductsQuery } from "@/entities/product/queries";
+import { type Category } from "@/entities/category";
+import { useCategoriesQuery } from "@/entities/category/queries";
+import { type Brand } from "@/entities/brand";
+import { useBrandsQuery } from "@/entities/brand/queries";
+import { VEHICLE_TYPES } from "@/shared/config";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 
 // ── Skeleton card ─────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -37,6 +41,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
       {label}
       <button
         onClick={onRemove}
+        aria-label={`Quitar filtro ${label}`}
         className="bg-[rgba(0,87,217,.15)] hover:bg-primary border-none rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 transition-[background] duration-150 shrink-0 text-primary hover:text-white"
       >
         <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
@@ -72,7 +77,7 @@ function FilterPanel({
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} className="bg-surface border border-border rounded-md w-7 h-7 flex items-center justify-center cursor-pointer text-textMuted">
+            <button onClick={onClose} aria-label="Cerrar filtros" className="bg-surface border border-border rounded-md w-7 h-7 flex items-center justify-center cursor-pointer text-textMuted">
               <Icon name="close" size={14} />
             </button>
           )}
@@ -129,21 +134,28 @@ function FilterPanel({
   );
 }
 
+// Tamaño de página del catálogo público. Coordinado con `skip`/`limit` en
+// cada request y reseteado a 0 en cada cambio de filtro (ver `setQPage0` y
+// hermanos) para que nunca se pida una página fuera de rango tras filtrar.
+const PAGE_SIZE = 48;
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function CatalogPage() {
   usePageMeta("Catálogo de repuestos", "Repuestos, lubricantes y baterías para autos, motos y camiones. Filtrá por categoría, marca y tipo de vehículo.");
   const [params] = useSearchParams();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
+
+  // TanStack Query -- categorías y marcas cambian poco (staleTime largo, ver
+  // entities/*/queries.ts) así que en la práctica se piden una sola vez por
+  // sesión de navegación, no en cada visita a esta página.
+  const { data: categories = [] } = useCategoriesQuery();
+  const { data: brands = [] } = useBrandsQuery();
 
   const [q, setQ] = useState(params.get("q") ?? "");
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [brandId, setBrandId] = useState<number | "">("");
   const [vehicleType, setVehicleType] = useState<string>("Todos");
   const [inStock, setInStock] = useState(false);
-
-  const [products, setProducts] = useState<Product[] | null>(null);
-  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [modal, setModal] = useState<{ open: boolean; message: string; productId: number | null }>({ open: false, message: "", productId: null });
   const [drawerOpen, setDrawerOpen] = useState(false);
   // `isMobile` drives which markup gets *mounted*, not just how it looks: the
@@ -155,11 +167,6 @@ export function CatalogPage() {
   const { isMobile } = useBreakpoint();
 
   useEffect(() => {
-    categoryApi.list().then(setCategories).catch(() => setCategories([]));
-    brandApi.list().then(setBrands).catch(() => setBrands([]));
-  }, []);
-
-  useEffect(() => {
     const catName = params.get("cat");
     if (catName && categories.length) {
       const match = categories.find((c) => c.name === catName);
@@ -167,26 +174,52 @@ export function CatalogPage() {
     }
   }, [params, categories]);
 
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setProducts(null);
-      productApi
-        .list({
-          q: q || undefined,
-          category_id: categoryId || undefined,
-          brand_id: brandId || undefined,
-          vehicle_type: vehicleType !== "Todos" ? vehicleType : undefined,
-          in_stock: inStock || undefined,
-          limit: 48,
-        })
-        .then((r) => { setProducts(r.items); setTotal(r.total); })
-        .catch(() => { setProducts([]); setTotal(0); });
-    }, 220);
-    return () => clearTimeout(handle);
-  }, [q, categoryId, brandId, vehicleType, inStock]);
+  // Debounce de 220ms sobre el objeto de filtros completo (mismo criterio
+  // que la versión anterior con setTimeout manual) -- evita un fetch por
+  // cada tecla en el buscador. `useProductsQuery` corre con `placeholderData`
+  // (ver entities/product/queries.ts), así que el grid de resultados no
+  // parpadea a skeleton en cada cambio de filtro/página: se ve la página
+  // anterior atenuada (`isFetching`) hasta que llega la nueva.
+  const debouncedParams = useDebouncedValue(
+    {
+      q: q || undefined,
+      category_id: categoryId || undefined,
+      brand_id: brandId || undefined,
+      vehicle_type: vehicleType !== "Todos" ? vehicleType : undefined,
+      in_stock: inStock || undefined,
+      skip: page * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    },
+    220,
+  );
+  const { data, isPending, isFetching } = useProductsQuery(debouncedParams);
+  const products = data?.items;
+  const total = data?.total ?? 0;
+
+  // useCallback -- ProductCard está envuelto en React.memo (ver
+  // entities/product/ProductCard.tsx); si `onQuote` fuera un closure inline
+  // nuevo en cada render de esta página, React.memo lo vería como un prop
+  // "cambiado" y re-renderizaría las 48 cards igual, anulando el memo.
+  const handleQuote = useCallback((prod: Product) => {
+    setModal({
+      open: true,
+      message: `Hola Crow! Me interesa este producto: ${prod.name} (SKU: ${prod.sku}). ¿Tienen disponibilidad?`,
+      productId: prod.id,
+    });
+  }, []);
+
+  // Cambiar cualquier filtro vuelve a la página 0 en el mismo batch de
+  // estado que el cambio del filtro (React los agrupa en un solo render),
+  // así el efecto de arriba dispara un único fetch, no dos.
+  const setQPage0 = (v: string) => { setQ(v); setPage(0); };
+  const setCategoryIdPage0 = (v: number | "") => { setCategoryId(v); setPage(0); };
+  const setBrandIdPage0 = (v: number | "") => { setBrandId(v); setPage(0); };
+  const setVehicleTypePage0 = (v: string) => { setVehicleType(v); setPage(0); };
+  const setInStockPage0 = (v: boolean) => { setInStock(v); setPage(0); };
 
   const clearFilters = () => {
     setQ(""); setCategoryId(""); setBrandId(""); setVehicleType("Todos"); setInStock(false);
+    setPage(0);
   };
 
   const hasFilters = q || categoryId !== "" || brandId !== "" || vehicleType !== "Todos" || inStock;
@@ -194,12 +227,12 @@ export function CatalogPage() {
   const activeChips = useMemo(() => {
     const chips: { label: string; clear: () => void }[] = [];
     const cat = categories.find((c) => c.id === categoryId);
-    if (cat) chips.push({ label: cat.name, clear: () => setCategoryId("") });
-    if (vehicleType !== "Todos") chips.push({ label: vehicleType, clear: () => setVehicleType("Todos") });
+    if (cat) chips.push({ label: cat.name, clear: () => setCategoryIdPage0("") });
+    if (vehicleType !== "Todos") chips.push({ label: vehicleType, clear: () => setVehicleTypePage0("Todos") });
     const brand = brands.find((b) => b.id === brandId);
-    if (brand) chips.push({ label: brand.name, clear: () => setBrandId("") });
-    if (inStock) chips.push({ label: "En stock", clear: () => setInStock(false) });
-    if (q) chips.push({ label: `"${q}"`, clear: () => setQ("") });
+    if (brand) chips.push({ label: brand.name, clear: () => setBrandIdPage0("") });
+    if (inStock) chips.push({ label: "En stock", clear: () => setInStockPage0(false) });
+    if (q) chips.push({ label: `"${q}"`, clear: () => setQPage0("") });
     return chips;
   }, [categories, brands, categoryId, brandId, vehicleType, inStock, q]);
 
@@ -216,7 +249,7 @@ export function CatalogPage() {
             guarantee (see shared/ui/Field.tsx's comment on the same trap). */}
         <Container className="relative pt-10 pb-0" style={{ paddingLeft: 40, paddingRight: 40 }}>
           {/* Breadcrumb */}
-          <div className="font-mono text-[11px] text-[#3F5165] tracking-[.08em] mb-5">
+          <div className="font-mono text-[11px] text-[#64809E] tracking-[.08em] mb-5">
             INICIO <span className="mx-1.5 text-[#1E2D3D]">/</span>
             <span className="text-primary">CATÁLOGO</span>
           </div>
@@ -226,26 +259,26 @@ export function CatalogPage() {
               <h1 className="font-display text-4xl font-black tracking-[-.025em] text-white mb-2">
                 Catálogo de repuestos
               </h1>
-              <p className="font-body text-[15px] text-[#4E6B82] m-0">
+              <p className="font-body text-[15px] text-[#5E819D] m-0">
                 Stock actualizado · Cotización directa por WhatsApp
               </p>
             </div>
 
             {/* Search bar in header */}
             <div className="relative w-80 shrink-0">
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#3F5165] pointer-events-none">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64809E] pointer-events-none">
                 <Icon name="search" size={16} />
               </div>
               <input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => setQPage0(e.target.value)}
                 placeholder="Buscar por nombre, SKU o marca…"
                 className="w-full box-border h-11 pr-3.5 pl-[42px] font-body text-sm text-white bg-[rgba(255,255,255,.07)] border-[1.5px] border-[rgba(255,255,255,.1)] rounded-md outline-none transition-[border-color,background] duration-150 focus:border-[rgba(0,87,217,.6)] focus:bg-[rgba(255,255,255,.1)]"
               />
               {q && (
                 <button
-                  onClick={() => setQ("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-[#4E6B82] p-1 leading-[0]"
+                  onClick={() => setQPage0("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-[#5E819D] p-1 leading-[0]"
                 >
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -265,10 +298,10 @@ export function CatalogPage() {
             <div className="w-9 h-1 bg-border rounded-[2px] mx-auto mt-3 mb-1" />
             <FilterPanel
               categories={categories} brands={brands}
-              categoryId={categoryId} setCategoryId={setCategoryId}
-              brandId={brandId} setBrandId={setBrandId}
-              vehicleType={vehicleType} setVehicleType={setVehicleType}
-              inStock={inStock} setInStock={setInStock}
+              categoryId={categoryId} setCategoryId={setCategoryIdPage0}
+              brandId={brandId} setBrandId={setBrandIdPage0}
+              vehicleType={vehicleType} setVehicleType={setVehicleTypePage0}
+              inStock={inStock} setInStock={setInStockPage0}
               hasFilters={!!hasFilters} clearFilters={clearFilters}
               onClose={() => setDrawerOpen(false)}
             />
@@ -293,10 +326,10 @@ export function CatalogPage() {
             <aside className="sticky top-[90px] bg-white border border-border rounded-lg shadow-sm overflow-hidden">
               <FilterPanel
                 categories={categories} brands={brands}
-                categoryId={categoryId} setCategoryId={setCategoryId}
-                brandId={brandId} setBrandId={setBrandId}
-                vehicleType={vehicleType} setVehicleType={setVehicleType}
-                inStock={inStock} setInStock={setInStock}
+                categoryId={categoryId} setCategoryId={setCategoryIdPage0}
+                brandId={brandId} setBrandId={setBrandIdPage0}
+                vehicleType={vehicleType} setVehicleType={setVehicleTypePage0}
+                inStock={inStock} setInStock={setInStockPage0}
                 hasFilters={!!hasFilters} clearFilters={clearFilters}
               />
             </aside>
@@ -308,7 +341,7 @@ export function CatalogPage() {
             <div className="mb-4">
               <div className={clsx("flex items-center justify-between", activeChips.length ? "mb-3" : "mb-0")}>
                 <div className="font-body text-sm text-textMuted">
-                  {products === null ? (
+                  {isPending ? (
                     <span className="text-textFaint">Cargando…</span>
                   ) : (
                     <>
@@ -342,26 +375,32 @@ export function CatalogPage() {
             </div>
 
             {/* Grid */}
-            {products === null ? (
+            {isPending ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5">
                 {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
-            ) : products.length === 0 ? (
+            ) : !products || products.length === 0 ? (
               <EmptyState
                 title="Sin resultados"
                 message="No encontramos productos con esos filtros. Probá ajustar la búsqueda o limpiar los filtros."
                 action={<Button onClick={clearFilters}>Limpiar filtros</Button>}
               />
             ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5">
-                {products.map((p) => (
-                  <ProductCard
-                    key={p.id}
-                    product={p}
-                    onQuote={(prod) => setModal({ open: true, message: `Hola Crow! Me interesa este producto: ${prod.name} (SKU: ${prod.sku}). ¿Tienen disponibilidad?`, productId: prod.id })}
-                  />
-                ))}
-              </div>
+              <>
+                <div
+                  className={clsx(
+                    "grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5 transition-opacity duration-150",
+                    isFetching && "opacity-60",
+                  )}
+                >
+                  {products.map((p) => (
+                    <ProductCard key={p.id} product={p} onQuote={handleQuote} />
+                  ))}
+                </div>
+                {total > PAGE_SIZE && (
+                  <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} />
+                )}
+              </>
             )}
           </div>
         </Container>

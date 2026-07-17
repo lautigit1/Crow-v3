@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ChangeEvent } from "react";
 import clsx from "clsx";
 import { Field, Input, Button, Icon } from "@/shared/ui";
 import { userApi } from "@/entities/user";
-import { apiError } from "@/shared/api/client";
+import { apiError } from "@/shared/api";
 
 // ── Password strength checker ─────────────────────────────────────────────────
 type Rule = { label: string; test: (v: string) => boolean };

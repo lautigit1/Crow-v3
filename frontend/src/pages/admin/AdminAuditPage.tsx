@@ -28,9 +28,14 @@ function actionMeta(action: string): { icon: IconName; tone: Tone; label: string
 
 export function AdminAuditPage() {
   const [items, setItems] = useState<AuditLog[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    auditApi.list().then(setItems).catch(() => setItems([]));
+    auditApi.list().then(setItems).catch((err) => {
+      console.error("[AdminAuditPage] no se pudo cargar el registro de auditoría:", err);
+      setItems([]);
+      setLoadError(true);
+    });
   }, []);
 
   const columns: Column<AuditLog>[] = [
@@ -70,7 +75,14 @@ export function AdminAuditPage() {
   return (
     <div>
       <AdminHeader title="Auditoría" icon="audit" subtitle="Registro inmutable de eventos de seguridad y cambios." />
-      {items === null ? <CenteredSpinner /> : <DataTable columns={columns} rows={items} getKey={(l) => l.id} empty="Sin eventos registrados todavía." />}
+      {items === null ? <CenteredSpinner /> : (
+        <DataTable
+          columns={columns}
+          rows={items}
+          getKey={(l) => l.id}
+          empty={loadError ? "No se pudo cargar el registro de auditoría. Recargá la página." : "Sin eventos registrados todavía."}
+        />
+      )}
     </div>
   );
 }

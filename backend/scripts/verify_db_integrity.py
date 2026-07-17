@@ -192,7 +192,7 @@ def reconcile(db, verbose: bool = True) -> None:
 
     if verbose:
         print(f"\nAplicando {len(missing)} objeto(s) faltante(s)...")
-    for kind, name, fix_sql in missing:
+    for _kind, name, fix_sql in missing:
         db.execute(text(fix_sql))
         if verbose:
             print(f"  + creado: {name}")

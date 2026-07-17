@@ -3,9 +3,10 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+import jwt
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from jose import JWTError, jwt
+from jwt import PyJWTError
 
 from app.core.config import settings
 
@@ -35,6 +36,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 _ISS = "crow-repuestos"
 _AUD = "crow-api"
+# Alias público -- deps.py y auth.py necesitan el mismo valor para decodificar
+# access tokens (antes lo tenían duplicado como literal "crow-api" a mano en
+# cada archivo; ahora hay una sola fuente de verdad).
+TOKEN_AUDIENCE = _AUD
 
 
 def _derive_secret(purpose: str) -> str:
@@ -113,17 +118,17 @@ def create_refresh_token(subject: str | int, token_version: int = 0) -> str:
 def decode_refresh_token(token: str) -> tuple[str, str, int, float]:
     """
     Validates and decodes a refresh token.
-    Returns (subject, jti, token_version, exp) or raises JWTError.
+    Returns (subject, jti, token_version, exp) or raises PyJWTError.
     The JTI should be blocklisted after rotation to prevent replay attacks.
     Tokens issued before the `ver` claim existed decode as version 0.
     """
     payload = jwt.decode(token, _REFRESH_SECRET, algorithms=[settings.ALGORITHM], audience=_AUD)
     if payload.get("type") != "refresh":
-        raise JWTError("Invalid token type")
+        raise PyJWTError("Invalid token type")
     sub = payload.get("sub")
     jti = payload.get("jti")
     if sub is None or jti is None:
-        raise JWTError("Malformed token")
+        raise PyJWTError("Malformed token")
     return sub, jti, int(payload.get("ver", 0)), float(payload.get("exp", 0))
 
 
@@ -158,13 +163,13 @@ def create_reset_token(user_id: int) -> tuple[str, str]:
 def decode_reset_token(token: str) -> tuple[int, str]:
     """
     Validates a reset token.
-    Returns (user_id, jti) or raises JWTError.
+    Returns (user_id, jti) or raises PyJWTError.
     """
     payload = jwt.decode(token, _RESET_SECRET, algorithms=[settings.ALGORITHM], audience=_AUD)
     if payload.get("type") != "reset":
-        raise JWTError("Invalid token type")
+        raise PyJWTError("Invalid token type")
     sub = payload.get("sub")
     jti = payload.get("jti")
     if sub is None or jti is None:
-        raise JWTError("Malformed token")
+        raise PyJWTError("Malformed token")
     return int(sub), jti

@@ -1,10 +1,10 @@
 import type * as React from "react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, DataTable, Modal, Input, CenteredSpinner, Icon, ConfirmModal, type Column } from "@/shared/ui";
-import { useConfirm } from "@/shared/hooks/useConfirm";
+import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { brandApi, type Brand, type BrandInput } from "@/entities/brand";
-import { apiError } from "@/shared/api/client";
+import { apiError } from "@/shared/api";
 import { slugify } from "@/shared/lib/slug";
 import { formatDateTime } from "@/shared/lib/format";
 
@@ -19,9 +19,14 @@ export function AdminBrandsPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const load = () => brandApi.list().then(setItems).catch(() => setItems([]));
+  const load = () => brandApi.list().then(setItems).catch((err) => {
+    console.error("[AdminBrandsPage] no se pudieron cargar las marcas:", err);
+    setItems([]);
+    setLoadError(true);
+  });
   useEffect(() => void load(), []);
 
   const openNew = () => { setForm(empty); setEditing("new"); setError(""); setLogoError(false); };
@@ -94,7 +99,7 @@ export function AdminBrandsPage() {
       render: (b) => (
         <div className="inline-flex gap-2">
           <Button variant="outline" size="sm" onClick={() => openEdit(b)}><Icon name="edit" size={14} /> Editar</Button>
-          <Button variant="danger" size="sm" onClick={() => remove(b)}><Icon name="trash" size={14} /></Button>
+          <Button variant="danger" size="sm" onClick={() => remove(b)} aria-label="Eliminar marca"><Icon name="trash" size={14} /></Button>
         </div>
       ),
     },
@@ -111,7 +116,12 @@ export function AdminBrandsPage() {
         action={<Button onClick={openNew}><Icon name="plus" size={16} /> Nueva marca</Button>}
       />
       {items === null ? <CenteredSpinner /> : (
-        <DataTable columns={columns} rows={items} getKey={(b) => b.id} empty="No hay marcas registradas." />
+        <DataTable
+          columns={columns}
+          rows={items}
+          getKey={(b) => b.id}
+          empty={loadError ? "No se pudieron cargar las marcas. Recargá la página." : "No hay marcas registradas."}
+        />
       )}
 
       <ConfirmModal {...confirmProps} />

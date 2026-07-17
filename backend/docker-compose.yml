@@ -5,10 +5,17 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: crow
-      POSTGRES_PASSWORD: crow_dev_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crow_dev_password}
       POSTGRES_DB: crow_repuestos
     ports:
-      - "5432:5432"
+      # Bindeado solo a localhost -- este compose es para desarrollo local
+      # aislado del backend (ver README.md), no para producción. Antes
+      # publicaba 5432 en todas las interfaces (0.0.0.0), exponiendo Postgres
+      # a toda la red si se corría en una máquina con IP accesible (ej. una
+      # VM de dev en la nube). Sigue expuesto a localhost a propósito, para
+      # poder conectar un cliente de DB (DBeaver, TablePlus, etc.) desde el
+      # host.
+      - "127.0.0.1:5432:5432"
     volumes:
       - crow_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +32,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg2://crow:crow_dev_password@db:5432/crow_repuestos
+      DATABASE_URL: postgresql+psycopg2://crow:${POSTGRES_PASSWORD:-crow_dev_password}@db:5432/crow_repuestos
       SECRET_KEY: ${SECRET_KEY}
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       REFRESH_TOKEN_EXPIRE_MINUTES: "60"

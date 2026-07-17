@@ -10,8 +10,8 @@ import { dashboardApi, type Analytics, type DashboardStats } from "@/entities/da
 import { productApi, type Product } from "@/entities/product";
 import { auditApi, type AuditLog } from "@/entities/audit";
 import { formatDate, formatPrice, formatDateTime } from "@/shared/lib/format";
-import { useAuth } from "@/app/providers/AuthProvider";
-import { color } from "@/shared/config/theme";
+import { useAuth } from "@/entities/session";
+import { color } from "@/shared/config";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const CARD_CLASS = "bg-white border border-border rounded-lg shadow-[0_1px_3px_rgba(13,23,40,.05)] overflow-hidden";
@@ -154,9 +154,20 @@ export function DashboardPage() {
   useEffect(() => {
     Promise.all([dashboardApi.stats(), dashboardApi.analytics()])
       .then(([s, a]) => { setStats(s); setAnalytics(a); })
-      .catch(() => setError(true));
-    productApi.list({ sort: "stock_asc", limit: 6 }).then((r) => setLowStock(r.items)).catch(() => setLowStock([]));
-    auditApi.list(7).then(setAudit).catch(() => setAudit([]));
+      .catch((err) => {
+        console.error("[DashboardPage] no se pudieron cargar stats/analytics:", err);
+        setError(true);
+      });
+    // Widgets secundarios: si fallan, el dashboard principal sigue siendo
+    // usable -- se loguea y el widget queda vacío en vez de tumbar la página.
+    productApi.list({ sort: "stock_asc", limit: 6 }).then((r) => setLowStock(r.items)).catch((err) => {
+      console.error("[DashboardPage] no se pudo cargar el widget de stock bajo:", err);
+      setLowStock([]);
+    });
+    auditApi.list(7).then(setAudit).catch((err) => {
+      console.error("[DashboardPage] no se pudo cargar el widget de auditoría reciente:", err);
+      setAudit([]);
+    });
   }, []);
 
   if (error) return (
@@ -185,7 +196,7 @@ export function DashboardPage() {
             <h1 className="font-display text-[26px] font-black text-white tracking-[-.02em] mb-1.5">
               {greeting}, {firstName}.
             </h1>
-            <p className="font-body text-sm text-[#4E6B82] m-0">
+            <p className="font-body text-sm text-[#5E819D] m-0">
               Tenés <strong className="text-[#FCD34D]">{stats.pending_quotes}</strong> cotizaci{stats.pending_quotes === 1 ? "ón pendiente" : "ones pendientes"} y{" "}
               <strong className={stats.out_of_stock > 0 ? "text-[#F87171]" : "text-[#86EFAC]"}>{stats.out_of_stock}</strong> producto{stats.out_of_stock === 1 ? "" : "s"} sin stock.
             </p>

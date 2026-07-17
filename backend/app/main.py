@@ -21,6 +21,7 @@ from app.api import api_router
 from app.api.routes.seo import router as seo_router
 from app.core.config import settings
 from app.core.database import Base, check_db_connection, engine
+from app.core.error_tracking import init_sentry
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, get_logger
 from app.core.middleware import (
@@ -31,6 +32,12 @@ from app.core.middleware import (
 )
 
 logger = get_logger("crow.startup")
+
+# Antes de crear la app -- la integración de Sentry con FastAPI/Starlette
+# necesita estar activa antes de que se registren las rutas y el middleware
+# para poder capturar excepciones en cualquiera de ellos. No-op si
+# SENTRY_DSN no está configurada (ver core/error_tracking.py).
+init_sentry()
 
 
 def _wait_for_db(retries: int = 10, delay: float = 2.0) -> None:
@@ -169,6 +176,7 @@ app.include_router(seo_router)
 @app.get("/api/health", tags=["ops"], include_in_schema=False)
 def health() -> dict:
     from fastapi.responses import JSONResponse
+
     from app.core.redis_client import redis_is_up
     db_ok = check_db_connection()
     redis_ok = redis_is_up()

@@ -17,18 +17,22 @@ Usage:
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
+
+import app.models  # noqa: F401 — registers all models on Base
 from alembic import context
 
 # Load our app config and models so Alembic can inspect the full schema.
 from app.core.config import settings
 from app.core.database import Base
-import app.models  # noqa: F401 — registers all models on Base
 
 # Alembic Config object (gives access to alembic.ini values)
 config = context.config
 
-# Override the SQLAlchemy URL with the one from our settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Override the SQLAlchemy URL with the one from our settings. Migrations
+# use `alembic_database_url` (direct-to-Postgres in production, bypassing
+# pgbouncer) rather than the app's pooled `DATABASE_URL` -- see the comment
+# on `Settings.ALEMBIC_DATABASE_URL`.
+config.set_main_option("sqlalchemy.url", settings.alembic_database_url)
 
 # Set up Python logging from the alembic.ini [loggers] section
 if config.config_file_name is not None:

@@ -4,7 +4,12 @@ Tests for orders endpoints:
   - GET /api/orders/me, GET /api/orders/me/{id} (propio, 403 ajeno)
   - PATCH /api/orders/me/{id}/cancel (solo Pendiente, 403 ajeno)
   - GET /api/orders, PATCH /api/orders/{id} (admin)
+  - Regresión N+1 en los listados (selectinload de items)
 """
+from sqlalchemy import event
+
+from tests.conftest import engine
+
 BASE = "/api/orders"
 
 
@@ -163,3 +168,59 @@ class TestAdminOrders:
         created = _create_order(user_client, product).json()
         r = user_client.patch(f"{BASE}/{created['id']}", json={"status": "Confirmado"})
         assert r.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Regresión N+1: listar pedidos no debe escalar linealmente con la cantidad
+# de pedidos (selectinload de Order.items en vez de lazy loading).
+# ---------------------------------------------------------------------------
+
+def _count_queries(fn):
+    """Cuenta las queries SQL emitidas mientras corre `fn`."""
+    count = 0
+
+    def _before_cursor_execute(*args, **kwargs):
+        nonlocal count
+        count += 1
+
+    event.listen(engine, "before_cursor_execute", _before_cursor_execute)
+    try:
+        fn()
+    finally:
+        event.remove(engine, "before_cursor_execute", _before_cursor_execute)
+    return count
+
+
+class TestOrdersNPlusOne:
+    def test_my_orders_query_count_does_not_scale_with_order_count(self, user_client, product):
+        # 1 pedido de referencia
+        _create_order(user_client, product)
+        baseline = _count_queries(lambda: user_client.get(f"{BASE}/me"))
+
+        # 5 pedidos más (6 en total)
+        for _ in range(5):
+            _create_order(user_client, product)
+        with_more_orders = _count_queries(lambda: user_client.get(f"{BASE}/me"))
+
+        # Sin selectinload, cada pedido extra agrega 1 query para sus items
+        # (N+1 real). Con selectinload, el número de queries es constante
+        # sin importar cuántos pedidos haya en la página.
+        assert with_more_orders == baseline, (
+            f"El listado de /orders/me parece tener N+1: {baseline} queries con 1 "
+            f"pedido vs {with_more_orders} con 6 pedidos (deberían ser iguales)."
+        )
+
+    def test_admin_list_orders_query_count_does_not_scale_with_order_count(
+        self, user_client, admin_client, product
+    ):
+        _create_order(user_client, product)
+        baseline = _count_queries(lambda: admin_client.get(BASE))
+
+        for _ in range(5):
+            _create_order(user_client, product)
+        with_more_orders = _count_queries(lambda: admin_client.get(BASE))
+
+        assert with_more_orders == baseline, (
+            f"El listado admin de pedidos parece tener N+1: {baseline} queries con 1 "
+            f"pedido vs {with_more_orders} con 6 pedidos (deberían ser iguales)."
+        )

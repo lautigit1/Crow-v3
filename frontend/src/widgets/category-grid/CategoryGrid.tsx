@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Container, Icon, Reveal } from "@/shared/ui";
-import { CATEGORIES } from "@/shared/config/categories";
+import { CATEGORIES } from "@/shared/config";
 
 const PRIMARY   = CATEGORIES.slice(0, 3); // Autos, Camiones, Motos
 const SECONDARY = CATEGORIES.slice(3);    // Lubricantes, Baterías, Filtros, Detailing, Accesorios
