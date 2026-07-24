@@ -37,11 +37,41 @@ export function fieldControl(scope: Page | Locator, label: string): Locator {
 /** Primer nombre tal cual queda en el trigger de AccountMenu (`full_name.split(" ")[0]`). */
 export const ADMIN_FIRST_NAME = "Administrador"; // seed.py: full_name="Administrador"
 
+/**
+ * Locators de los campos de /login y /registro.
+ *
+ * El rediseño de auth (AuthPanel + AuthFormKit, commit "reestructuracion
+ * visual de landing y login") reemplazó los inputs con placeholder por
+ * campos con floating label: el `placeholder` ahora es literalmente `" "`
+ * (un espacio) porque el label flota vía `peer-[:not(:placeholder-shown)]`
+ * en Tailwind. Por eso `getByPlaceholder("tu@correo.com")` dejó de
+ * encontrar nada y todos los tests que loguean/registran se colgaban
+ * hasta el timeout de 60s.
+ *
+ * La contrapartida buena es que ahora SÍ hay asociación semántica
+ * (`<label htmlFor>` ↔ `id="auth-<key>"`), así que `getByLabel` es el
+ * locator correcto y estable. `exact: true` evita que "Contraseña" matchee
+ * también el botón del ojito (aria-label "Mostrar/Ocultar contraseña").
+ */
+const emailField = (page: Page) => page.getByLabel("Email", { exact: true });
+const passwordField = (page: Page) => page.getByLabel("Contraseña", { exact: true });
+const fullNameField = (page: Page) => page.getByLabel("Nombre completo", { exact: true });
+
+/**
+ * Botón de submit del formulario de auth (StampButton).
+ *
+ * No se busca por texto a propósito: el selector de modo son dos <button>
+ * con las mismas palabras que el submit ("Ingresar" / "Crear cuenta"), así
+ * que `getByRole("button", { name: "Crear cuenta" })` viola strict mode en
+ * /registro. El `type="submit"` dentro del <form> es único.
+ */
+const authSubmit = (page: Page) => page.locator('form button[type="submit"]');
+
 export async function loginAsAdmin(page: Page) {
   await page.goto("/login");
-  await page.getByPlaceholder("tu@correo.com").fill(ADMIN_EMAIL);
-  await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await emailField(page).fill(ADMIN_EMAIL);
+  await passwordField(page).fill(ADMIN_PASSWORD);
+  await authSubmit(page).click();
   await expect(page).toHaveURL(/\/admin/);
 }
 
@@ -81,10 +111,10 @@ export async function registerNewCustomer(page: Page): Promise<NewCustomer> {
   };
 
   await page.goto("/registro");
-  await page.getByPlaceholder("Tu nombre").fill(customer.fullName);
-  await page.getByPlaceholder("tu@correo.com").fill(customer.email);
-  await page.getByPlaceholder("Mínimo 10 caracteres").fill(customer.password);
-  await page.getByRole("button", { name: "Crear cuenta gratis" }).click();
+  await fullNameField(page).fill(customer.fullName);
+  await emailField(page).fill(customer.email);
+  await passwordField(page).fill(customer.password);
+  await authSubmit(page).click();
   await expect(page).toHaveURL(/\/cuenta/);
 
   return customer;
@@ -92,9 +122,9 @@ export async function registerNewCustomer(page: Page): Promise<NewCustomer> {
 
 export async function loginAs(page: Page, email: string, password: string) {
   await page.goto("/login");
-  await page.getByPlaceholder("tu@correo.com").fill(email);
-  await page.locator('input[type="password"]').fill(password);
-  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await emailField(page).fill(email);
+  await passwordField(page).fill(password);
+  await authSubmit(page).click();
 }
 
 export type ProductSeed = { name: string; sku: string; price: number; stock: number };

@@ -31,6 +31,15 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   use: {
     baseURL,
+    // El default de Playwright para acciones (click/fill) es 0 = sin límite
+    // propio: una acción sobre un locator que no existe se queda colgada
+    // hasta consumir el timeout entero del test (60s acá). Cuando el
+    // rediseño de auth cambió los selectores, eso hizo que los 9 tests
+    // rotos tardaran 1 minuto cada uno y el job de CI se cancelara por
+    // timeout antes de terminar, sin dejar claro qué había fallado.
+    // Con un límite explícito el error aparece en 15s y dice exactamente
+    // qué locator no resolvió.
+    actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
