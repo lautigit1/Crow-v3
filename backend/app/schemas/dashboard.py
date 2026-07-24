@@ -33,3 +33,18 @@ class Analytics(BaseModel):
     products_by_vehicle: list[NamedCount]
     stock_summary: StockSummary
     inventory_value: float
+
+
+class TrendPoint(BaseModel):
+    # `date` es el inicio del bucket en ISO (día para 7d/30d, lunes de la
+    # semana para 90d, primero de mes para 12m). El frontend lo formatea.
+    date: str
+    revenue: float
+    orders: int
+    quotes: int
+
+
+class Trends(BaseModel):
+    period: str        # "7d" | "30d" | "90d" | "12m"
+    granularity: str   # "day" | "week" | "month"
+    points: list[TrendPoint]

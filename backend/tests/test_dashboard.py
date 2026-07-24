@@ -113,3 +113,82 @@ class TestDashboardAnalytics:
     def test_inventory_value_nonnegative(self, admin_client):
         r = admin_client.get(f"{BASE}/analytics")
         assert r.json()["inventory_value"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Trends (series temporales)
+# ---------------------------------------------------------------------------
+from app.models.order import Order, OrderItem, OrderStatus  # noqa: E402
+
+TRENDS = f"{BASE}/trends"
+
+_EXPECTED = {
+    "7d": ("day", 7),
+    "30d": ("day", 30),
+    "90d": ("week", 13),
+    "12m": ("month", 12),
+}
+
+
+def _add_order(db, user, product, qty=2, price=1500.0, status=OrderStatus.CONFIRMADO):
+    o = Order(user_id=user.id, status=status)
+    db.add(o)
+    db.flush()
+    db.add(OrderItem(
+        order_id=o.id, product_id=product.id, sku_snapshot=product.sku,
+        name_snapshot=product.name, unit_price_snapshot=price, quantity=qty,
+    ))
+    db.flush()
+    return o
+
+
+class TestTrendsAccess:
+    def test_requires_admin(self, user_client):
+        assert user_client.get(TRENDS).status_code == 403
+
+    def test_requires_auth(self, client):
+        assert client.get(TRENDS).status_code == 401
+
+
+class TestTrendsShape:
+    def test_default_is_30d_daily(self, admin_client):
+        r = admin_client.get(TRENDS)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["period"] == "30d"
+        assert data["granularity"] == "day"
+        assert len(data["points"]) == 30
+        for p in data["points"]:
+            assert set(p) == {"date", "revenue", "orders", "quotes"}
+
+    def test_each_period_shape(self, admin_client):
+        for period, (gran, n) in _EXPECTED.items():
+            r = admin_client.get(TRENDS, params={"period": period})
+            assert r.status_code == 200, period
+            data = r.json()
+            assert data["granularity"] == gran, period
+            assert len(data["points"]) == n, period
+
+    def test_invalid_period_rejected(self, admin_client):
+        assert admin_client.get(TRENDS, params={"period": "5y"}).status_code == 422
+
+
+class TestTrendsValues:
+    def test_counts_revenue_orders_and_quotes_today(self, admin_client, db, user, product):
+        _add_order(db, user, product, qty=2, price=1500.0)  # 3000 de ingreso
+        db.add(Quote(customer_name="Hoy", message="consulta de hoy"))
+        db.flush()
+
+        pts = admin_client.get(TRENDS, params={"period": "7d"}).json()["points"]
+        today = pts[-1]  # el último bucket diario es hoy
+        assert today["revenue"] >= 3000.0
+        assert today["orders"] >= 1
+        assert today["quotes"] >= 1
+
+    def test_cancelled_order_counts_but_no_revenue(self, admin_client, db, user, product):
+        base = admin_client.get(TRENDS, params={"period": "7d"}).json()["points"][-1]
+        _add_order(db, user, product, qty=2, price=1500.0, status=OrderStatus.CANCELADO)
+        db.flush()
+        after = admin_client.get(TRENDS, params={"period": "7d"}).json()["points"][-1]
+        assert after["orders"] == base["orders"] + 1
+        assert after["revenue"] == base["revenue"]  # cancelado no suma ingreso

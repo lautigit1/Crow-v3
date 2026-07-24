@@ -35,7 +35,7 @@ const AdminCategoriesPage = lazy(() => import("@/pages/admin/AdminCategoriesPage
 const AdminBrandsPage     = lazy(() => import("@/pages/admin/AdminBrandsPage").then((m) => ({ default: m.AdminBrandsPage })));
 const AdminQuotesPage     = lazy(() => import("@/pages/admin/AdminQuotesPage").then((m) => ({ default: m.AdminQuotesPage })));
 const AdminUsersPage      = lazy(() => import("@/pages/admin/AdminUsersPage").then((m) => ({ default: m.AdminUsersPage })));
-const AdminReportsPage    = lazy(() => import("@/pages/admin/AdminReportsPage").then((m) => ({ default: m.AdminReportsPage })));
+const AdminStatsPage      = lazy(() => import("@/pages/admin/AdminStatsPage").then((m) => ({ default: m.AdminStatsPage })));
 const AdminAuditPage      = lazy(() => import("@/pages/admin/AdminAuditPage").then((m) => ({ default: m.AdminAuditPage })));
 const AdminSettingsPage   = lazy(() => import("@/pages/admin/AdminSettingsPage").then((m) => ({ default: m.AdminSettingsPage })));
 const AdminSuppliersPage  = lazy(() => import("@/pages/admin/AdminSuppliersPage").then((m) => ({ default: m.AdminSuppliersPage })));
@@ -124,7 +124,7 @@ export function App() {
         <Route path="cotizaciones" element={<Suspense fallback={<CenteredSpinner />}><AdminQuotesPage /></Suspense>} />
         <Route path="proveedores" element={<Suspense fallback={<CenteredSpinner />}><AdminSuppliersPage /></Suspense>} />
         <Route path="usuarios" element={<Suspense fallback={<CenteredSpinner />}><AdminUsersPage /></Suspense>} />
-        <Route path="reportes" element={<Suspense fallback={<CenteredSpinner />}><AdminReportsPage /></Suspense>} />
+        <Route path="estadisticas" element={<Suspense fallback={<CenteredSpinner />}><AdminStatsPage /></Suspense>} />
         <Route path="auditoria" element={<Suspense fallback={<CenteredSpinner />}><AdminAuditPage /></Suspense>} />
         <Route path="configuracion" element={<Suspense fallback={<CenteredSpinner />}><AdminSettingsPage /></Suspense>} />
       </Route>

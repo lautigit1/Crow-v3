@@ -24,7 +24,24 @@ export type Analytics = {
   inventory_value: number;
 };
 
+export type TrendPeriod = "7d" | "30d" | "90d" | "12m";
+
+export type TrendPoint = {
+  date: string; // ISO date del inicio del bucket
+  revenue: number;
+  orders: number;
+  quotes: number;
+};
+
+export type Trends = {
+  period: TrendPeriod;
+  granularity: "day" | "week" | "month";
+  points: TrendPoint[];
+};
+
 export const dashboardApi = {
   stats: () => api.get<DashboardStats>("/dashboard").then((r) => r.data),
   analytics: () => api.get<Analytics>("/dashboard/analytics").then((r) => r.data),
+  trends: (period: TrendPeriod = "30d") =>
+    api.get<Trends>("/dashboard/trends", { params: { period } }).then((r) => r.data),
 };

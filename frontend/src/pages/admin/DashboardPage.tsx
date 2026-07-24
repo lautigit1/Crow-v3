@@ -220,7 +220,7 @@ export function DashboardPage() {
         <QuickAction icon="truck" label="Nuevo proveedor" to="/admin/proveedores" tone="purple" />
         <QuickAction icon="quotes" label="Cotizaciones" to="/admin/cotizaciones" tone="cyan" />
         <QuickAction icon="inventory" label="Inventario" to="/admin/inventario" tone="amber" />
-        <QuickAction icon="reports" label="Reportes" to="/admin/reportes" tone="green" />
+        <QuickAction icon="trendingUp" label="Estadísticas" to="/admin/estadisticas" tone="green" />
         <QuickAction icon="users" label="Usuarios" to="/admin/usuarios" tone="slate" />
       </div>
 

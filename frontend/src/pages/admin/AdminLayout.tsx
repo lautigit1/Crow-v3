@@ -30,7 +30,7 @@ const GROUPS: Group[] = [
   {
     title: "Sistema",
     items: [
-      { to: "/admin/reportes", label: "Reportes", icon: "reports" },
+      { to: "/admin/estadisticas", label: "Estadísticas", icon: "trendingUp" },
       { to: "/admin/auditoria", label: "Auditoría", icon: "audit" },
       { to: "/admin/configuracion", label: "Configuración", icon: "settings" },
     ],

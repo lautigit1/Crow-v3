@@ -1,19 +1,27 @@
+from collections.abc import Callable
+from datetime import date, datetime, timedelta
+from typing import Literal
+
 from fastapi import APIRouter, Response
 from sqlalchemy import func, select
 
 from app.core.deps import AdminUser, DbSession
 from app.models.brand import Brand
 from app.models.category import Category
+from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Product
 from app.models.quote import Quote, QuoteStatus
 from app.models.supplier import Supplier
 from app.models.user import User
-from app.schemas.dashboard import Analytics, DashboardStats, NamedCount, StockSummary
+from app.schemas.dashboard import Analytics, DashboardStats, NamedCount, StockSummary, TrendPoint, Trends
 
 router = APIRouter()
 
 LOW_STOCK_THRESHOLD = 5
 _CACHE_TTL = 60  # seconds
+
+Period = Literal["7d", "30d", "90d", "12m"]
+_TREND_PERIODS: tuple[Period, ...] = ("7d", "30d", "90d", "12m")
 
 # ── Redis cache helpers ────────────────────────────────────────────────────────
 
@@ -54,7 +62,9 @@ def invalidate_dashboard_cache() -> None:
     if r is None:
         return
     try:
-        r.delete("crow:cache:dashboard", "crow:cache:analytics")
+        keys = ["crow:cache:dashboard", "crow:cache:analytics"]
+        keys += [f"crow:cache:trends:{p}" for p in _TREND_PERIODS]
+        r.delete(*keys)
     except Exception:
         pass
 
@@ -153,4 +163,93 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
         inventory_value=float(inventory_value),
     )
     _cache_set("analytics", result.model_dump_json())
+    return result
+
+
+# ── Trends (series temporales) ─────────────────────────────────────────────────
+# El bucketing se hace en Python a propósito: `date_trunc` es solo de Postgres y
+# `strftime` solo de SQLite (que usan los tests). Fetch + agrupación en memoria
+# funciona igual en ambos y, al volumen de una PyME, el costo es despreciable.
+
+def _bucket_plan(period: Period) -> tuple[list[date], str, Callable[[date], date]]:
+    """Devuelve (buckets ordenados, granularidad, fn que mapea una fecha a su bucket)."""
+    today = datetime.utcnow().date()
+    if period == "7d":
+        start = today - timedelta(days=6)
+        return [start + timedelta(days=i) for i in range(7)], "day", lambda d: d
+    if period == "30d":
+        start = today - timedelta(days=29)
+        return [start + timedelta(days=i) for i in range(30)], "day", lambda d: d
+    if period == "90d":
+        this_monday = today - timedelta(days=today.weekday())
+        start_monday = this_monday - timedelta(weeks=12)
+        return (
+            [start_monday + timedelta(weeks=i) for i in range(13)],
+            "week",
+            lambda d: d - timedelta(days=d.weekday()),
+        )
+    # "12m" — mensual
+    keys: list[date] = []
+    for i in range(11, -1, -1):
+        mm, yy = today.month - i, today.year
+        while mm <= 0:
+            mm += 12
+            yy -= 1
+        keys.append(date(yy, mm, 1))
+    return keys, "month", lambda d: date(d.year, d.month, 1)
+
+
+def _as_date(dt: datetime | date) -> date:
+    return dt.date() if isinstance(dt, datetime) else dt
+
+
+@router.get("/trends", response_model=Trends)
+def get_trends(db: DbSession, _: AdminUser, response: Response, period: Period = "30d") -> Trends:
+    response.headers["Cache-Control"] = "private, max-age=60, stale-while-revalidate=30"
+
+    cached = _cache_get(f"trends:{period}")
+    if cached:
+        return Trends.model_validate_json(cached)
+
+    buckets, granularity, bucket_of = _bucket_plan(period)
+    index = {b: i for i, b in enumerate(buckets)}
+    revenue = [0.0] * len(buckets)
+    orders = [0] * len(buckets)
+    quotes = [0] * len(buckets)
+    cutoff = datetime.combine(buckets[0], datetime.min.time())
+
+    # Ingresos + pedidos: un total por pedido (suma de sus ítems). Los pedidos
+    # CANCELADO cuentan como pedido creado pero no como ingreso.
+    order_rows = db.execute(
+        select(
+            Order.created_at,
+            Order.status,
+            func.coalesce(func.sum(OrderItem.unit_price_snapshot * OrderItem.quantity), 0),
+        )
+        .join(OrderItem, OrderItem.order_id == Order.id, isouter=True)
+        .where(Order.created_at >= cutoff)
+        .group_by(Order.id)
+    ).all()
+    for created_at, status, order_total in order_rows:
+        b = bucket_of(_as_date(created_at))
+        i = index.get(b)
+        if i is None:
+            continue
+        orders[i] += 1
+        if status != OrderStatus.CANCELADO:
+            revenue[i] += float(order_total or 0)
+
+    quote_rows = db.execute(select(Quote.created_at).where(Quote.created_at >= cutoff)).all()
+    for (created_at,) in quote_rows:
+        b = bucket_of(_as_date(created_at))
+        i = index.get(b)
+        if i is not None:
+            quotes[i] += 1
+
+    points = [
+        TrendPoint(date=buckets[i].isoformat(), revenue=round(revenue[i], 2), orders=orders[i], quotes=quotes[i])
+        for i in range(len(buckets))
+    ]
+    result = Trends(period=period, granularity=granularity, points=points)
+    _cache_set(f"trends:{period}", result.model_dump_json())
     return result
