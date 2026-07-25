@@ -26,6 +26,28 @@ interface State {
  *     <AdminLayout />
  *   </ErrorBoundary>
  */
+/**
+ * Un chunk lazy que ya no existe en el server.
+ *
+ * Pasa cuando se deploya una versión nueva mientras alguien tiene el sitio
+ * abierto: el módulo cargado en memoria referencia `/assets/<algo>-<hash>.js`
+ * con el hash del build viejo, y ese archivo ya no está. La primera ruta lazy
+ * que se visite (/cuenta después de registrarse, /admin, /checkout, legales)
+ * tira este error. No es un bug de la app: el código nuevo ya está publicado,
+ * lo único que hace falta es que la pestaña lo vuelva a pedir.
+ *
+ * Los mensajes varían por browser -- Chrome/Edge dicen "Failed to fetch
+ * dynamically imported module", Firefox "error loading dynamically imported
+ * module", Safari "Importing a module script failed".
+ */
+const CHUNK_ERROR = /dynamically imported module|Importing a module script failed|Failed to fetch dynamically/i;
+
+// Marca en sessionStorage para no entrar en un loop de recargas si el chunk
+// sigue faltando después de recargar (server mal deployado, asset borrado):
+// se intenta una sola vez por pestaña, y si vuelve a fallar se muestra el
+// error de siempre en vez de recargar para siempre.
+const RELOAD_FLAG = "crow:chunk-reloaded";
+
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false, error: null };
 
@@ -34,6 +56,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    if (CHUNK_ERROR.test(error.message) && sessionStorage.getItem(RELOAD_FLAG) !== "1") {
+      sessionStorage.setItem(RELOAD_FLAG, "1");
+      // Con el `no-cache` de index.html (ver frontend/nginx.conf) un reload
+      // normal alcanza: revalida el HTML y baja los hashes nuevos.
+      window.location.reload();
+      return;
+    }
     // Sin VITE_SENTRY_DSN configurado, Sentry.captureException es un no-op
     // seguro (ver shared/lib/sentry.ts) -- no hace falta un if acá.
     Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
