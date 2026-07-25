@@ -35,8 +35,12 @@ test.describe("Compra completa: catálogo → carrito → checkout", () => {
     await expect(page.getByText("Te pasamos el CBU/alias para transferir.")).toBeVisible();
     await page.getByRole("button", { name: "Confirmar pedido" }).click();
 
-    // Éxito
-    await expect(page.getByText(/¡Pedido #\d+ creado!/)).toBeVisible();
+    // Éxito -- la pantalla de confirmación se rediseñó (CheckoutPage →
+    // OrderSuccess): ya no dice "¡Pedido #N creado!" en una sola línea,
+    // ahora es un eyebrow "Pedido confirmado" + el número como sello
+    // ("N.º 00012", `String(order.id).padStart(5, "0")`).
+    await expect(page.getByText("Pedido confirmado")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^N\.º \d{5}$/ })).toBeVisible();
     await expect(page.getByRole("link", { name: "Ver mis pedidos" })).toBeVisible();
 
     await logout(page, customer.firstName);

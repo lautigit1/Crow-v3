@@ -19,9 +19,18 @@ test.describe("Admin — CRUD de productos", () => {
     await expect(page.locator("tr", { hasText: sku })).toContainText("2.500");
 
     // ── Eliminar (soft delete) ────────────────────────────────────────────
-    await row.locator("button").last().click(); // botón de borrar (solo ícono, sin texto)
+    // El botón de borrar de la fila es solo-ícono, pero tiene
+    // aria-label="Eliminar producto" -- más explícito que `.locator("button").last()`,
+    // que se rompe si alguna vez se agrega otra acción al final de la fila.
+    await row.getByRole("button", { name: "Eliminar producto" }).click();
     await expect(page.getByText(`¿Eliminar "${product.name}"?`)).toBeVisible();
-    await page.getByRole("button", { name: "Eliminar" }).click();
+    // `exact: true` es obligatorio: sin eso el nombre "Eliminar" también
+    // matchea por substring los "Eliminar producto" de cada fila de la
+    // tabla de atrás (el ConfirmModal no bloquea el árbol de accesibilidad,
+    // no tiene role="dialog"), y Playwright falla por strict mode. El
+    // botón del modal es el único cuyo nombre accesible es exactamente
+    // "Eliminar" (ConfirmModal → confirmLabel).
+    await page.getByRole("button", { name: "Eliminar", exact: true }).click();
 
     await expect(page.locator("tr", { hasText: sku })).toHaveCount(0);
 
