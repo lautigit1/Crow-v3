@@ -28,17 +28,24 @@ export default defineConfig([
     },
   },
   {
-    // `pages/admin/*` se importa exclusivamente vía `lazy(() => import("@/pages/admin/XPage"))`
-    // en `app/App.tsx`, una ruta por chunk (code-splitting real: cada
-    // sección del panel de admin es su propio bundle, cargado solo cuando
-    // se visita). Si se forzara a pasar por un `index.ts` barrel de
-    // `pages/admin`, ese barrel importaría (estáticamente) todas las
-    // páginas del admin, y CUALQUIER `lazy()` individual arrastraría el
-    // panel de admin completo a un solo chunk -- exactamente la regresión
-    // de performance que el code-splitting evita. Evaluado explícitamente,
-    // no es un descuido: la regla no tiene forma de expresar "excepto para
-    // imports dinámicos con code-splitting intencional".
-    files: ["./src/app/**", "./src/pages/admin/**"],
+    // `pages/admin/*` y `pages/account/*` se importan exclusivamente vía
+    // `lazy(() => import("@/pages/<slice>/XPage"))` en `app/App.tsx`, una ruta
+    // por chunk (code-splitting real: cada sección es su propio bundle,
+    // cargado solo cuando se visita). Si se forzara a pasar por un `index.ts`
+    // barrel, ese barrel importaría (estáticamente) todas las páginas de la
+    // slice, y CUALQUIER `lazy()` individual arrastraría la sección completa
+    // a un solo chunk -- exactamente la regresión de performance que el
+    // code-splitting evita. Evaluado explícitamente, no es un descuido: la
+    // regla no tiene forma de expresar "excepto para imports dinámicos con
+    // code-splitting intencional".
+    //
+    // `pages/account` entra en esta excepción recién ahora porque hasta hace
+    // poco era una slice plana, y `fsd/public-api` sólo exige el barrel
+    // cuando la slice tiene segmentos. Al extraer el encabezado compartido a
+    // `pages/account/ui/AccountPageHeader.tsx` pasó a estar segmentada, igual
+    // que `pages/admin` con su `ui/`. Es el mismo caso, con el mismo motivo:
+    // no es una excepción nueva, es la misma situación en otra slice.
+    files: ["./src/app/**", "./src/pages/admin/**", "./src/pages/account/**"],
     rules: {
       "fsd/public-api": "off",
       "fsd/no-public-api-sidestep": "off",
