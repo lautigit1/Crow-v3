@@ -21,7 +21,9 @@ export function CenteredSpinner({ label }: { label?: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-[14px] py-20 px-0">
       <Spinner size={28} />
-      {label && <span className="font-[Inter,sans-serif] text-[14px] text-textFaint">{label}</span>}
+      {/* `font-[Inter,sans-serif]` pedía una fuente que el proyecto no carga
+          (ver el comentario en Card.tsx) y caía al sans-serif del sistema. */}
+      {label && <span className="font-body text-[14px] text-textFaint">{label}</span>}
     </div>
   );
 }

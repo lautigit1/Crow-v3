@@ -3,6 +3,7 @@ import clsx from "clsx";
 import {
   CenteredSpinner,
   EmptyState,
+  Icon,
   Button,
   Drawer,
   Modal,
@@ -29,9 +30,11 @@ const STATUS_BADGE: Record<Order["status"], string> = {
   Cancelado: "bg-[#ef444422] text-[#ef4444]",
 };
 
+// El estado es una palabra ("Entregado"), no un dato tabular: en Fira Mono y
+// mayúscula leía como un código de sistema en vez de algo escrito para alguien.
 function StatusBadge({ status }: { status: Order["status"] }) {
   return (
-    <span className={clsx("inline-block py-[3px] px-2.5 rounded-full font-mono text-[11px] font-bold tracking-[0.5px] uppercase", STATUS_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
+    <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", STATUS_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
       {status}
     </span>
   );
@@ -101,7 +104,7 @@ function OrderDetailBody({ order }: { order: Order }) {
       {/* Método de pago */}
       {order.payment_method && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] tracking-[.1em] text-textFaint uppercase">
+          <span className="font-body text-[12px] font-semibold text-textFaint">
             Pago
           </span>
           <span className="font-body text-[13px] font-bold text-ink800">
@@ -113,7 +116,7 @@ function OrderDetailBody({ order }: { order: Order }) {
       {/* User notes */}
       {order.notes && (
         <div className="bg-white border border-border rounded-sm py-3 px-4">
-          <div className="font-mono text-[10px] tracking-[.1em] text-textFaint mb-1.5 uppercase">
+          <div className="font-body text-[12px] font-semibold text-textFaint mb-1.5">
             Tus notas
           </div>
           <div className="font-body text-sm text-ink700 leading-[1.5]">{order.notes}</div>
@@ -123,7 +126,7 @@ function OrderDetailBody({ order }: { order: Order }) {
       {/* Admin notes */}
       {order.admin_notes && (
         <div className="bg-[#fffbeb] border border-[#fde68a] rounded-sm py-3 px-4">
-          <div className="font-mono text-[10px] tracking-[.1em] text-[#92400e] mb-1.5 uppercase">
+          <div className="font-body text-[12px] font-semibold text-[#92400e] mb-1.5">
             Respuesta del equipo
           </div>
           <div className="font-body text-sm text-[#78350f] leading-[1.5]">{order.admin_notes}</div>
@@ -132,7 +135,7 @@ function OrderDetailBody({ order }: { order: Order }) {
 
       {/* Items */}
       <div>
-        <div className="font-mono text-[10px] tracking-[.1em] text-textFaint mb-2.5 uppercase">
+        <div className="font-body text-[12px] font-semibold text-textFaint mb-2.5">
           Ítems
         </div>
         <div className="flex flex-col gap-1.5">
@@ -293,6 +296,7 @@ export function MyOrdersPage() {
         <CenteredSpinner label="Cargando pedidos…" />
       ) : !orders || orders.length === 0 ? (
         <EmptyState
+          icon={<Icon name="box" size={24} />}
           title="No tenés pedidos todavía"
           message="Creá tu primer pedido para solicitar productos directamente a nuestro equipo."
           action={<Button onClick={() => setShowCreate(true)}>Crear pedido</Button>}
@@ -393,7 +397,7 @@ export function MyOrdersPage() {
           {/* Items draft */}
           {createItems.length > 0 && (
             <div>
-              <div className="font-mono text-[10px] tracking-[.1em] text-textFaint mb-2 uppercase">
+              <div className="font-body text-[12px] font-semibold text-textFaint mb-2">
                 Ítems agregados
               </div>
               <div className="flex flex-col gap-1.5">

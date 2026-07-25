@@ -26,7 +26,7 @@ function SidebarLink({ to, label, icon, end }: NavItem) {
       end={end}
       className={({ isActive }) =>
         clsx(
-          "group flex items-center gap-2.5 py-2.5 px-3.5 rounded-sm font-body text-[13.5px] no-underline border-l-[3px] -ml-px transition-colors duration-[120ms]",
+          "group flex items-center gap-3 py-2.5 px-3.5 rounded-md font-body text-[14px] no-underline border-l-[3px] -ml-px transition-colors duration-[120ms]",
           isActive
             ? "font-bold text-primary bg-primarySoft border-primary"
             : "font-medium text-textMuted bg-transparent border-transparent hover:text-ink900 hover:bg-surface"
@@ -54,43 +54,47 @@ export function AccountLayout() {
   const { user, isAdmin } = useAuth();
   return (
     <div className="bg-[#F1F5F9] min-h-[70vh] pt-10 pb-20">
-      <Container className="grid grid-cols-[268px_1fr] gap-7 items-start">
+      {/* `lg:` en vez de un grid de dos columnas fijo: sin breakpoint, en un
+          teléfono la barra lateral seguía reservando 268px y el contenido
+          quedaba en la nada. Ahora se apila y el sticky se activa recién
+          cuando hay dos columnas de verdad. */}
+      <Container className="grid items-start gap-6 lg:grid-cols-[264px_1fr] lg:gap-7">
 
-        {/* ── Sidebar ── */}
-        <aside className="border border-border rounded-[14px] overflow-hidden sticky top-[90px] shadow-[0_4px_24px_rgba(7,17,31,.06)]">
-          {/* Dark header */}
-          <div className="relative overflow-hidden bg-ink900 pt-[22px] px-5 pb-5">
-            {/* Accent line */}
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
-            {/* Glow */}
-            <div className="absolute -top-[50px] -right-5 w-40 h-40 rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.2)_0%,transparent_70%)] pointer-events-none" />
-
-            <div className="relative flex flex-col items-center gap-3 text-center">
-              <Avatar name={user?.full_name ?? "?"} size={58} />
-              <div>
-                <div className="font-display text-[15px] font-extrabold text-white tracking-[-.02em] leading-[1.2]">
-                  {user?.full_name}
-                </div>
-                <div className="font-mono text-[10.5px] text-[#7FB0FF] mt-[5px] break-all">
-                  {user?.email}
-                </div>
+        {/* ── Sidebar ──
+            La identidad estaba dos veces en pantalla: acá en grande (avatar
+            58px, nombre, mail, chip de rol) y otra vez en el encabezado de
+            cada página. Dos bloques oscuros compitiendo por decir lo mismo.
+            Acá queda la versión compacta -- suficiente para saber con qué
+            cuenta estás -- y el dato completo vive en el encabezado. */}
+        <aside className="overflow-hidden rounded-[14px] border border-border bg-white shadow-[0_4px_24px_rgba(7,17,31,.06)] lg:sticky lg:top-[90px]">
+          <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+            <Avatar name={user?.full_name ?? "?"} size={40} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-body text-[14px] font-semibold leading-tight tracking-[-.01em] text-ink900">
+                {user?.full_name}
               </div>
-              <span
-                className={clsx(
-                  "font-mono text-[9px] font-bold tracking-[.12em] uppercase py-[3px] px-2.5 rounded-full border",
-                  isAdmin
-                    ? "text-[#FCD34D] bg-[rgba(252,211,77,.12)] border-[rgba(252,211,77,.28)]"
-                    : "text-[#86EFAC] bg-[rgba(134,239,172,.12)] border-[rgba(134,239,172,.28)]"
-                )}
-              >
-                {isAdmin ? "Administrador" : "Cliente"}
-              </span>
+              {/* El mail estaba en Fira Mono 10.5px con `break-all`, que corta
+                  donde llegue sin respetar la arroba. Truncado con `title`
+                  para verlo entero en hover. */}
+              <div className="mt-0.5 truncate font-body text-[12.5px] leading-tight text-textFaint" title={user?.email}>
+                {user?.email}
+              </div>
             </div>
+            <span
+              className={clsx(
+                "shrink-0 rounded-pill border px-2 py-[2px] font-body text-[10px] font-bold uppercase tracking-[.06em]",
+                isAdmin
+                  ? "border-[#FDE68A] bg-warningSoft text-warning"
+                  : "border-[#BBF7D0] bg-successSoft text-success"
+              )}
+            >
+              {isAdmin ? "Admin" : "Cliente"}
+            </span>
           </div>
 
           {/* Nav */}
-          <div className="bg-white pt-2.5 px-3 pb-3.5">
-            <div className="font-mono text-[9px] tracking-[.12em] uppercase text-textFaint pt-2 pr-1 pb-1.5 pl-[17px]">
+          <div className="px-3 pb-3.5 pt-3">
+            <div className="mb-1.5 pl-[17px] font-body text-[11.5px] font-semibold leading-none text-textFaint">
               Mi cuenta
             </div>
             <nav className="flex flex-col gap-0.5">

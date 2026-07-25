@@ -5,6 +5,7 @@ import { useAuth } from "@/entities/session";
 import { userApi } from "@/entities/user";
 import { apiError } from "@/shared/api";
 import { formatDate } from "@/shared/lib/format";
+import { AccountStat } from "./ui/AccountPageHeader";
 
 // ── Section card ──────────────────────────────────────────────────────────────
 function SectionCard({
@@ -20,38 +21,26 @@ function SectionCard({
 }) {
   return (
     <div className="bg-white border border-border rounded-[14px] overflow-hidden shadow-[0_2px_12px_rgba(7,17,31,.04)]">
-      <div className="flex items-center gap-3 py-4 px-[22px] border-b border-border bg-surface">
-        <span className="w-9 h-9 rounded-[10px] shrink-0 flex items-center justify-center bg-primarySoft text-primary">
+      <div className="flex items-center gap-3.5 border-b border-border bg-surface px-6 py-[18px]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-primarySoft text-primary">
           {icon}
         </span>
         <div>
-          <div className="font-display text-[15px] font-bold text-ink900">
+          <h2 className="m-0 font-display text-[16px] font-extrabold tracking-[-.02em] text-ink900">
             {title}
-          </div>
+          </h2>
           {subtitle && (
-            <div className="font-body text-xs text-textFaint mt-px">
+            /* 12px → 13px y `textMuted` en vez de `textFaint`: el subtítulo
+               explica qué hace la sección, no es una nota al pie. */
+            <p className="m-0 mt-0.5 font-body text-[13px] leading-snug text-textMuted">
               {subtitle}
-            </div>
+            </p>
           )}
         </div>
       </div>
-      <div className="p-[22px]">
+      <div className="p-6">
         {children}
       </div>
-    </div>
-  );
-}
-
-// ── Stat chip ─────────────────────────────────────────────────────────────────
-function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-[3px] py-2.5 px-4 bg-[rgba(255,255,255,.08)] rounded-md border border-[rgba(255,255,255,.1)]">
-      <span className="font-mono text-[9px] tracking-[.1em] uppercase text-[#7FB0FF]">
-        {label}
-      </span>
-      <span className="font-body text-[13px] font-semibold text-white">
-        {value}
-      </span>
     </div>
   );
 }
@@ -82,28 +71,34 @@ export function ProfilePage() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Hero header ── */}
-      <div className="relative overflow-hidden bg-ink900 rounded-[14px] pt-7 px-7 pb-6 shadow-[0_4px_24px_rgba(7,17,31,.12)]">
-        {/* Accent line */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
-        {/* Glow */}
-        <div className="absolute -top-[60px] -right-10 w-60 h-60 rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
+      {/* ── Hero header ──
+          Mantiene el avatar (es la única página donde la identidad es el
+          tema, no el contexto) pero comparte los colores y el espaciado con
+          `AccountPageHeader`, que ahora usan las otras cuatro páginas. */}
+      <div className="relative overflow-hidden rounded-[14px] bg-ink900 px-7 py-6 shadow-[0_4px_24px_rgba(7,17,31,.1)]">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
+        <div className="pointer-events-none absolute -right-10 -top-16 h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.1)_0%,transparent_70%)]" />
 
-        <div className="relative flex items-center gap-5">
-          <Avatar name={user?.full_name ?? "?"} size={64} />
-          <div className="flex-1 min-w-0">
-            <div className="font-display text-[22px] font-extrabold text-white tracking-[-.02em]">
-              {user?.full_name}
-            </div>
-            <div className="font-mono text-[11px] text-[#7FB0FF] mt-1">
-              {user?.email}
+        <div className="relative flex flex-wrap items-center justify-between gap-x-6 gap-y-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <Avatar name={user?.full_name ?? "?"} size={60} />
+            <div className="min-w-0">
+              <h1 className="m-0 font-display text-[22px] font-black leading-tight tracking-[-.025em] text-white">
+                {user?.full_name}
+              </h1>
+              {/* Fira Mono 11px pasa a DM Sans 13.5px sobre #8AA3BC: un mail
+                  es una cadena que se lee, no un dato tabular que se compara
+                  columna por columna, que es para lo que sirve una mono. */}
+              <p className="m-0 mt-1 truncate font-body text-[13.5px] leading-snug text-[#8AA3BC]" title={user?.email}>
+                {user?.email}
+              </p>
             </div>
           </div>
 
-          <div className="flex gap-2.5 shrink-0">
-            <StatChip label="Miembro desde" value={user ? formatDate(user.created_at) : "—"} />
+          <div className="flex shrink-0 gap-2.5">
+            <AccountStat label="Miembro desde" value={user ? formatDate(user.created_at) : "—"} />
             {user?.last_login_at && (
-              <StatChip label="Último acceso" value={formatDate(user.last_login_at)} />
+              <AccountStat label="Último acceso" value={formatDate(user.last_login_at)} />
             )}
           </div>
         </div>
@@ -115,8 +110,12 @@ export function ProfilePage() {
         title="Información personal"
         subtitle="Actualizá tu nombre y número de contacto"
       >
-        <form onSubmit={submit} className="flex flex-col gap-4 max-w-[480px]">
-          <div className="grid grid-cols-2 gap-3.5">
+        {/* 640px en vez de 480: con los campos a la mitad del ancho, la
+            tarjeta quedaba con un tercio vacío a la derecha y el formulario
+            leía como si le faltara algo. `sm:grid-cols-2` además evita que
+            las dos columnas se aplasten en un teléfono. */}
+        <form onSubmit={submit} className="flex max-w-[640px] flex-col gap-5">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nombre completo">
               <Input
                 value={fullName}
@@ -136,10 +135,13 @@ export function ProfilePage() {
             <Input
               value={user?.email ?? ""}
               disabled
-              className="bg-surface text-textFaint"
+              className="cursor-not-allowed bg-surface text-textFaint"
             />
-            <div className="font-body text-[11px] text-textFaint mt-1 flex items-center gap-1">
-              <Icon name="lock" size={10} />
+            {/* El aviso estaba a 11px, más chico que cualquier otro texto de
+                la página: leía como letra chica de contrato justo donde hace
+                falta que se entienda por qué el campo no responde. */}
+            <div className="mt-0.5 flex items-center gap-1.5 font-body text-[12px] text-textFaint">
+              <Icon name="lock" size={12} />
               El email no se puede cambiar
             </div>
           </Field>

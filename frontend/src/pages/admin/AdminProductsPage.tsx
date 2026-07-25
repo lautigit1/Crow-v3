@@ -576,7 +576,12 @@ export function AdminProductsPage() {
 function CompactField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-mono text-[9.5px] font-bold tracking-[.12em] text-textFaint uppercase">{label}</span>
+      {/* Mismo criterio que `Field` en shared/ui: DM Sans en sentence case en
+          vez de mono 9.5px en mayúscula. Acá el cuerpo es 11.5px y no 12.5px
+          porque este formulario es denso a propósito (tres columnas, inputs
+          de 34px), pero la familia y el peso son los mismos para que los dos
+          formularios se lean como parte del mismo panel. */}
+      <span className="font-body text-[11.5px] font-semibold leading-none tracking-[-.005em] text-textMuted">{label}</span>
       {children}
     </div>
   );
@@ -586,7 +591,7 @@ function Divider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2.5 my-0.5">
       <div className="w-[3px] h-3 rounded-[2px] bg-primary shrink-0" />
-      <span className="font-mono text-[9.5px] font-bold tracking-[.14em] text-textFaint uppercase">{label}</span>
+      <span className="font-body text-[11.5px] font-bold tracking-[-.005em] text-ink800">{label}</span>
       <div className="flex-1 h-px bg-border" />
     </div>
   );

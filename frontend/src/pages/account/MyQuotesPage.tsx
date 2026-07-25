@@ -4,6 +4,7 @@ import { CenteredSpinner, EmptyState, Button, Spinner, Icon } from "@/shared/ui"
 import { quoteApi, type Quote } from "@/entities/quote";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
 import { formatDate } from "@/shared/lib/format";
+import { AccountPageHeader } from "./ui/AccountPageHeader";
 
 const LIMIT = 20;
 
@@ -41,10 +42,10 @@ function QuoteCard({ quote }: { quote: Quote }) {
         )}
         {quote.admin_reply && (
           <div className="mt-1 py-2.5 px-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-sm">
-            <div className="font-mono text-[9px] tracking-[.1em] uppercase text-[#92400E] mb-1">
+            <div className="mb-1.5 font-body text-[12px] font-semibold text-[#92400E]">
               Respuesta del equipo
             </div>
-            <p className="font-body text-[13px] text-[#78350F] leading-[1.5] m-0">
+            <p className="m-0 font-body text-[13.5px] leading-[1.6] text-[#78350F]">
               {quote.admin_reply}
             </p>
           </div>
@@ -94,44 +95,33 @@ export function MyQuotesPage() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Page header ── */}
-      <div className="relative overflow-hidden bg-ink900 rounded-[14px] py-[22px] px-7 shadow-[0_4px_24px_rgba(7,17,31,.12)]">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
-        <div className="absolute -top-10 -right-5 w-[140px] h-[140px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
-        <div className="relative flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center bg-[rgba(255,255,255,.08)] border border-[rgba(255,255,255,.12)] text-[#7FB0FF]">
-              <Icon name="quotes" size={20} />
-            </span>
-            <div>
-              <div className="font-display text-xl font-extrabold text-white tracking-[-.02em]">
-                Mis cotizaciones
-              </div>
-              <div className="font-body text-[12.5px] text-[#94A3B8] mt-[3px]">
-                {total > 0 ? `${total} cotización${total !== 1 ? "es" : ""} en total` : "Sin cotizaciones aún"}
-              </div>
-            </div>
-          </div>
-          {/* Ghost-variant override needs to reliably beat the variant's own
-              text/border classes -- kept as `style` passthrough, same
-              reasoning as the admin toggle buttons. */}
-          <Button as={Link} to="/catalogo" variant="ghost" size="sm" style={{ color: "#94A3B8", borderColor: "rgba(255,255,255,.15)" }}>
+      <AccountPageHeader
+        icon="quotes"
+        title="Mis cotizaciones"
+        subtitle={total > 0 ? `${total} cotización${total !== 1 ? "es" : ""} en total` : "Sin cotizaciones aún"}
+        action={
+          /* Ghost-variant override needs to reliably beat the variant's own
+             text/border classes -- kept as `style` passthrough, same
+             reasoning as the admin toggle buttons. */
+          <Button as={Link} to="/catalogo" variant="ghost" size="sm" style={{ color: "#8AA3BC", borderColor: "rgba(255,255,255,.15)" }}>
             Ir al catálogo →
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── List ── */}
       {initialLoading ? (
         <CenteredSpinner label="Cargando…" />
       ) : loadError ? (
         <EmptyState
+          icon={<Icon name="alert" size={24} />}
           title="No se pudieron cargar tus cotizaciones"
           message="Ocurrió un error de conexión. Probá de nuevo."
           action={<Button onClick={load}>Reintentar</Button>}
         />
       ) : quotes.length === 0 ? (
         <EmptyState
+          icon={<Icon name="quotes" size={24} />}
           title="Todavía no tenés cotizaciones"
           message="Cuando solicites una cotización, aparecerá acá con su estado."
           action={<Button as={Link} to="/catalogo">Ir al catálogo</Button>}

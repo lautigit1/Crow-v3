@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { Field, Input, Button, Icon } from "@/shared/ui";
 import { userApi } from "@/entities/user";
 import { apiError } from "@/shared/api";
+import { AccountPageHeader } from "./ui/AccountPageHeader";
 
 // ── Password strength checker ─────────────────────────────────────────────────
 type Rule = { label: string; test: (v: string) => boolean };
@@ -82,24 +83,11 @@ export function AccountSettingsPage() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Page header ── */}
-      <div className="relative overflow-hidden bg-ink900 rounded-[14px] py-[22px] px-7 shadow-[0_4px_24px_rgba(7,17,31,.12)]">
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#0057D9_0%,#7FB0FF_55%,transparent_100%)]" />
-        <div className="absolute -top-10 -right-5 w-[140px] h-[140px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.18)_0%,transparent_70%)] pointer-events-none" />
-        <div className="relative flex items-center gap-4">
-          <span className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center bg-[rgba(255,255,255,.08)] border border-[rgba(255,255,255,.12)] text-[#7FB0FF]">
-            <Icon name="lock" size={20} />
-          </span>
-          <div>
-            <div className="font-display text-xl font-extrabold text-white tracking-[-.02em]">
-              Configuración
-            </div>
-            <div className="font-body text-[12.5px] text-[#94A3B8] mt-[3px]">
-              Administrá la seguridad de tu cuenta
-            </div>
-          </div>
-        </div>
-      </div>
+      <AccountPageHeader
+        icon="lock"
+        title="Configuración"
+        subtitle="Administrá la seguridad de tu cuenta"
+      />
 
       {/* ── Change password ── */}
       <SectionCard

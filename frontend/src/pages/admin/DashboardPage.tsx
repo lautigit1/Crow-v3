@@ -17,6 +17,29 @@ import { color } from "@/shared/config";
 const CARD_CLASS = "bg-white border border-border rounded-lg shadow-[0_1px_3px_rgba(13,23,40,.05)] overflow-hidden";
 const PANEL_HEADER_CLASS = "flex items-center gap-3 py-[15px] px-5";
 
+/** `toLocaleDateString` en español devuelve el día en minúscula ("viernes"). */
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ── Dato del banner de bienvenida ─────────────────────────────────────────────
+// Los dos recuadros comparten componente a propósito: antes eran dos bloques
+// escritos a mano con el mismo contenedor pero distinto color de número
+// (blanco uno, celeste el otro) sin que la diferencia codificara nada. Con un
+// solo componente no hay forma de que vuelvan a divergir por descuido.
+function BannerStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-[128px] rounded-md border border-[rgba(255,255,255,.09)] bg-[rgba(255,255,255,.04)] px-5 py-4">
+      <div className="font-body text-[11.5px] font-medium leading-none tracking-[-.005em] text-[#8AA3BC]">
+        {label}
+      </div>
+      <div className="mt-2.5 font-display text-[23px] font-black leading-none tracking-[-.02em] text-white [font-variant-numeric:tabular-nums]">
+        {value}
+      </div>
+    </div>
+  );
+}
+
 // ── Quick action card ─────────────────────────────────────────────────────────
 // Only 6 fixed brand/tint combos are ever used (below, in this same file),
 // not free-form per-call colors -- so like `TrustBand`/`StatCard`, each
@@ -185,31 +208,60 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Welcome banner ── */}
-      <div className="bg-ink900 rounded-lg py-6 px-7 relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.2)_0%,transparent_70%)] pointer-events-none" />
-        <div className="relative flex items-center justify-between">
-          <div>
-            <div className="font-mono text-[11px] tracking-[.12em] text-[#3A5A7A] mb-2">
-              {formatDate(now.toISOString()).toUpperCase()} · {now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+      {/* ── Welcome banner ──
+          El problema principal de la versión anterior era de contraste, no de
+          estilo: la fecha y las etiquetas de los recuadros usaban #3A5A7A
+          sobre #07111F, que da ~2,4:1 -- por debajo del mínimo de 4,5:1 que
+          pide WCAG AA para texto chico, y se veía como si estuvieran a medio
+          cargar. Ahora todo el texto secundario usa #8AA3BC (~7:1), el mismo
+          gris azulado que ya se usa en el panel de /login.
+
+          Lo demás es jerarquía: el valor de inventario estaba en Unbounded
+          black a 28px, así que "$ 204.000" era lo más ruidoso de la pantalla
+          por encima del saludo, siendo un dato de contexto. Los dos recuadros
+          además tenían el mismo contenedor pero números de distinto color
+          (blanco y celeste) sin que la diferencia significara nada. */}
+      <div className="relative overflow-hidden rounded-lg bg-ink900 px-8 py-7 shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]">
+        {/* El halo pasó de .2 a .08 de alfa: a .2 se leía como una mancha con
+            borde propio en la esquina, no como iluminación. */}
+        <div className="pointer-events-none absolute -right-24 -top-28 h-[320px] w-[320px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.08)_0%,transparent_70%)]" />
+
+        <div className="relative flex flex-wrap items-center justify-between gap-x-8 gap-y-6">
+          <div className="min-w-0">
+            {/* Sentence case y 24h. Antes: mono en mayúscula con .12em de
+                tracking y hora en 12h ("03:40 p. m."), cinco caracteres para
+                decir lo que "15:40" dice en cinco sin ambigüedad. */}
+            <div className="mb-2.5 font-body text-[13px] font-medium tracking-[-.005em] text-[#8AA3BC]">
+              {capitalize(now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }))}
+              <span className="px-1.5 text-[#43607D]">·</span>
+              {now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false })}
             </div>
-            <h1 className="font-display text-[26px] font-black text-white tracking-[-.02em] mb-1.5">
+
+            <h1 className="mb-2 font-display text-[27px] font-black leading-[1.1] tracking-[-.025em] text-white">
               {greeting}, {firstName}.
             </h1>
-            <p className="font-body text-sm text-[#5E819D] m-0">
-              Tenés <strong className="text-[#FCD34D]">{stats.pending_quotes}</strong> cotizaci{stats.pending_quotes === 1 ? "ón pendiente" : "ones pendientes"} y{" "}
-              <strong className={stats.out_of_stock > 0 ? "text-[#F87171]" : "text-[#86EFAC]"}>{stats.out_of_stock}</strong> producto{stats.out_of_stock === 1 ? "" : "s"} sin stock.
+
+            {/* El ámbar y el rojo solo aparecen cuando hay algo que atender.
+                Antes un 0 de cotizaciones pendientes se pintaba igual de
+                ámbar que un 12: el color alertaba de buenas noticias y, a
+                fuerza de estar siempre encendido, dejaba de significar algo. */}
+            <p className="m-0 font-body text-[14.5px] leading-relaxed text-[#8AA3BC]">
+              Tenés{" "}
+              <strong className={stats.pending_quotes > 0 ? "text-[#FCD34D]" : "text-white"}>{stats.pending_quotes}</strong>{" "}
+              cotizaci{stats.pending_quotes === 1 ? "ón pendiente" : "ones pendientes"} y{" "}
+              <strong className={stats.out_of_stock > 0 ? "text-[#F87171]" : "text-white"}>{stats.out_of_stock}</strong>{" "}
+              producto{stats.out_of_stock === 1 ? "" : "s"} sin stock.
             </p>
           </div>
-          <div className="flex gap-2.5">
-            <div className="text-center bg-[rgba(255,255,255,.05)] border border-[rgba(255,255,255,.08)] rounded-md py-3.5 px-5">
-              <div className="font-display text-[28px] font-black text-white leading-none">{stats.total_products}</div>
-              <div className="font-mono text-[10px] text-[#3A5A7A] mt-1 tracking-[.08em]">PRODUCTOS</div>
-            </div>
-            <div className="text-center bg-[rgba(255,255,255,.05)] border border-[rgba(255,255,255,.08)] rounded-md py-3.5 px-5">
-              <div className="font-display text-[28px] font-black text-[#7FB0FF] leading-none">{formatPrice(analytics.inventory_value)}</div>
-              <div className="font-mono text-[10px] text-[#3A5A7A] mt-1 tracking-[.08em]">INVENTARIO</div>
-            </div>
+
+          {/* Etiqueta arriba y valor abajo, los dos recuadros idénticos: se
+              leen como una unidad ("qué dato" y después "cuánto") en vez de
+              obligar a saltar del número a su etiqueta y volver.
+              `tabular-nums` evita que los dígitos cambien de ancho y el bloque
+              tiemble cuando el valor se actualiza. */}
+          <div className="flex shrink-0 gap-3">
+            <BannerStat label="Productos" value={String(stats.total_products)} />
+            <BannerStat label="Inventario" value={formatPrice(analytics.inventory_value)} />
           </div>
         </div>
       </div>

@@ -358,11 +358,16 @@ export function AdminSuppliersPage() {
           </>
         }
       >
-        <form id="supplier-form" onSubmit={save} className="flex flex-col gap-3">
+        {/* gap-5 entre campos y gap-4 dentro de cada fila: con etiquetas en
+            sentence case el bloque etiqueta+campo se lee como una unidad, así
+            que necesita más aire alrededor para no fundirse con el siguiente
+            (antes: gap-3 uniforme, que con mayúsculas espaciadas disimulaba
+            el problema). */}
+        <form id="supplier-form" onSubmit={save} className="flex flex-col gap-5">
           <Field label="Nombre del proveedor *">
             <Input required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ name: e.target.value })} placeholder="Ej. Distribuidora del Sur S.A." />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <Field label="Persona de contacto">
               <Input value={form.contact_name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ contact_name: e.target.value })} placeholder="Nombre y apellido" />
             </Field>
@@ -370,7 +375,7 @@ export function AdminSuppliersPage() {
               <Input value={form.city ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ city: e.target.value })} placeholder="Ej. Mendoza" />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <Field label="Teléfono">
               <Input type="tel" value={form.phone ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set({ phone: e.target.value })} placeholder="+54 261 …" />
             </Field>
@@ -381,9 +386,24 @@ export function AdminSuppliersPage() {
           <Field label="Notas internas">
             <Textarea rows={3} value={form.notes ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set({ notes: e.target.value })} placeholder="Condiciones comerciales, tiempos de entrega, observaciones…" />
           </Field>
-          <label className="flex items-center gap-[9px] cursor-pointer font-body text-[13.5px] text-ink800">
-            <input type="checkbox" checked={!!form.is_active} onChange={(e) => set({ is_active: e.target.checked })} className="w-[15px] h-[15px] accent-primary" />
-            Proveedor activo
+
+          {/* El checkbox pasa de una línea suelta al pie del formulario a una
+              fila propia con fondo y borde: es la única opción del modal que
+              no es un campo de texto, y como decisión (activo / inactivo)
+              merece leerse aparte y no como un renglón más. */}
+          <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-surface px-4 py-3.5 transition-colors duration-150 hover:border-borderStrong">
+            <input
+              type="checkbox"
+              checked={!!form.is_active}
+              onChange={(e) => set({ is_active: e.target.checked })}
+              className="h-4 w-4 shrink-0 cursor-pointer accent-primary"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-body text-[13.5px] font-semibold leading-none text-ink800">Proveedor activo</span>
+              <span className="font-body text-[12px] leading-snug text-textFaint">
+                Los inactivos no aparecen al asignar proveedor a un producto.
+              </span>
+            </span>
           </label>
         </form>
       </Modal>
