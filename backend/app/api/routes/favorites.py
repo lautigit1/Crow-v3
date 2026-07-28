@@ -22,7 +22,9 @@ def list_favorites(current_user: CurrentUser, db: DbSession) -> FavoriteList:
 def add_favorite(product_id: int, current_user: CurrentUser, db: DbSession) -> dict:
     """Agrega un producto a favoritos. Idempotente."""
     product = db.get(Product, product_id)
-    if product is None or product.is_deleted:
+    # `is_active` además de `is_deleted`: un borrador no se puede favoritear,
+    # porque para el cliente todavía no existe.
+    if product is None or product.is_deleted or not product.is_active:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
     # Chequeo previo en vez de insert-y-atrapar-IntegrityError: las rutas no

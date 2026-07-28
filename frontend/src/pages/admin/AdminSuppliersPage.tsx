@@ -10,6 +10,7 @@ import { AdminHeader } from "./ui/AdminHeader";
 import { supplierApi, type Supplier, type SupplierInput } from "@/entities/supplier";
 import { apiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib/format";
+import { SupplierProductsPanel } from "./ui/SupplierProductsPanel";
 import { color } from "@/shared/config";
 
 const PAGE = 15;
@@ -39,6 +40,7 @@ export function AdminSuppliersPage() {
   const [saving, setSaving] = useState(false);
 
   const [detail, setDetail] = useState<Supplier | null>(null);
+  const [tab, setTab] = useState<"datos" | "productos">("datos");
   const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
@@ -220,7 +222,11 @@ export function AdminSuppliersPage() {
       <AdminHeader
         title="Proveedores"
         icon="brands"
-        subtitle={`${total} proveedores registrados · ${activeCount} activos`}
+        subtitle={
+          total === 1
+            ? `1 proveedor registrado · ${activeCount} activo`
+            : `${total} proveedores registrados · ${activeCount} activo${activeCount !== 1 ? "s" : ""}`
+        }
         action={<Button onClick={openNew}><Icon name="plus" size={16} /> Nuevo proveedor</Button>}
       />
 
@@ -274,6 +280,10 @@ export function AdminSuppliersPage() {
       <Drawer
         open={detail !== null}
         onClose={() => setDetail(null)}
+        // 820 en vez de los 460 por defecto: la pestaña de productos tiene
+        // checkbox + nombre + SKU/precio/stock + estado en la misma fila, y a
+        // 460 se apila todo.
+        width={820}
         eyebrow={detail?.city ?? "PROVEEDOR"}
         title={detail?.name}
         footer={
@@ -292,6 +302,30 @@ export function AdminSuppliersPage() {
               <Badge tone={detail.is_active ? "success" : "neutral"}>{detail.is_active ? "Activo" : "Inactivo"}</Badge>
               <Badge tone="primary">{detail.product_count} productos</Badge>
             </div>
+
+            {/* Pestañas -- el drawer pasó de mostrar solo la ficha a tener dos
+                vistas del proveedor: sus datos y sus productos. */}
+            <div className="flex gap-1 rounded-[10px] bg-surface p-1">
+              {(["datos", "productos"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={clsx(
+                    "flex-1 cursor-pointer rounded-md border-none px-4 py-2 font-body text-[13.5px] font-semibold transition-colors duration-150",
+                    tab === t ? "bg-white text-ink900 shadow-[0_1px_2px_rgba(13,23,40,.06)]" : "bg-transparent text-textFaint hover:text-ink800"
+                  )}
+                >
+                  {t === "datos" ? "Datos" : `Productos (${detail.product_count})`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {detail && tab === "productos" && <SupplierProductsPanel supplierId={detail.id} />}
+
+        {detail && tab === "datos" && (
+          <div className="flex flex-col gap-5">
 
             {/* Contact card */}
             <div className="bg-surface border border-border rounded-md p-4 flex flex-col gap-2.5">

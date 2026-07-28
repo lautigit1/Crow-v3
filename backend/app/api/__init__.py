@@ -7,6 +7,7 @@ from app.api.routes import (
     categories,
     dashboard,
     favorites,
+    imports,
     orders,
     products,
     quotes,
@@ -30,3 +31,6 @@ api_router.include_router(settings.router, prefix="/settings", tags=["settings"]
 api_router.include_router(favorites.router, prefix="/favorites", tags=["favorites"])
 api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
 api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
+# Sin prefijo: sus rutas son /suppliers/{id}/imports y /imports/{id}, o sea
+# que viven en dos raíces distintas y no comparten un prefijo común.
+api_router.include_router(imports.router, tags=["imports"])

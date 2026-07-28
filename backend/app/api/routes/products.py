@@ -7,10 +7,20 @@ from sqlalchemy.orm import selectinload
 from app.api.routes.dashboard import invalidate_dashboard_cache
 from app.core import audit
 from app.core.deps import AdminUser, DbSession, OptionalAdmin
+from app.core.stock import mover_stock
 from app.crud import crud
-from app.models.product import Product
+from app.models.product import Product, producto_publico
+from app.models.stock_movement import StockMovement, StockReason
 from app.models.user import User
-from app.schemas.product import ProductCreate, ProductList, ProductRead, ProductUpdate
+from app.schemas.product import (
+    ProductBulkActive,
+    ProductBulkResult,
+    ProductCreate,
+    ProductList,
+    ProductRead,
+    ProductUpdate,
+    StockMovementRead,
+)
 
 router = APIRouter()
 
@@ -40,6 +50,10 @@ def list_products(
     vehicle_type: str | None = Query(default=None),
     in_stock: bool | None = Query(default=None),
     featured: bool | None = Query(default=None),
+    supplier_id: int | None = Query(default=None),
+    # Solo tiene efecto para un admin logueado: el público nunca ve borradores,
+    # así que dejarlo pasar sería una forma de listar lo no publicado.
+    is_active: bool | None = Query(default=None),
     sort: str = Query(default="recent", pattern="^(recent|name|price_asc|price_desc|stock_asc|stock_desc)$"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=24, ge=1, le=100),
@@ -55,7 +69,15 @@ def list_products(
         "no-store" if admin else "public, max-age=60, stale-while-revalidate=30"
     )
 
-    stmt = select(Product).options(*_EAGER).where(Product.is_deleted.is_(False))
+    # Un admin logueado ve también los borradores (los necesita para
+    # completarlos y publicarlos); cualquier otro caller ve solo lo público.
+    stmt = select(Product).options(*_EAGER)
+    if admin:
+        stmt = stmt.where(Product.is_deleted.is_(False))
+        if is_active is not None:
+            stmt = stmt.where(Product.is_active.is_(is_active))
+    else:
+        stmt = stmt.where(producto_publico())
 
     if q:
         q_clean = q.strip()
@@ -84,6 +106,8 @@ def list_products(
         stmt = stmt.where(Product.stock > 0)
     if featured:
         stmt = stmt.where(Product.is_featured.is_(True))
+    if supplier_id is not None:
+        stmt = stmt.where(Product.supplier_id == supplier_id)
 
     order_map = {
         "recent":     Product.created_at.desc(),
@@ -125,7 +149,11 @@ def get_product(product_id: int, db: DbSession, response: Response, admin: Optio
     response.headers["Cache-Control"] = (
         "no-store" if admin else "public, max-age=120, stale-while-revalidate=60"
     )
-    obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == product_id, Product.is_deleted.is_(False)))
+    # Sin esto, un borrador seguiría accesible por URL directa aunque no
+    # aparezca en ningún listado -- que es la forma más común de filtrar algo
+    # sin querer (el link se comparte, o queda en el historial de alguien).
+    visible = Product.is_deleted.is_(False) if admin else producto_publico()
+    obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == product_id, visible))
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     return _serialize_product(obj, admin)
@@ -135,10 +163,61 @@ def get_product(product_id: int, db: DbSession, response: Response, admin: Optio
 def create_product(data: ProductCreate, db: DbSession, admin: AdminUser, request: Request) -> ProductRead:
     obj = crud.product.create(db, data)
     db.refresh(obj)
+    # El stock inicial también es un movimiento: si no, el primer producto
+    # cargado con 20 unidades arrancaría con un historial que no explica de
+    # dónde salieron esas 20. `mover_stock` espera el delta, y el producto ya
+    # se creó con su stock, así que se arranca desde 0.
+    if obj.stock:
+        inicial = obj.stock
+        obj.stock = 0
+        mover_stock(db, obj, inicial, StockReason.ALTA, actor=admin, note="Stock inicial")
+        db.flush()
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.create", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
     invalidate_dashboard_cache()
     return _serialize_product(obj, admin)
+
+
+@router.patch("/bulk", response_model=ProductBulkResult)
+def bulk_set_active(
+    data: ProductBulkActive, db: DbSession, admin: AdminUser, request: Request
+) -> ProductBulkResult:
+    """Publica o despublica varios productos en una sola operación.
+
+    IMPORTANTE: esta ruta tiene que quedar declarada ANTES de
+    `PATCH /{product_id}`. FastAPI resuelve por orden de registro, así que si
+    estuviera después, "bulk" se interpretaría como el `product_id` de la otra
+    ruta y devolvería 422 en vez de entrar acá. Mismo motivo por el que
+    `GET /deleted` está antes que `GET /{product_id}` más arriba.
+
+    Es genérico (recibe ids, no un proveedor) porque lo usan dos pantallas: el
+    panel del proveedor manda los ids de sus productos, y la tabla de
+    productos manda los que el admin haya seleccionado a mano.
+    """
+    # Los borrados quedan afuera: republicar algo que está en la papelera
+    # tiene que pasar por "restaurar", que es una acción distinta y explícita.
+    encontrados = list(db.scalars(
+        select(Product).where(Product.id.in_(data.ids), Product.is_deleted.is_(False))
+    ).all())
+
+    for producto in encontrados:
+        producto.is_active = data.is_active
+        db.add(producto)
+    db.flush()
+
+    ids_encontrados = {p.id for p in encontrados}
+    salteados = [i for i in data.ids if i not in ids_encontrados]
+
+    audit.record(
+        db,
+        action="product.bulk_active",
+        actor=admin,
+        entity="product",
+        detail=f"{'publicados' if data.is_active else 'despublicados'}: {len(encontrados)}",
+        request=request,
+    )
+    invalidate_dashboard_cache()
+    return ProductBulkResult(updated=len(encontrados), skipped=salteados)
 
 
 @router.patch("/{product_id}", response_model=ProductRead)
@@ -146,11 +225,59 @@ def update_product(product_id: int, data: ProductUpdate, db: DbSession, admin: A
     obj = crud.product.get(db, product_id)
     if not obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    obj = crud.product.update(db, obj, data)
+
+    # El stock se saca del payload y se aplica aparte, vía `mover_stock()`:
+    # si se dejara pasar por el update genérico, el valor se pisaría sin dejar
+    # registro y el historial quedaría con un agujero cada vez que alguien
+    # corrige una cantidad desde Inventario.
+    #
+    # Se reconstruye el schema en vez de usar `model_copy(update={"stock": None})`:
+    # `model_copy` marca el campo como seteado, así que `exclude_unset` en
+    # `crud.update` lo dejaría pasar igual y escribiría `stock = NULL`, que la
+    # columna rechaza. Reconstruir desde `model_dump(exclude_unset=True)` sin
+    # esa clave es la única forma de que el campo quede realmente sin setear.
+    campos = data.model_dump(exclude_unset=True)
+    stock_pedido = campos.pop("stock", None)
+    obj = crud.product.update(db, obj, type(data)(**campos))
+    if stock_pedido is not None:
+        mover_stock(
+            db,
+            obj,
+            stock_pedido - obj.stock,
+            StockReason.AJUSTE,
+            actor=admin,
+            note="Ajuste desde el panel",
+        )
+        db.flush()
+
     obj = db.scalar(select(Product).options(*_EAGER).where(Product.id == obj.id))
     audit.record(db, action="product.update", actor=admin, entity="product", entity_id=obj.id, detail=obj.name, request=request)
     invalidate_dashboard_cache()
     return _serialize_product(obj, admin)
+
+
+@router.get("/{product_id}/stock-movements", response_model=list[StockMovementRead])
+def list_stock_movements(
+    product_id: int,
+    db: DbSession,
+    _: AdminUser,
+    limit: int = Query(default=50, ge=1, le=200),
+) -> list[StockMovement]:
+    """Historial de stock de un producto, del más reciente al más viejo.
+
+    Solo admin: expone quién movió qué y cuándo.
+
+    El historial arranca en el deploy de la migración 014 -- los movimientos
+    anteriores no existían y no hay forma de reconstruirlos, así que para un
+    producto viejo la suma de los deltas no va a dar su stock actual. Por eso
+    cada movimiento guarda además `stock_after`.
+    """
+    return list(db.scalars(
+        select(StockMovement)
+        .where(StockMovement.product_id == product_id)
+        .order_by(StockMovement.created_at.desc(), StockMovement.id.desc())
+        .limit(limit)
+    ).all())
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

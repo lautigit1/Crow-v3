@@ -23,15 +23,27 @@ COPY . .
 RUN groupadd --gid 1000 appuser \
     && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \
     && chown -R appuser:appuser /app
+
+# El repo se clona desde Windows, donde git puede materializar los archivos
+# con finales de línea CRLF. Un script de shell con \r al final de cada línea
+# falla dentro del contenedor con un "not found" que no dice nada útil
+# (el \r queda pegado al nombre del comando). Se normaliza en el build en vez
+# de depender de la configuración de git de cada máquina.
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
+
 USER appuser
 
 EXPOSE 8000
 
-# Startup:
-#   - production: alembic upgrade head (fuente de verdad del schema) y despues
-#     el seed (idempotente; en prod solo asegura el admin, sin producto demo).
-#   - dev: seed directo -- create_all + reconcile() cubren el schema, ver
-#     scripts/verify_db_integrity.py y app/seed.py.
+# Startup: ver backend/docker-entrypoint.sh.
+#
+# Alembic corre ahora en LOS DOS entornos. Antes solo en producción, y el
+# esquema de desarrollo lo armaba `create_all()` desde el seed -- que crea
+# tablas faltantes pero nunca agrega columnas a una tabla existente. Además
+# de romper el arranque cada vez que alguien sumaba una columna, eso hacía
+# que las migraciones no se ejecutaran nunca en desarrollo: una migración con
+# un error se estrenaba en producción. Ahora cada `docker compose up` las
+# ejerce.
 #
 # --workers: hallazgo "Alta" #15 de la auditoría técnica del 2026-07-13 --
 # un único proceso uvicorn no usa más de un core de CPU y es un punto único
@@ -43,4 +55,4 @@ EXPOSE 8000
 # pool de conexiones de SQLAlchemy (DB_POOL_SIZE) multiplicado por N workers
 # no sature a Postgres directamente. UVICORN_WORKERS es configurable por
 # entorno (sin rebuildear la imagen) con default conservador de 2.
-CMD ["sh", "-c", "if [ \"$ENVIRONMENT\" = \"production\" ]; then alembic upgrade head; fi && python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}"]
+CMD ["/app/docker-entrypoint.sh"]

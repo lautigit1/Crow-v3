@@ -7,6 +7,7 @@ import {
 } from "@/shared/ui";
 import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
+import { StockHistory } from "./ui/StockHistory";
 import { productApi, type Product, type ProductInput, type ProductSort } from "@/entities/product";
 import { categoryApi, type Category } from "@/entities/category";
 import { brandApi, type Brand } from "@/entities/brand";
@@ -175,6 +176,20 @@ export function AdminProductsPage() {
     await reload();
   };
 
+  /**
+   * Publica o saca del catálogo. Sin confirmación a propósito: es
+   * reversible con el mismo clic, y pedir confirmación para algo que se
+   * deshace igual de rápido solo agrega fricción.
+   */
+  const toggleActive = async (p: Product) => {
+    try {
+      await productApi.update(p.id, { is_active: !p.is_active });
+      await reload();
+    } catch (err) {
+      setError(apiError(err));
+    }
+  };
+
   const set = (patch: Partial<ProductInput>) => setForm((f) => ({ ...f, ...patch }));
 
   // Costo / margen / precio -- cualquiera de los tres que se edite recalcula
@@ -259,6 +274,27 @@ export function AdminProductsPage() {
       render: (p) => <Badge tone={p.stock <= 0 ? "danger" : p.stock <= 5 ? "warning" : "success"}>{p.stock}</Badge>,
     },
     { header: "Dest.", align: "center", render: (p) => (p.is_featured ? <Icon name="star" size={15} className="inline text-primary" /> : "—") },
+    {
+      // Se muestra como "En catálogo / Borrador" y no como "Activo": en este
+      // panel "activo" ya significa otra cosa en proveedores, y en un
+      // producto se confunde con "tiene stock".
+      header: "Catálogo",
+      align: "center",
+      render: (p) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleActive(p); }}
+          title={p.is_active ? "Sacar del catálogo" : "Publicar en el catálogo"}
+          className={clsx(
+            "cursor-pointer rounded-pill border px-2.5 py-1 font-body text-[11.5px] font-semibold transition-colors duration-150",
+            p.is_active
+              ? "border-[#BBF7D0] bg-successSoft text-success hover:border-success"
+              : "border-borderStrong bg-surface text-textFaint hover:border-primary hover:text-primary"
+          )}
+        >
+          {p.is_active ? "En catálogo" : "Borrador"}
+        </button>
+      ),
+    },
     {
       header: "Acciones",
       align: "right",
@@ -437,6 +473,16 @@ export function AdminProductsPage() {
               <Detail label="Tipo vehículo" value={detail.vehicle_type} />
               <Detail label="Creado" value={formatDateTime(detail.created_at)} />
               <Detail label="Actualizado" value={formatDateTime(detail.updated_at)} />
+            </div>
+
+            {/* Historial de stock -- responde "¿por qué tiene 3 si compré 20?",
+                que antes no tenía respuesta posible. Se carga al abrir la
+                ficha, no con el listado. */}
+            <div className="border-t border-border pt-4">
+              <h3 className="m-0 mb-2.5 font-body text-[12.5px] font-semibold text-textFaint">
+                Movimientos de stock
+              </h3>
+              <StockHistory productId={detail.id} />
             </div>
           </div>
         )}

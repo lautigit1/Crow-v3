@@ -5,8 +5,11 @@ from sqlalchemy.orm import selectinload
 from app.core import audit
 from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.core.ratelimit import LoginRateLimiter
+from app.core.stock import mover_stock
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Product
+from app.models.stock_movement import StockReason
+from app.models.user import User
 from app.schemas.order import OrderCreate, OrderList, OrderRead, OrderStatusUpdate
 
 router = APIRouter()
@@ -27,7 +30,7 @@ def _get_order_or_404(order_id: int, db: DbSession) -> Order:
     return order
 
 
-def _restore_stock(order: Order, db: DbSession) -> None:
+def _restore_stock(order: Order, db: DbSession, actor: User | None = None) -> None:
     """Devuelve el stock de los ítems de un pedido (al cancelarlo).
 
     Los productos borrados desde el pedido (product_id en NULL por el
@@ -40,7 +43,15 @@ def _restore_stock(order: Order, db: DbSession) -> None:
             select(Product).where(Product.id == item.product_id).with_for_update()
         )
         if product is not None:
-            product.stock += item.quantity
+            mover_stock(
+                db,
+                product,
+                item.quantity,
+                StockReason.CANCELACION,
+                actor=actor,
+                order_id=order.id,
+                note=f"Cancelación del pedido #{order.id}",
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -103,17 +114,30 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession,
         product = db.scalar(
             select(Product).where(Product.id == product_id).with_for_update()
         )
-        if product is None or product.is_deleted:
+        if product is None or product.is_deleted or not product.is_active:
+            # Mensaje con el nombre cuando lo tenemos: este caso se dispara
+            # sobre todo cuando alguien tenía el producto en el carrito y el
+            # admin lo sacó del catálogo mientras tanto. "Producto 42 no
+            # encontrado" no le dice nada al cliente sobre qué sacar.
+            nombre = f"'{product.name}'" if product is not None else f"{product_id}"
             raise HTTPException(
                 status_code=422,
-                detail=f"Producto {product_id} no encontrado o inactivo",
+                detail=f"El producto {nombre} ya no está disponible. Quitalo del carrito para continuar.",
             )
         if product.stock < quantity:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Stock insuficiente para '{product.name}': disponible {product.stock}, pedido {quantity}",
             )
-        product.stock -= quantity
+        mover_stock(
+            db,
+            product,
+            -quantity,
+            StockReason.VENTA,
+            actor=current_user,
+            order_id=order.id,
+            note=f"Pedido #{order.id}",
+        )
         db.add(
             OrderItem(
                 order_id=order.id,
@@ -148,7 +172,7 @@ def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession, req
             detail="Solo se pueden cancelar pedidos Pendientes",
         )
     order.status = OrderStatus.CANCELADO
-    _restore_stock(order, db)
+    _restore_stock(order, db, actor=current_user)
     db.flush()
     db.refresh(order)
     audit.record(db, action="order.cancel", actor=current_user, entity="order", entity_id=order.id, request=request)
@@ -206,7 +230,7 @@ def admin_update_order(
     if payload.admin_notes is not None:
         order.admin_notes = payload.admin_notes
     if payload.status == OrderStatus.CANCELADO and previous_status != OrderStatus.CANCELADO:
-        _restore_stock(order, db)
+        _restore_stock(order, db, actor=admin)
     db.flush()
     db.refresh(order)
     audit.record(

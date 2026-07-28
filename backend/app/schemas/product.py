@@ -31,6 +31,10 @@ class ProductBase(BaseModel):
     image_url: str | None = Field(default=None, max_length=_URL_MAX)
     vehicle_type: str = Field(default="Universal", max_length=_VEH_MAX)
     is_featured: bool = False
+    # Default True: crear un producto desde el panel lo publica, que es el
+    # comportamiento de siempre. El flujo de importación de facturas lo manda
+    # explícitamente en False para que entre como borrador.
+    is_active: bool = True
     category_id: int | None = None
     brand_id: int | None = None
     supplier_id: int | None = None
@@ -53,6 +57,7 @@ class ProductUpdate(BaseModel):
     image_url: str | None = Field(default=None, max_length=_URL_MAX)
     vehicle_type: str | None = Field(default=None, max_length=_VEH_MAX)
     is_featured: bool | None = None
+    is_active: bool | None = None
     category_id: int | None = None
     brand_id: int | None = None
     supplier_id: int | None = None
@@ -80,3 +85,34 @@ class ProductRead(ProductBase):
 class ProductList(BaseModel):
     items: list[ProductRead]
     total: int
+
+
+class StockMovementRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    delta: int
+    stock_after: int
+    reason: str
+    note: str | None = None
+    order_id: int | None = None
+    created_at: datetime
+
+
+class ProductBulkActive(BaseModel):
+    """Publicar o despublicar varios productos de una."""
+
+    # `max_length` acotado a propósito: el caso de uso real es "todos los
+    # productos de un proveedor", que en este negocio son decenas, no miles.
+    # Un tope explícito evita que un request accidental bloquee filas de la
+    # tabla por varios segundos.
+    ids: list[int] = Field(min_length=1, max_length=500)
+    is_active: bool
+
+
+class ProductBulkResult(BaseModel):
+    updated: int
+    # Ids que se pidieron pero no se tocaron (no existen o están borrados).
+    # Se devuelven en vez de fallar: en una acción en lote es más útil saber
+    # qué quedó afuera que perder toda la operación por un id viejo.
+    skipped: list[int]

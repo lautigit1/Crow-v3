@@ -1,0 +1,55 @@
+# Normalización de fines de línea.
+#
+# El repo se trabaja desde Windows, donde git por defecto puede convertir los
+# archivos a CRLF al hacer checkout. Sin este archivo, `git status` marcaba
+# como modificados casi todos los archivos del proyecto aunque nadie los
+# hubiera tocado, y cada commit arrastraba un diff enorme que hace ilegibles
+# los reviews.
+#
+# `text=auto eol=lf` guarda TODO con LF en el repositorio. En el disco de
+# Windows los editores modernos manejan LF sin problema, y los archivos que
+# realmente necesitan CRLF (.bat, .cmd) se declaran aparte más abajo.
+#
+# ─────────────────────────────────────────────────────────────────────────
+# PARA APLICARLO (una sola vez, con el árbol limpio y todo commiteado):
+#
+#     git add --renormalize .
+#     git commit -m "chore: normalizar fines de línea a LF"
+#
+# Ese commit va a tocar muchos archivos y es esperable: es el precio de una
+# sola vez para que los siguientes sean legibles. Conviene hacerlo en un
+# commit propio, sin mezclar cambios de código.
+# ─────────────────────────────────────────────────────────────────────────
+
+* text=auto eol=lf
+
+# Scripts de shell: LF obligatorio. Un .sh con CRLF falla dentro de un
+# contenedor Linux con un "not found" que no explica nada -- ya pasó con
+# backend/docker-entrypoint.sh, que además normaliza por las suyas en el
+# Dockerfile justamente por esto.
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+
+# Scripts de Windows: CRLF obligatorio, cmd.exe no los interpreta bien con LF.
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+
+# Binarios: que git no intente convertir nada.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.webp          binary
+*.pdf           binary
+*.docx          binary
+*.xlsx          binary
+*.zip           binary
+*.woff          binary
+*.woff2         binary
+*.ttf           binary
+*.otf           binary
+
+# Lockfiles: se generan solos, no vale la pena verlos en los diffs.
+package-lock.json   -diff

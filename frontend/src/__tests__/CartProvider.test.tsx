@@ -25,6 +25,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     image_url: null,
     vehicle_type: "Auto",
     is_featured: false,
+    // Publicado en el catálogo (columna agregada en la migración 013).
+    is_active: true,
     is_deleted: false,
     deleted_at: null,
     category_id: null,

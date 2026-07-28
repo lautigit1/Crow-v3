@@ -10,6 +10,21 @@ import os
 
 os.environ["TESTING"] = "1"  # must be set before importing app
 
+# Fuerza el fallback en memoria de rate limiters, blocklist y cache del
+# dashboard, sin importar qué Redis haya alcanzable.
+#
+# Hace falta porque la limpieza entre tests (más abajo:
+# `token_blocklist._entries.clear()` y `LoginRateLimiter.reset_all_memory_state()`)
+# SOLO toca el estado en memoria. Si el proceso encuentra un Redis, esos
+# resets no hacen nada: los contadores de la clave `testclient:*` se acumulan
+# a lo largo de toda la suite y el cache del dashboard devuelve valores viejos.
+#
+# Sin esta línea, la suite pasa o falla según si hay un Redis a mano. En CI no
+# lo hay y sale verde; corriendo los tests en un contenedor sobre la red de
+# `docker compose`, el `crow_redis` del stack de desarrollo se resuelve solo y
+# aparecen 8 fallos que no tienen nada que ver con el código.
+os.environ["REDIS_URL"] = ""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event

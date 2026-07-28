@@ -59,6 +59,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     image_url: null,
     vehicle_type: "Auto",
     is_featured: false,
+    // Publicado en el catálogo (columna agregada en la migración 013).
+    is_active: true,
     is_deleted: false,
     deleted_at: null,
     category_id: null,
@@ -150,9 +152,18 @@ describe("AdminProductsPage — borrado", () => {
     await screen.findByText("Filtro de aceite");
 
     const row = screen.getByText("Filtro de aceite").closest("tr")!;
-    const buttons = within(row).getAllByRole("button");
-    // Editar tiene texto visible; el botón de borrar es el que no lo tiene.
-    const deleteBtn = buttons.find((b) => !/editar/i.test(b.textContent ?? ""))!;
+    // Por nombre accesible, no por descarte.
+    //
+    // Antes se buscaba "el botón de la fila que no dice editar", y eso se
+    // rompió al agregar la columna Catálogo: su chip ("En catálogo" /
+    // "Borrador") tampoco dice editar y viene ANTES en el DOM, así que el
+    // descarte devolvía el chip y el test terminaba publicando el producto
+    // en vez de abrir el modal de borrado.
+    //
+    // El botón de borrar es solo-ícono pero tiene aria-label, que es
+    // justamente para lo que sirve: identificarlo sin depender de en qué
+    // posición de la fila quedó.
+    const deleteBtn = within(row).getByRole("button", { name: "Eliminar producto" });
     await user.click(deleteBtn);
 
     expect(await screen.findByText("¿Eliminar producto?")).toBeInTheDocument();

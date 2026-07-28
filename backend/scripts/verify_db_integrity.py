@@ -122,6 +122,47 @@ CHECKS: list[tuple[str, str, str, str]] = [
         "WHERE table_name = 'products' AND column_name = 'margin_pct'",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS margin_pct NUMERIC(6, 2)",
     ),
+    # --- migracion 013: estado de publicacion ---
+    # NOT NULL con DEFAULT true: en una base de desarrollo que ya tenia
+    # productos cargados, todos estaban publicados (era el unico estado
+    # posible antes de esta columna). Sin el DEFAULT, el ALTER falla sobre
+    # una tabla con filas; sin el backfill implicito que da el DEFAULT,
+    # quedarian todos en borrador y el catalogo se veria vacio.
+    (
+        "columna", "products.is_active",
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'products' AND column_name = 'is_active'",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active "
+        "BOOLEAN NOT NULL DEFAULT true",
+    ),
+    (
+        "indice", "ix_products_is_active",
+        "SELECT 1 FROM pg_indexes WHERE indexname = 'ix_products_is_active'",
+        "CREATE INDEX IF NOT EXISTS ix_products_is_active ON products (is_active)",
+    ),
+    # --- migracion 014 ---
+    # `create_all()` sí crea tablas nuevas, así que en una base de desarrollo
+    # `stock_movements` aparece sola. Se deja igual el chequeo porque el
+    # script también se corre standalone contra bases que no pasan por
+    # create_all, y ahí la tabla puede faltar.
+    (
+        "tabla", "stock_movements",
+        "SELECT 1 FROM information_schema.tables WHERE table_name = 'stock_movements'",
+        "DO $$ BEGIN "
+        "CREATE TYPE stockreason AS ENUM "
+        "('ALTA', 'AJUSTE', 'VENTA', 'CANCELACION', 'COMPRA'); "
+        "EXCEPTION WHEN duplicate_object THEN NULL; END $$; "
+        "CREATE TABLE IF NOT EXISTS stock_movements ("
+        "id SERIAL PRIMARY KEY, "
+        "product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE, "
+        "delta INTEGER NOT NULL, "
+        "stock_after INTEGER NOT NULL, "
+        "reason stockreason NOT NULL, "
+        "note TEXT, "
+        "order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL, "
+        "actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL, "
+        "created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
+    ),
     # --- migracion 009: columna con tipo ENUM nuevo en tabla que ya podia existir ---
     (
         "columna", "orders.payment_method",
@@ -176,7 +217,7 @@ def reconcile(db, verbose: bool = True) -> None:
     """
     missing: list[tuple[str, str, str]] = []
     if verbose:
-        print("Verificando objetos de las migraciones 003/005/006/008/009/010/011...\n")
+        print("Verificando objetos de las migraciones 003/005/006/008/009/010/011/013...\n")
     for kind, name, check_sql, fix_sql in CHECKS:
         exists = db.execute(text(check_sql)).first() is not None
         if verbose:

@@ -14,7 +14,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.deps import DbSession
 from app.models.category import Category
-from app.models.product import Product
+from app.models.product import Product, producto_publico
 
 router = APIRouter(tags=["seo"])
 
@@ -81,7 +81,7 @@ def sitemap(db: DbSession) -> str:
     # sigue siendo válida y vale la pena que Google la indexe.
     products = list(db.execute(
         select(Product.id, Product.updated_at)
-        .where(Product.is_deleted.is_(False))
+        .where(producto_publico())
         .order_by(Product.id)
     ).all())
 

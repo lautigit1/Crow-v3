@@ -14,6 +14,14 @@ cryptography==48.0.0
 bcrypt==4.2.1
 python-multipart==0.0.12
 email-validator==2.2.0
+# Lectura de las facturas en Excel que mandan los proveedores (fase 4 de
+# openspec/changes/supplier-catalog-and-invoice-import). Solo lectura: no se
+# generan .xlsx desde el backend.
+openpyxl==3.1.5
+# Extracción de tablas de facturas en PDF digitales (fase 6). Determinístico
+# y local: no manda el archivo a ningún servicio externo. No sirve para
+# escaneados -- esos van por carga manual, ver design.md.
+pdfplumber==0.11.4
 alembic==1.14.0
 redis>=5.0,<6.0
 jinja2==3.1.4
