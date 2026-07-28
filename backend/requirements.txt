@@ -11,7 +11,7 @@ pyjwt==2.13.0
 # se fue esa dependencia, se declara explícita porque `core/security.py` la
 # importa directamente (HKDF para derivar secretos de firma por propósito).
 cryptography==48.0.0
-bcrypt==4.2.1
+bcrypt==5.0.0
 python-multipart==0.0.12
 email-validator==2.2.0
 # Lectura de las facturas en Excel que mandan los proveedores (fase 4 de
