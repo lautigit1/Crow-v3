@@ -12,7 +12,7 @@ pyjwt==2.13.0
 # importa directamente (HKDF para derivar secretos de firma por propósito).
 cryptography==48.0.0
 bcrypt==4.2.1
-python-multipart==0.0.12
+python-multipart==0.0.32
 email-validator==2.2.0
 # Lectura de las facturas en Excel que mandan los proveedores (fase 4 de
 # openspec/changes/supplier-catalog-and-invoice-import). Solo lectura: no se
