@@ -18,34 +18,78 @@ set -e
 #
 # Ahora Alembic es la fuente de verdad del esquema en los dos entornos.
 
-# --- Bases anteriores a este cambio -----------------------------------------
-# Un volumen creado por `create_all()` tiene todas las tablas pero ninguna
-# fila en `alembic_version`: Alembic lo ve como una base vacía e intenta
-# correr 001 en adelante, que falla con "relation already exists". Se lo
-# marca como que ya está en 012 (el esquema que esas bases tienen) y a partir
-# de ahí las migraciones nuevas se aplican normalmente.
+# --- En qué estado viene la base --------------------------------------------
+# Hay tres situaciones posibles y cada una necesita algo distinto. La consulta
+# se hace una sola vez y devuelve una palabra, en vez de encadenar chequeos
+# con exit codes: con `set -e` activo un comando suelto que devuelve 1 aborta
+# el script entero, y acá "no" es una respuesta válida, no un error.
 #
-# El caso opuesto -- base recién creada, sin tablas -- no entra acá y corre
-# la cadena completa desde 001, que es lo que se quiere: así el arranque de
-# desarrollo ejerce las migraciones de verdad.
-# El chequeo va como condición de un `if` y no como comando suelto seguido de
-# `$?`: con `set -e` activo, un exit code distinto de 0 en un comando suelto
-# aborta el script entero, y acá el "1" es una respuesta válida ("no es una
-# base legacy"), no un error.
-if python - <<'PY'
-import sys
+#   gestionada → ya tiene `alembic_version`. Caso normal: se aplican las
+#                migraciones pendientes y listo.
+#
+#   legacy     → tiene las tablas pero ninguna fila en `alembic_version`. Es
+#                un volumen viejo creado por `create_all()`. Alembic lo ve
+#                como vacío e intenta correr 001, que falla con "relation
+#                already exists". Se lo marca en 012 (el esquema que esas
+#                bases tienen) y de ahí en adelante todo sigue normal.
+#
+#   vacia      → base recién creada, sin una sola tabla. Es el caso de CI y
+#                el de cualquiera que arranque de cero.
+#
+# El caso `vacia` es el que rompió el CI de Playwright y merece explicación,
+# porque la solución parece al revés de lo esperable.
+#
+# La cadena de migraciones NO contiene el esquema base: la 001 es
+# "add_user_updated_at_last_login", que hace ALTER TABLE users. Nunca hubo
+# una migración 000 que creara las tablas -- el proyecto empezó a usar
+# Alembic cuando la base ya existía, y el esquema inicial siempre lo armó
+# `create_all()` desde los modelos. Sobre una base vacía, entonces,
+# `alembic upgrade head` muere en la primera migración con "relation users
+# does not exist", el entrypoint se corta por `set -e` y el contenedor queda
+# unhealthy. Que es exactamente lo que pasó.
+#
+# Así que para una base vacía el camino correcto es el de siempre: armar el
+# esquema con `create_all()` (los modelos ya reflejan hasta la 018) y marcarla
+# en head. Lo que create_all() no sabe hacer -- extensión pg_trgm, índices
+# GIN, check constraints, que viven solo en las migraciones -- lo agrega
+# `reconcile()` durante el seed, unas líneas más abajo.
+#
+# LIMITACIÓN CONOCIDA: en una base vacía las migraciones no se ejercen, que
+# era justamente una de las dos razones para meter Alembic en desarrollo.
+# Sí se ejercen sobre cualquier base existente, que es el caso más frecuente
+# y el más riesgoso. Cerrar el hueco del todo requiere una migración 000 con
+# el esquema base, y eso es un cambio propio, no algo para colar acá.
+ESTADO_BASE="$(python - <<'PY'
 from sqlalchemy import create_engine, inspect
 from app.core.config import settings
 
 engine = create_engine(settings.alembic_database_url)
 tablas = set(inspect(engine).get_table_names())
-# "products existe pero alembic_version no" == base legacy de create_all()
-sys.exit(0 if ("products" in tablas and "alembic_version" not in tablas) else 1)
+if "alembic_version" in tablas:
+    print("gestionada")
+elif "products" in tablas:
+    print("legacy")
+else:
+    print("vacia")
 PY
-then
-  echo "→ Base preexistente sin control de Alembic: marcándola en la revisión 012"
-  alembic stamp 012
-fi
+)"
+
+case "$ESTADO_BASE" in
+  legacy)
+    echo "→ Base preexistente sin control de Alembic: marcándola en la revisión 012"
+    alembic stamp 012
+    ;;
+  vacia)
+    echo "→ Base vacía: creando el esquema desde los modelos y marcándola al día"
+    python -c "
+from app.core.database import Base, engine
+import app.models  # noqa: F401  -- registra todos los modelos en Base.metadata
+Base.metadata.create_all(bind=engine)
+print('  esquema creado')
+"
+    alembic stamp head
+    ;;
+esac
 
 # Se imprime la revisión antes y después para que el log diga sin ambigüedad
 # si el esquema cambió o ya estaba al día. Sin esto, `alembic upgrade head`

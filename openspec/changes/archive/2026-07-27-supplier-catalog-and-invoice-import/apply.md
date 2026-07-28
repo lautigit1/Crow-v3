@@ -47,7 +47,8 @@ Seis, todas nuevas. Tres no estaban previstas en el plan y están justificadas e
 - **D1 — mapeo con memoria por proveedor**, no plantilla fija. La plantilla obligaría a copiar y pegar el Excel del proveedor, que es justo el trabajo que la feature viene a ahorrar.
 - **Fase 6 sin IA.** Se hizo primero la extracción local con `pdfplumber`: determinística, gratis, y el archivo no sale del servidor. La opción de IA queda para medir con facturas reales, no para decidir de antemano.
 - **Escaneados: no se hace OCR.** ~30 facturas/mes × 4 min de carga asistida son 2 horas mensuales, contra semanas de trabajo más mantenimiento permanente — y el OCR falla justo en los dígitos.
-- **Alembic en los dos entornos.** Antes las migraciones solo corrían en producción, así que una migración rota se estrenaba ahí. Ahora cada `docker compose up` las ejerce.
+- **Alembic en los dos entornos.** Antes las migraciones solo corrían en producción, así que una migración rota se estrenaba ahí. Ahora cada `docker compose up` las ejerce — con una excepción, abajo.
+- **Una base vacía no corre migraciones, arma el esquema con `create_all()` y se marca en head.** Suena al revés, pero la cadena no contiene el esquema base: la 001 es un `ALTER TABLE users`, porque el proyecto empezó a usar Alembic cuando la base ya existía. Sobre una base sin tablas, `alembic upgrade head` muere en la primera migración. Lo encontró el CI de Playwright, que arranca de cero en cada corrida.
 
 ## Verificación
 
@@ -70,4 +71,5 @@ Vale registrarlo porque justifica el costo de escribirlos:
 - **D3** sin confirmar: si el `Drawer` a 820px alcanza para los productos del proveedor o conviene una página propia. Se decide usándolo.
 - **La detección de duplicados es exacta sobre los bytes.** Si el proveedor reexporta el mismo comprobante, el hash cambia y no lo detecta; para eso queda el control del total.
 - **Nota operativa:** correr los E2E varias veces seguidas agota el tope de 10 registros por hora por IP y los tests de compra empiezan a fallar con 429. Entre corridas, `docker compose restart redis`. En CI no pasa porque cada corrida arranca limpia.
+- **En una base vacía las migraciones no se ejercen** (ver decisiones). Sí se ejercen sobre cualquier base existente, que es el caso frecuente y el riesgoso. Cerrar el hueco pide una migración 000 con el esquema base: es un cambio propio.
 - **El historial de stock arranca vacío** para los productos anteriores a la migración 014: esos movimientos nunca se registraron y no hay forma de reconstruirlos. Por eso cada movimiento guarda `stock_after` en vez de depender de la suma de deltas.
