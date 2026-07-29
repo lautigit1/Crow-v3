@@ -114,6 +114,18 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("REDIS_URL no configurada — usando stores en memoria")
 
+    # El broker de eventos necesita una referencia al event loop para poder
+    # publicar desde los handlers sync, que corren en un hilo del threadpool.
+    # `asyncio.Queue.put_nowait` no es thread-safe: sin esto habría que
+    # llamarlo desde otro hilo y fallaría de forma intermitente.
+    # Solo aplica al fallback en memoria; con Redis el publish es sync y no
+    # toca el loop.
+    import asyncio as _asyncio
+
+    from app.core.events import registrar_loop
+
+    registrar_loop(_asyncio.get_running_loop())
+
     import os
     if os.getenv("TESTING"):
         pass  # tables already created by conftest fixture

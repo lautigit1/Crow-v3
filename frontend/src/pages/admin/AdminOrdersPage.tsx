@@ -1,5 +1,8 @@
 import type * as React from "react";
 import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerEvent } from "@/shared/lib/serverEvents";
+import { orderKeys } from "@/entities/order/queries";
 import {
   Button,
   DataTable,
@@ -272,15 +275,17 @@ function FichaPedido({
 // ─── Página ──────────────────────────────────────────────────────────────────
 
 export function AdminOrdersPage() {
-  const [items, setItems] = useState<AdminOrder[] | null>(null);
-  const [total, setTotal] = useState(0);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [entrega, setEntrega] = useState<OrderStatus | "">("");
   const [cobro, setCobro] = useState<PaymentStatus | "">("");
   const [q, setQ] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [abierto, setAbierto] = useState<AdminOrder | null>(null);
-  const [loadError, setLoadError] = useState(false);
+  // Pedidos que entraron mientras la persona miraba la pantalla. No se
+  // aplican solos: reordenar la tabla justo cuando alguien va a hacer clic es
+  // peor que enterarse diez segundos más tarde.
+  const [nuevos, setNuevos] = useState(0);
 
   // Debounce del buscador: sin esto cada tecla dispara una consulta con JOIN
   // contra users.
@@ -292,29 +297,51 @@ export function AdminOrdersPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const cargar = useCallback(async () => {
-    try {
-      // El filtrado es del lado del servidor, no en memoria como en
-      // Cotizaciones: los pedidos se acumulan sin techo y traerlos todos para
-      // filtrar en el navegador deja de funcionar en algún momento.
-      const r = await orderApi.listAll({
-        skip: page * PAGE_SIZE,
-        limit: PAGE_SIZE,
-        status: entrega || undefined,
-        payment_status: cobro || undefined,
-        q: busqueda || undefined,
-      });
-      setItems(r.items);
-      setTotal(r.total);
-      setLoadError(false);
-    } catch (err) {
-      console.error("[AdminOrdersPage] no se pudieron cargar los pedidos:", err);
-      setItems([]);
-      setLoadError(true);
-    }
-  }, [page, entrega, cobro, busqueda]);
+  // El filtrado es del lado del servidor, no en memoria como en Cotizaciones:
+  // los pedidos se acumulan sin techo y traerlos todos para filtrar en el
+  // navegador deja de funcionar en algún momento.
+  const filtros = {
+    skip: page * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    status: entrega || undefined,
+    payment_status: cobro || undefined,
+    q: busqueda || undefined,
+  };
 
-  useEffect(() => void cargar(), [cargar]);
+  const { data, isPending, isError } = useQuery({
+    queryKey: orderKeys.adminPage(filtros),
+    queryFn: () => orderApi.listAll(filtros),
+  });
+
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+
+  const refrescar = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: orderKeys.adminAll() }),
+    [queryClient],
+  );
+
+  // Acá se paga lo que costó pasar la página a TanStack Query: poder decir
+  // "esta lista quedó vieja" desde afuera del componente, que es exactamente
+  // lo que hace falta cuando el aviso llega por un canal y no por una acción
+  // de la persona.
+  useServerEvent((evento) => {
+    if (evento.type === "order.created") {
+      setNuevos((n) => n + 1);
+      return;
+    }
+    if (evento.type === "order.updated") {
+      // Un cambio de estado sí se aplica solo: es la confirmación de algo que
+      // acaba de pasar, y mostrar el dato viejo es peor que refrescar.
+      void refrescar();
+    }
+  });
+
+  const mostrarNuevos = () => {
+    setNuevos(0);
+    setPage(0);
+    void refrescar();
+  };
 
   const guardar = async (
     pedido: AdminOrder,
@@ -326,9 +353,11 @@ export function AdminOrdersPage() {
       cambios.admin_notes,
       cambios.payment_status,
     );
-    // El PATCH devuelve la forma de admin completa, así que se reemplaza la
-    // fila sin volver a pedir la página.
-    setItems((prev) => prev?.map((o) => (o.id === pedido.id ? actualizado : o)) ?? null);
+    // El PATCH devuelve la forma de admin completa, así que se parchea la fila
+    // en el cache sin volver a pedir la página.
+    queryClient.setQueryData(orderKeys.adminPage(filtros), (prev: typeof data) =>
+      prev ? { ...prev, items: prev.items.map((o) => (o.id === pedido.id ? actualizado : o)) } : prev,
+    );
     setAbierto(actualizado);
   };
 
@@ -441,7 +470,22 @@ export function AdminOrdersPage() {
         )}
       </div>
 
-      {items === null ? (
+      {/* Avisa sin tocar la lista. La persona decide cuándo se reordena. */}
+      {nuevos > 0 && (
+        <button
+          type="button"
+          onClick={mostrarNuevos}
+          className="mb-4 flex w-full items-center justify-center gap-2.5 rounded-xl bg-primary py-3 font-body text-[14px] font-bold text-white shadow-[0_8px_20px_-8px_rgba(0,87,217,.6)] transition-transform duration-150 hover:-translate-y-px"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-70" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+          </span>
+          {nuevos === 1 ? "1 pedido nuevo" : `${nuevos} pedidos nuevos`} — mostrar
+        </button>
+      )}
+
+      {isPending ? (
         <CenteredSpinner />
       ) : (
         <>
@@ -451,7 +495,7 @@ export function AdminOrdersPage() {
             getKey={(o) => o.id}
             onRowClick={(o) => setAbierto(o)}
             empty={
-              loadError
+              isError
                 ? "No se pudieron cargar los pedidos. Recargá la página."
                 : "No hay pedidos con estos filtros."
             }

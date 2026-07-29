@@ -6,6 +6,7 @@ import { AuthProvider } from "@/app/providers/AuthProvider";
 import { CartProvider } from "@/app/providers/CartProvider";
 import { FavoritesProvider } from "@/app/providers/FavoritesProvider";
 import { ErrorBoundary } from "@/app/providers/ErrorBoundary";
+import { ServerEventsProvider } from "@/app/providers/ServerEventsProvider";
 import { queryClient } from "@/app/providers/queryClient";
 import { App } from "@/app/App";
 import { initSentry } from "@/shared/lib/sentry";
@@ -29,11 +30,15 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <CartProvider>
-              <FavoritesProvider>
-                <App />
-              </FavoritesProvider>
-            </CartProvider>
+            {/* Dentro de AuthProvider: la conexión solo se abre cuando hay
+                sesión, y se cierra al cerrarla. */}
+            <ServerEventsProvider>
+              <CartProvider>
+                <FavoritesProvider>
+                  <App />
+                </FavoritesProvider>
+              </CartProvider>
+            </ServerEventsProvider>
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>

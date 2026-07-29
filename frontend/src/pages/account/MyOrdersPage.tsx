@@ -11,7 +11,9 @@ import {
   ConfirmModal,
 } from "@/shared/ui";
 import { type Order, type OrderCreate } from "@/entities/order";
-import { useMyOrdersQuery, useCreateOrderMutation, useCancelOrderMutation } from "@/entities/order/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMyOrdersQuery, useCreateOrderMutation, useCancelOrderMutation, orderKeys } from "@/entities/order/queries";
+import { useServerEvent } from "@/shared/lib/serverEvents";
 import { productApi, type Product } from "@/entities/product";
 import { formatPrice } from "@/shared/lib/format";
 
@@ -224,7 +226,18 @@ const inputCls = "w-full py-[9px] px-3 border border-border rounded-sm font-body
 
 export function MyOrdersPage() {
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<Order | null>(null);
+  /**
+   * Se guarda el ID, no el pedido.
+   *
+   * Antes acá vivía una copia del objeto, y con los eventos en vivo eso pasó a
+   * ser un problema concreto: cuando el admin marca el pedido como pagado, la
+   * lista se refresca pero la ficha abierta seguiría mostrando la copia vieja
+   * para siempre. Y tener la ficha abierta es justamente el momento en que
+   * alguien está mirando si su pedido se movió.
+   *
+   * Derivándolo de la lista, la ficha se actualiza sola con cada refresco.
+   */
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
@@ -241,7 +254,21 @@ export function MyOrdersPage() {
   // falta un `fetchOrders` manual ni pasar `page` a mano después de cada
   // mutación.
   const { data, isPending } = useMyOrdersQuery({ skip: page * PAGE_SIZE, limit: PAGE_SIZE });
+  const queryClient = useQueryClient();
+
+  // Cuando el admin mueve el estado de entrega o el de cobro, la lista se
+  // actualiza sola. Acá no hace falta la barra de aviso del panel: no aparecen
+  // filas nuevas, solo cambian las que ya están, así que nada se reordena bajo
+  // el cursor. El servidor ya filtró -- por el canal `user:{id}` solo llegan
+  // eventos de los pedidos propios.
+  useServerEvent((evento) => {
+    if (evento.type === "order.updated") {
+      void queryClient.invalidateQueries({ queryKey: orderKeys.mine() });
+    }
+  });
   const orders = data?.items ?? null;
+  // Derivado, no estado: cada refresco de la lista actualiza la ficha abierta.
+  const selected = orders?.find((o) => o.id === selectedId) ?? null;
   const total = data?.total ?? 0;
   const createOrderMutation = useCreateOrderMutation();
   const cancelOrderMutation = useCancelOrderMutation();
@@ -304,8 +331,9 @@ export function MyOrdersPage() {
   const handleCancel = async () => {
     if (!selected) return;
     try {
-      const updated = await cancelOrderMutation.mutateAsync(selected.id);
-      setSelected(updated);
+      await cancelOrderMutation.mutateAsync(selected.id);
+      // No hace falta guardar la respuesta: la mutación invalida la lista y la
+      // ficha se recalcula desde los datos nuevos.
       setConfirmCancel(false);
     } catch {
       setConfirmCancel(false);
@@ -336,7 +364,7 @@ export function MyOrdersPage() {
         <>
           <div className="flex flex-col gap-2.5">
             {orders.map((o) => (
-              <OrderCard key={o.id} order={o} onExpand={() => setSelected(o)} />
+              <OrderCard key={o.id} order={o} onExpand={() => setSelectedId(o.id)} />
             ))}
           </div>
           {total > PAGE_SIZE && (
@@ -348,7 +376,7 @@ export function MyOrdersPage() {
       {/* Order detail — Drawer */}
       <Drawer
         open={!!selected}
-        onClose={() => setSelected(null)}
+        onClose={() => setSelectedId(null)}
         title={selected ? `Pedido #${selected.id}` : ""}
         eyebrow="Mis pedidos"
         footer={

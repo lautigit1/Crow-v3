@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
-from app.core import audit
+from app.core import audit, events
 from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.core.ratelimit import LoginRateLimiter
 from app.core.stock import mover_stock
@@ -164,6 +164,8 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession,
     db.refresh(order)
     _order_limiter.register_failure(ip, current_user.email)
     audit.record(db, action="order.create", actor=current_user, entity="order", entity_id=order.id, request=request)
+    # Solo al canal de admin: el cliente acaba de crearlo, ya lo sabe.
+    events.publicar([events.CANAL_ADMIN], "order.created", order_id=order.id)
     return order
 
 
@@ -183,6 +185,8 @@ def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession, req
     db.flush()
     db.refresh(order)
     audit.record(db, action="order.cancel", actor=current_user, entity="order", entity_id=order.id, request=request)
+    # Al admin, que necesita enterarse de que ese pedido ya no va.
+    events.publicar([events.CANAL_ADMIN], "order.updated", order_id=order.id)
     return order
 
 
@@ -336,6 +340,14 @@ def admin_update_order(
         entity_id=order.id,
         detail=" | ".join(cambios) if cambios else "sin cambios de estado",
         request=request,
+    )
+    # A los dos lados: al panel, por si hay otro admin con la lista abierta, y
+    # al dueño del pedido, que ve moverse el estado en "Mis pedidos" sin
+    # recargar. Es el evento que justifica el alcance "admin y clientes".
+    events.publicar(
+        [events.CANAL_ADMIN, events.canal_usuario(order.user_id)],
+        "order.updated",
+        order_id=order.id,
     )
     # Devuelve la forma de admin (con cliente y total) y no `OrderRead`: es la
     # respuesta que la lista del panel necesita para actualizar la fila sin

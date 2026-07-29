@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { orderApi, type OrderCreate, type OrderStatus } from "./index";
+import { orderApi, type AdminOrderFilters, type OrderCreate, type OrderStatus } from "./index";
 
 export const orderKeys = {
   all: ["orders"] as const,
   mine: () => [...orderKeys.all, "mine"] as const,
   minePage: (params: { skip?: number; limit?: number }) => [...orderKeys.mine(), params] as const,
   adminAll: () => [...orderKeys.all, "admin"] as const,
-  adminPage: (params: { skip?: number; limit?: number; user_id?: number }) =>
-    [...orderKeys.adminAll(), params] as const,
+  adminPage: (params: AdminOrderFilters) => [...orderKeys.adminAll(), params] as const,
 };
 
 export function useMyOrdersQuery(params: { skip?: number; limit?: number }) {

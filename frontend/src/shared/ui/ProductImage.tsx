@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Icon, type IconName } from "./Icon";
 import { cloudinaryTransform } from "@/shared/lib/cloudinaryUrl";
 
@@ -65,7 +66,15 @@ export function ProductImage({
    */
   priority?: boolean;
 }) {
-  if (imageUrl) {
+  // Una URL guardada puede dejar de responder: la imagen se borró de
+  // Cloudinary, se cargó mal a mano, o el producto vino de una importación con
+  // un link roto. Sin esto el navegador pinta el ícono de imagen rota más el
+  // texto alternativo -- lo más barato que puede verse en una pantalla de
+  // compra. Al fallar se cae al tile generado, que ya existe para los
+  // productos sin foto y se ve deliberado en vez de accidental.
+  const [fallo, setFallo] = useState(false);
+
+  if (imageUrl && !fallo) {
     // Miniaturas (compact) piden un ancho chico a Cloudinary -- de sobra
     // para el tile más grande en ese modo (80px, carrito) incluso en
     // pantallas retina. Tiles grandes (catálogo, detalle) piden más
@@ -77,6 +86,7 @@ export function ProductImage({
         <img
           src={src}
           alt={name}
+          onError={() => setFallo(true)}
           className="w-full h-full object-cover"
           loading={priority ? "eager" : "lazy"}
           decoding="async"

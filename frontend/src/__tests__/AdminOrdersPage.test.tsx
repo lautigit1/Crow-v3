@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AdminOrdersPage } from "@/pages/admin/AdminOrdersPage";
 import type { AdminOrder } from "@/entities/order";
+import type { ServerEvent } from "@/shared/lib/serverEvents";
 
 /**
  * Lo que se prueba acá es lo que el backend no puede garantizar: que el admin
@@ -54,8 +56,38 @@ function pedido(over: Partial<AdminOrder> = {}): AdminOrder {
   };
 }
 
+// Se captura el handler que la página registra para poder disparar eventos del
+// servidor a mano. Mockear el hook en vez de levantar un EventSource de verdad
+// mantiene el test sobre lo que importa: qué hace la pantalla cuando llega el
+// aviso, no cómo viaja.
+let emitir: ((evento: ServerEvent) => void) | null = null;
+vi.mock("@/shared/lib/serverEvents", () => ({
+  useServerEvent: (handler: (evento: ServerEvent) => void) => {
+    emitir = handler;
+  },
+}));
+
+/**
+ * La página usa TanStack Query, así que necesita un cliente en contexto.
+ *
+ * Uno nuevo por test y sin reintentos: compartirlo dejaría el cache de un caso
+ * filtrándose al siguiente, y el reintento por defecto haría que un test de
+ * error tarde de más antes de fallar.
+ */
+function renderPage() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <AdminOrdersPage />
+    </QueryClientProvider>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  emitir = null;
   mockListAll.mockResolvedValue({ items: [pedido()], total: 1 });
 });
 
@@ -63,7 +95,7 @@ beforeEach(() => {
 
 describe("AdminOrdersPage — lista", () => {
   it("muestra el cliente y los dos estados por separado", async () => {
-    render(<AdminOrdersPage />);
+    renderPage();
     const fila = (await screen.findByText("Juan Pérez")).closest("tr")!;
     // Acotado a la fila a propósito: "Pendiente" y "Sin cobrar" también
     // existen como <option> en los selects de filtro, y un getByText suelto
@@ -77,14 +109,14 @@ describe("AdminOrdersPage — lista", () => {
       items: [pedido({ total: 3000, items_sin_precio: 2 })],
       total: 1,
     });
-    render(<AdminOrdersPage />);
+    renderPage();
     // Sin este aviso el admin lee un número que parece el total del pedido
     // y no lo es: los productos "Consultar precio" no suman.
     expect(await screen.findByText(/2 a consultar/)).toBeInTheDocument();
   });
 
   it("no muestra el aviso cuando todas las líneas tienen precio", async () => {
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     expect(screen.queryByText(/a consultar/)).not.toBeInTheDocument();
   });
@@ -95,7 +127,7 @@ describe("AdminOrdersPage — lista", () => {
 describe("AdminOrdersPage — filtros", () => {
   it("filtra por estado de entrega contra el servidor", async () => {
     const user = userEvent.setup();
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     mockListAll.mockClear();
 
@@ -108,7 +140,7 @@ describe("AdminOrdersPage — filtros", () => {
 
   it("filtra por estado de cobro", async () => {
     const user = userEvent.setup();
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     mockListAll.mockClear();
 
@@ -121,7 +153,7 @@ describe("AdminOrdersPage — filtros", () => {
 
   it("busca con debounce, no en cada tecla", async () => {
     const user = userEvent.setup();
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     mockListAll.mockClear();
 
@@ -141,7 +173,7 @@ describe("AdminOrdersPage — filtros", () => {
 describe("AdminOrdersPage — ficha del pedido", () => {
   const abrir = async () => {
     const user = userEvent.setup();
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     await user.click(screen.getByRole("button", { name: "Gestionar" }));
     return user;
@@ -188,12 +220,68 @@ describe("AdminOrdersPage — ficha del pedido", () => {
   });
 });
 
+// ─── Eventos en vivo ─────────────────────────────────────────────────────────
+
+describe("AdminOrdersPage — pedidos que entran en vivo", () => {
+  it("avisa de un pedido nuevo sin tocar la lista", async () => {
+    renderPage();
+    await screen.findByText("Juan Pérez");
+    mockListAll.mockClear();
+
+    act(() => emitir!({ type: "order.created", order_id: 99 }));
+
+    expect(await screen.findByText(/1 pedido nuevo/)).toBeInTheDocument();
+    // Lo que hace útil a la barra: la tabla NO se reordena sola. Si se
+    // refrescara acá, la fila que la persona iba a tocar se le movería abajo
+    // del cursor.
+    expect(mockListAll).not.toHaveBeenCalled();
+  });
+
+  it("acumula varios avisos en un solo cartel", async () => {
+    renderPage();
+    await screen.findByText("Juan Pérez");
+
+    act(() => {
+      emitir!({ type: "order.created", order_id: 1 });
+      emitir!({ type: "order.created", order_id: 2 });
+    });
+
+    expect(await screen.findByText(/2 pedidos nuevos/)).toBeInTheDocument();
+  });
+
+  it("al apretar el aviso recarga y el cartel desaparece", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Juan Pérez");
+    act(() => emitir!({ type: "order.created", order_id: 99 }));
+
+    mockListAll.mockClear();
+    await user.click(await screen.findByText(/1 pedido nuevo/));
+
+    await waitFor(() => expect(mockListAll).toHaveBeenCalled());
+    expect(screen.queryByText(/pedido nuevo/)).not.toBeInTheDocument();
+  });
+
+  it("un cambio de estado sí refresca solo", async () => {
+    renderPage();
+    await screen.findByText("Juan Pérez");
+    mockListAll.mockClear();
+
+    act(() => emitir!({ type: "order.updated", order_id: 12 }));
+
+    // Sin barra de por medio: no aparecen filas nuevas, solo cambian las que ya
+    // están, así que nada se mueve bajo el cursor.
+    await waitFor(() => expect(mockListAll).toHaveBeenCalled());
+    expect(screen.queryByText(/pedido nuevo/)).not.toBeInTheDocument();
+  });
+});
+
 // ─── Contacto ────────────────────────────────────────────────────────────────
 
 describe("AdminOrdersPage — contacto", () => {
   it("ofrece WhatsApp al número del cliente", async () => {
     const user = userEvent.setup();
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     await user.click(screen.getByRole("button", { name: "Gestionar" }));
 
@@ -205,7 +293,7 @@ describe("AdminOrdersPage — contacto", () => {
   it("cae al mail cuando el cliente no tiene teléfono", async () => {
     const user = userEvent.setup();
     mockListAll.mockResolvedValue({ items: [pedido({ customer_phone: null })], total: 1 });
-    render(<AdminOrdersPage />);
+    renderPage();
     await screen.findByText("Juan Pérez");
     await user.click(screen.getByRole("button", { name: "Gestionar" }));
 
