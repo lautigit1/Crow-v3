@@ -37,9 +37,13 @@ test.describe("Compra completa: catálogo → carrito → checkout", () => {
 
     // Éxito -- la pantalla de confirmación se rediseñó (CheckoutPage →
     // OrderSuccess): ya no dice "¡Pedido #N creado!" en una sola línea,
-    // ahora es un eyebrow "Pedido confirmado" + el número como sello
-    // ("N.º 00012", `String(order.id).padStart(5, "0")`).
-    await expect(page.getByText("Pedido confirmado")).toBeVisible();
+    // ahora es un eyebrow + el número como sello ("N.º 00012",
+    // `String(order.id).padStart(5, "0")`).
+    //
+    // El eyebrow dice "Pedido recibido" y no "confirmado": "Confirmado" es un
+    // estado real del pedido, el que el admin pone cuando verificó stock, y
+    // usarlo acá le daría dos significados distintos al mismo término.
+    await expect(page.getByText("Pedido recibido")).toBeVisible();
     await expect(page.getByRole("heading", { name: /^N\.º \d{5}$/ })).toBeVisible();
     await expect(page.getByRole("link", { name: "Ver mis pedidos" })).toBeVisible();
 

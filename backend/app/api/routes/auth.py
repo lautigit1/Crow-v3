@@ -40,7 +40,9 @@ _reset_limiter    = LoginRateLimiter(max_attempts=5, window_seconds=3600, lockou
 # IP-only limiters (sentinel "*" as the email part). The per-(ip, email)
 # limiters above are trivially bypassed on public endpoints by rotating the
 # email — each new email creates a fresh key. These cap total volume per IP.
-_register_ip_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600, lockout_seconds=3600)
+_register_ip_limiter = LoginRateLimiter(
+    max_attempts=settings.REGISTER_RATE_LIMIT_PER_IP, window_seconds=3600, lockout_seconds=3600
+)
 _reset_ip_limiter    = LoginRateLimiter(max_attempts=15, window_seconds=3600, lockout_seconds=3600)
 
 

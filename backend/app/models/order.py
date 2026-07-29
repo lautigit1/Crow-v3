@@ -23,6 +23,27 @@ class PaymentMethod(str, enum.Enum):
     EFECTIVO_LOCAL = "Retiro en local (efectivo)"
 
 
+class PaymentStatus(str, enum.Enum):
+    """En qué punto está el COBRO, que es independiente de la entrega.
+
+    `OrderStatus` responde "¿en qué punto está la entrega?" y este responde
+    "¿ya me pagó?". Son preguntas ortogonales: un pedido puede estar Pagado y
+    En proceso (pagó por adelantado), o Entregado y Sin cobrar (cliente de
+    confianza que paga a fin de mes). Meterlas en un solo enum obligaría a
+    inventar estados híbridos imposibles de desarmar después.
+
+    No hay validación de transiciones ni entre estos valores ni contra el
+    estado de entrega, y es a propósito: el cobro pasa por fuera del sistema
+    (link de Mercado Pago mandado por WhatsApp), así que el sistema no tiene
+    forma de conocer la verdad. Poner reglas acá solo lograría que el admin no
+    pueda registrar lo que realmente pasó.
+    """
+
+    SIN_COBRAR = "Sin cobrar"
+    LINK_ENVIADO = "Link enviado"
+    PAGADO = "Pagado"
+
+
 class Order(Base):
     __tablename__ = "orders"
 
@@ -35,6 +56,19 @@ class Order(Base):
     # es solo una opción más que el cliente elige, el cobro se coordina igual
     # que transferencia/efectivo.
     payment_method: Mapped[PaymentMethod | None] = mapped_column(Enum(PaymentMethod), nullable=True)
+    # Migración 019. `server_default` además del `default` de Python: el default
+    # de SQLAlchemy solo aplica a las filas que inserta el ORM, y acá hace falta
+    # que las que ya existían en la base también queden en un valor válido.
+    payment_status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus),
+        default=PaymentStatus.SIN_COBRAR,
+        # `.name`, no `.value`: SQLAlchemy guarda el NOMBRE del miembro en la
+        # base ("SIN_COBRAR"), así que el default del servidor tiene que estar
+        # escrito en ese mismo idioma o las filas insertadas por fuera del ORM
+        # quedarían con una etiqueta que el tipo no acepta.
+        server_default=PaymentStatus.SIN_COBRAR.name,
+        nullable=False,
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

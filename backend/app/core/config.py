@@ -71,6 +71,19 @@ class Settings(BaseSettings):
     QUOTE_RATE_LIMIT: int = 5       # max public quote submissions per window
     QUOTE_RATE_WINDOW: int = 3600   # window in seconds (1 hour)
 
+    # Registros por hora desde una misma IP. El default de 10 es el valor de
+    # producción y no debería subirse ahí: es lo que frena la creación masiva
+    # de cuentas rotando el email (el limitador por (ip, email) se esquiva
+    # trivialmente cambiando el email).
+    #
+    # Existe como variable para poder subirlo donde la IP no identifica a una
+    # persona: la suite E2E completa registra 10 clientes por corrida contra el
+    # stack local, o sea que roza el tope exacto. Un reintento -- CI corre con
+    # `retries: 1` -- lo pasa, y a partir de ahí fallan todos los tests que
+    # necesiten registrar a alguien, con un error que no tiene nada que ver con
+    # lo que se estaba probando.
+    REGISTER_RATE_LIMIT_PER_IP: int = 10
+
     # ── Media uploads (Cloudinary) ───────────────────────────────────────────
     # Dejar vacío para deshabilitar el upload de imágenes (el form admin cae
     # al campo de URL manual). Conseguí las credenciales en cloudinary.com.

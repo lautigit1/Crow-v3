@@ -60,6 +60,12 @@ services:
       # rango entero cubre a nginx aunque el contenedor se recree con otra IP.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.28.0.0/16}
       REDIS_URL: redis://crow_redis:6379/0
+      # En desarrollo todas las peticiones llegan desde la misma IP (la del
+      # host o la de nginx), así que el tope por IP no separa personas: separa
+      # corridas de tests. La suite E2E completa registra 10 clientes, o sea
+      # justo el default de producción. Ver REGISTER_RATE_LIMIT_PER_IP en
+      # backend/app/core/config.py.
+      REGISTER_RATE_LIMIT_PER_IP: ${REGISTER_RATE_LIMIT_PER_IP:-200}
       # 2 en dev (suficiente para probar el comportamiento multi-worker sin
       # gastar de más en la máquina local) -- ver backend/Dockerfile.
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}

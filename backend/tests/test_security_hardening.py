@@ -227,3 +227,23 @@ class TestOrderBounds:
         items = [{"product_id": product.id, "quantity": 1} for _ in range(51)]
         r = user_client.post(ORDERS, json={"items": items})
         assert r.status_code == 422
+
+
+class TestRegisterRateLimitDefault:
+    def test_el_default_de_registros_por_ip_sigue_siendo_10(self):
+        """El tope por IP es lo que frena la creación masiva de cuentas.
+
+        Se volvió configurable para poder subirlo en desarrollo y CI, donde
+        todas las peticiones vienen de la misma IP y el tope separa corridas de
+        tests en vez de personas. Este test fija el DEFAULT, que es el valor
+        que corre en producción: subirlo ahí tiene que ser una decisión
+        explícita y visible en el diff, no un efecto colateral de haber tocado
+        el compose de desarrollo.
+
+        El limitador por (ip, email) no sustituye a este: se esquiva
+        trivialmente rotando el email, porque cada email nuevo crea una clave
+        nueva.
+        """
+        from app.core.config import Settings
+
+        assert Settings().REGISTER_RATE_LIMIT_PER_IP == 10

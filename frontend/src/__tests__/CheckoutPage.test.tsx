@@ -64,6 +64,8 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
     id: 42,
     user_id: 1,
     status: "Pendiente",
+    // Eje de cobro, independiente del de entrega (migración 019).
+    payment_status: "Sin cobrar",
     notes: null,
     admin_notes: null,
     payment_method: "Transferencia",

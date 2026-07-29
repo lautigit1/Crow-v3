@@ -22,6 +22,7 @@ const GROUPS: Group[] = [
   {
     title: "Operación",
     items: [
+      { to: "/admin/pedidos", label: "Pedidos", icon: "cart" },
       { to: "/admin/cotizaciones", label: "Cotizaciones", icon: "quotes" },
       { to: "/admin/proveedores", label: "Proveedores", icon: "truck" },
       { to: "/admin/importaciones", label: "Importaciones", icon: "inventory" },

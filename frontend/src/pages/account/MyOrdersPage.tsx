@@ -30,12 +30,42 @@ const STATUS_BADGE: Record<Order["status"], string> = {
   Cancelado: "bg-[#ef444422] text-[#ef4444]",
 };
 
+// Mismo criterio que arriba para el eje del cobro. "Sin cobrar" queda en gris
+// a propósito: es el estado inicial de todos los pedidos y pintarlo de rojo
+// haría que cada compra recién hecha parezca un problema.
+const PAYMENT_BADGE: Record<Order["payment_status"], string> = {
+  "Sin cobrar": "bg-[#94a3b822] text-[#64748b]",
+  "Link enviado": "bg-[#f59e0b22] text-[#f59e0b]",
+  Pagado: "bg-[#22c55e22] text-[#22c55e]",
+};
+
 // El estado es una palabra ("Entregado"), no un dato tabular: en Fira Mono y
 // mayúscula leía como un código de sistema en vez de algo escrito para alguien.
 function StatusBadge({ status }: { status: Order["status"] }) {
   return (
     <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", STATUS_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
       {status}
+    </span>
+  );
+}
+
+/**
+ * Estado del cobro, que es independiente del de entrega.
+ *
+ * Se le muestra al cliente para que no tenga que preguntar si su pago ya
+ * figura. El texto se reformula desde su punto de vista: "Sin cobrar" es
+ * lenguaje del negocio y del otro lado se lee mejor como "Pago pendiente".
+ */
+const PAYMENT_LABEL: Record<Order["payment_status"], string> = {
+  "Sin cobrar": "Pago pendiente",
+  "Link enviado": "Link de pago enviado",
+  Pagado: "Pagado",
+};
+
+function PaymentBadge({ status }: { status: Order["payment_status"] }) {
+  return (
+    <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", PAYMENT_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
+      {PAYMENT_LABEL[status] ?? status}
     </span>
   );
 }
@@ -94,6 +124,7 @@ function OrderDetailBody({ order }: { order: Order }) {
       {/* Status + date */}
       <div className="flex items-center gap-2.5 flex-wrap">
         <StatusBadge status={order.status} />
+        <PaymentBadge status={order.payment_status} />
         <span className="font-body text-[13px] text-textFaint">
           {new Date(order.created_at).toLocaleDateString("es-AR", {
             day: "2-digit", month: "long", year: "numeric",

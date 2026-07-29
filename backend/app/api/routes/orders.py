@@ -1,16 +1,23 @@
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.core import audit
 from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.core.ratelimit import LoginRateLimiter
 from app.core.stock import mover_stock
-from app.models.order import Order, OrderItem, OrderStatus
+from app.models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from app.models.product import Product
 from app.models.stock_movement import StockReason
 from app.models.user import User
-from app.schemas.order import OrderCreate, OrderList, OrderRead, OrderStatusUpdate
+from app.schemas.order import (
+    AdminOrderList,
+    AdminOrderRead,
+    OrderCreate,
+    OrderList,
+    OrderRead,
+    OrderStatusUpdate,
+)
 
 router = APIRouter()
 
@@ -183,42 +190,116 @@ def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession, req
 # Admin endpoints
 # ---------------------------------------------------------------------------
 
-@router.get("", response_model=OrderList)
+def _a_schema_admin(order: Order) -> AdminOrderRead:
+    """Arma la respuesta de admin agregando los datos del cliente y el total.
+
+    El total sale de los SNAPSHOTS del pedido, nunca del producto actual: un
+    pedido de marzo no puede cambiar de monto porque hoy el producto valga
+    otra cosa.
+
+    Las líneas sin precio (`unit_price_snapshot` en NULL, o sea productos
+    "Consultar precio") no suman al total y se cuentan aparte, para que la UI
+    pueda mostrar "$ 45.000 + 2 a consultar" en vez de un número que parece
+    completo y no lo es.
+    """
+    total = 0.0
+    sin_precio = 0
+    for item in order.items:
+        if item.unit_price_snapshot is None:
+            sin_precio += 1
+        else:
+            total += float(item.unit_price_snapshot) * item.quantity
+
+    # `order.user` puede ser None: el FK es ON DELETE CASCADE, pero un pedido
+    # puede quedar sin usuario cargado en escenarios de test o si la relación
+    # no se pudo resolver. Se degrada a None en vez de romper la lista entera.
+    usuario = order.user
+    return AdminOrderRead(
+        **OrderRead.model_validate(order).model_dump(),
+        customer_name=usuario.full_name if usuario else None,
+        customer_email=usuario.email if usuario else None,
+        customer_phone=usuario.phone if usuario else None,
+        total=round(total, 2),
+        items_sin_precio=sin_precio,
+    )
+
+
+@router.get("", response_model=AdminOrderList)
 def admin_list_orders(
     _admin: AdminUser,
     db: DbSession,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     user_id: int | None = Query(None),
-) -> OrderList:
-    """Todos los pedidos (admin)."""
+    order_status: OrderStatus | None = Query(None, alias="status"),
+    payment_status: PaymentStatus | None = Query(None),
+    q: str | None = Query(None, max_length=120),
+) -> AdminOrderList:
+    """Todos los pedidos (admin), filtrables por estado, cobro y cliente."""
     base = select(Order)
     if user_id is not None:
         base = base.where(Order.user_id == user_id)
+    if order_status is not None:
+        base = base.where(Order.status == order_status)
+    if payment_status is not None:
+        base = base.where(Order.payment_status == payment_status)
+
+    if q:
+        termino = q.strip()
+        if termino:
+            # Buscar por nombre o mail obliga al JOIN con users. Y si el
+            # término es un número, lo más probable es que el admin esté
+            # tipeando el número de pedido que le pasaron por WhatsApp, así
+            # que se busca también por id -- sin excluir la búsqueda por
+            # texto, porque un cliente podría llamarse "1234" en teoría y
+            # perder el resultado sería peor que traer uno de más.
+            condiciones = [
+                User.full_name.ilike(f"%{termino}%"),
+                User.email.ilike(f"%{termino}%"),
+            ]
+            if termino.isdigit():
+                condiciones.append(Order.id == int(termino))
+            base = base.join(User, Order.user_id == User.id).where(or_(*condiciones))
+
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
     rows = db.scalars(
-        base.options(selectinload(Order.items)).order_by(Order.created_at.desc()).offset(skip).limit(limit)
+        base.options(
+            selectinload(Order.items),
+            # Sin esto, listar 20 pedidos son 21 consultas: una por la lista y
+            # una por el usuario de cada fila, al leer customer_name.
+            selectinload(Order.user),
+        )
+        .order_by(Order.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     ).all()
-    return OrderList(items=list(rows), total=total)
+    return AdminOrderList(items=[_a_schema_admin(o) for o in rows], total=total)
 
 
-@router.patch("/{order_id}", response_model=OrderRead)
+@router.patch("/{order_id}", response_model=AdminOrderRead)
 def admin_update_order(
     order_id: int,
     payload: OrderStatusUpdate,
     admin: AdminUser,
     db: DbSession,
     request: Request,
-) -> Order:
-    """Actualiza estado y notas admin de un pedido.
+) -> AdminOrderRead:
+    """Actualiza estado de entrega, estado de cobro y notas admin de un pedido.
 
     Reglas de stock:
       - Transicionar A Cancelado desde otro estado devuelve el stock.
       - Salir DE Cancelado está bloqueado (el stock ya se devolvió; re-descontar
         podría dejarlo inconsistente). Si hace falta, se crea un pedido nuevo.
+
+    El estado de cobro NO participa de ninguna de esas reglas. Cancelar un
+    pedido pagado devuelve el stock y deja el cobro en Pagado, que es la
+    verdad: la plata está y hay que devolverla por fuera del sistema. Ponerlo
+    automáticamente en "Sin cobrar" borraría el rastro de que ese cliente pagó,
+    que es justo el dato que hace falta para devolvérsela.
     """
     order = _get_order_or_404(order_id, db)
     previous_status = order.status
+    previous_payment = order.payment_status
 
     if previous_status == OrderStatus.CANCELADO and payload.status != OrderStatus.CANCELADO:
         raise HTTPException(
@@ -227,19 +308,36 @@ def admin_update_order(
         )
 
     order.status = payload.status
+    # Solo si viene: un PATCH que manda únicamente `status` no tiene que pisar
+    # el cobro. Por eso el campo es opcional en el schema y no tiene default.
+    if payload.payment_status is not None:
+        order.payment_status = payload.payment_status
     if payload.admin_notes is not None:
         order.admin_notes = payload.admin_notes
     if payload.status == OrderStatus.CANCELADO and previous_status != OrderStatus.CANCELADO:
         _restore_stock(order, db, actor=admin)
     db.flush()
     db.refresh(order)
+
+    # El detalle de auditoría solo menciona los ejes que efectivamente
+    # cambiaron. Registrar siempre los dos llenaría el historial de "Pagado →
+    # Pagado" y volvería inútil la pantalla de auditoría para encontrar cuándo
+    # se cobró un pedido, que es la consulta para la que sirve.
+    cambios = []
+    if previous_status != order.status:
+        cambios.append(f"{previous_status.value} → {order.status.value}")
+    if previous_payment != order.payment_status:
+        cambios.append(f"cobro: {previous_payment.value} → {order.payment_status.value}")
     audit.record(
         db,
         action="order.admin_update",
         actor=admin,
         entity="order",
         entity_id=order.id,
-        detail=f"{previous_status.value} → {payload.status.value}",
+        detail=" | ".join(cambios) if cambios else "sin cambios de estado",
         request=request,
     )
-    return order
+    # Devuelve la forma de admin (con cliente y total) y no `OrderRead`: es la
+    # respuesta que la lista del panel necesita para actualizar la fila sin
+    # tener que volver a pedir la página entera.
+    return _a_schema_admin(order)

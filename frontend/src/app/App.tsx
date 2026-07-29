@@ -33,6 +33,7 @@ const AdminProductsPage   = lazy(() => import("@/pages/admin/AdminProductsPage")
 const AdminInventoryPage  = lazy(() => import("@/pages/admin/AdminInventoryPage").then((m) => ({ default: m.AdminInventoryPage })));
 const AdminCategoriesPage = lazy(() => import("@/pages/admin/AdminCategoriesPage").then((m) => ({ default: m.AdminCategoriesPage })));
 const AdminBrandsPage     = lazy(() => import("@/pages/admin/AdminBrandsPage").then((m) => ({ default: m.AdminBrandsPage })));
+const AdminOrdersPage     = lazy(() => import("@/pages/admin/AdminOrdersPage").then((m) => ({ default: m.AdminOrdersPage })));
 const AdminQuotesPage     = lazy(() => import("@/pages/admin/AdminQuotesPage").then((m) => ({ default: m.AdminQuotesPage })));
 const AdminUsersPage      = lazy(() => import("@/pages/admin/AdminUsersPage").then((m) => ({ default: m.AdminUsersPage })));
 const AdminStatsPage      = lazy(() => import("@/pages/admin/AdminStatsPage").then((m) => ({ default: m.AdminStatsPage })));
@@ -122,6 +123,7 @@ export function App() {
         <Route path="inventario" element={<Suspense fallback={<CenteredSpinner />}><AdminInventoryPage /></Suspense>} />
         <Route path="categorias" element={<Suspense fallback={<CenteredSpinner />}><AdminCategoriesPage /></Suspense>} />
         <Route path="marcas" element={<Suspense fallback={<CenteredSpinner />}><AdminBrandsPage /></Suspense>} />
+        <Route path="pedidos" element={<Suspense fallback={<CenteredSpinner />}><AdminOrdersPage /></Suspense>} />
         <Route path="cotizaciones" element={<Suspense fallback={<CenteredSpinner />}><AdminQuotesPage /></Suspense>} />
         <Route path="proveedores" element={<Suspense fallback={<CenteredSpinner />}><AdminSuppliersPage /></Suspense>} />
         <Route path="importaciones" element={<Suspense fallback={<CenteredSpinner />}><AdminImportsPage /></Suspense>} />

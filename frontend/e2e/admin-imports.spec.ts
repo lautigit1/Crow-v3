@@ -110,6 +110,12 @@ test.describe("Admin — importación de facturas", () => {
     // atributo `form="supplier-form"`. Un selector de descendencia no lo
     // alcanza.
     await page.getByRole("button", { name: "Crear proveedor" }).click();
+    // Se busca por nombre en vez de dar por hecho que aparece a la vista: la
+    // lista ordena por nombre y pagina de a 15, así que sobre una base de
+    // desarrollo con varias corridas de E2E encima el proveedor recién creado
+    // queda fuera de la primera página y la fila no existe en el DOM. En CI no
+    // se nota porque la base arranca vacía en cada corrida.
+    await page.getByPlaceholder("Buscar por nombre, contacto o ciudad").fill(proveedor);
     await expect(page.locator("tr", { hasText: proveedor })).toBeVisible();
 
     const sku = `IMP-${unique()}`;
@@ -169,6 +175,12 @@ test.describe("Admin — importación de facturas", () => {
     // atributo `form="supplier-form"`. Un selector de descendencia no lo
     // alcanza.
     await page.getByRole("button", { name: "Crear proveedor" }).click();
+    // Se busca por nombre en vez de dar por hecho que aparece a la vista: la
+    // lista ordena por nombre y pagina de a 15, así que sobre una base de
+    // desarrollo con varias corridas de E2E encima el proveedor recién creado
+    // queda fuera de la primera página y la fila no existe en el DOM. En CI no
+    // se nota porque la base arranca vacía en cada corrida.
+    await page.getByPlaceholder("Buscar por nombre, contacto o ciudad").fill(proveedor);
     await expect(page.locator("tr", { hasText: proveedor })).toBeVisible();
 
     const archivo = await xlsx(page, [
@@ -213,6 +225,12 @@ test.describe("Admin — importación de facturas", () => {
     // atributo `form="supplier-form"`. Un selector de descendencia no lo
     // alcanza.
     await page.getByRole("button", { name: "Crear proveedor" }).click();
+    // Se busca por nombre en vez de dar por hecho que aparece a la vista: la
+    // lista ordena por nombre y pagina de a 15, así que sobre una base de
+    // desarrollo con varias corridas de E2E encima el proveedor recién creado
+    // queda fuera de la primera página y la fila no existe en el DOM. En CI no
+    // se nota porque la base arranca vacía en cada corrida.
+    await page.getByPlaceholder("Buscar por nombre, contacto o ciudad").fill(proveedor);
     await expect(page.locator("tr", { hasText: proveedor })).toBeVisible();
 
     const archivo = await xlsx(page, [

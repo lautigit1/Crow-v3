@@ -195,8 +195,13 @@ function OrderSuccess({ order }: { order: Order }) {
             <Icon name="check" size={28} strokeWidth={2.6} />
           </div>
 
+          {/* "Recibido" y no "confirmado": en este instante nadie del negocio
+              lo miró todavía. Y "Confirmado" es un estado real del pedido, el
+              que el admin pone cuando verificó stock -- si la pantalla usa esa
+              palabra acá, el cliente y el panel le dan dos significados
+              distintos al mismo término, y el del cliente es el optimista. */}
           <div className="mb-2 font-mono text-[12px] font-bold uppercase tracking-[.14em] text-textFaint">
-            Pedido confirmado
+            Pedido recibido
           </div>
           <h1 className="mb-7 font-display text-[46px] font-black leading-none tracking-[-.02em] text-ink900">
             N.º {String(order.id).padStart(5, "0")}
