@@ -80,6 +80,12 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: "http://localhost:8080"
+          # Tienen que ser IDÉNTICAS a las SEED_ADMIN_* del paso que levanta el
+          # stack. En CI no hay `.env` que las una, así que van explícitas en los
+          # dos lugares y con este comentario al lado: si alguien cambia una y no
+          # la otra, los 23 tests fallan con "expected /admin, got /login", que
+          # no insinúa en ningún momento que el problema sea una credencial.
+          E2E_ADMIN_EMAIL: "admin@crowrepuestos.com"
           E2E_ADMIN_PASSWORD: "AdminCrow2026!"
         run: npm run e2e
 

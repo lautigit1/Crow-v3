@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Container, Logo, Icon, Avatar, Button } from "@/shared/ui";
 import { AccountMenu } from "@/features/auth/AccountMenu";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { CartPreview } from "@/features/cart/CartPreview";
 import { useAuth } from "@/entities/session";
 import { useCart } from "@/app/providers/CartProvider";
@@ -234,6 +235,9 @@ function ActionRow({ onSearchOpen }: { onSearchOpen: () => void }) {
       >
         <Icon name="search" size={16} />
       </button>
+
+      {/* Se oculta sola para invitados. */}
+      <NotificationBell />
 
       <CartPreview />
 

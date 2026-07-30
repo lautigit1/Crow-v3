@@ -38,6 +38,8 @@ export type IconName =
   | "trendingUp"
   | "wrench"
   | "bell"
+  | "volumeOn"
+  | "volumeOff"
   | "box"
   | "image"
   | "refresh"
@@ -237,6 +239,23 @@ const P: Record<IconName, ReactNode> = {
     <>
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </>
+  ),
+  // Parlante con dos ondas. Se usa en el toggle de sonido de las
+  // notificaciones; `volumeOff` es el mismo cuerpo con una tachadura, que es
+  // la convención que la gente reconoce sin leer nada.
+  volumeOn: (
+    <>
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M18.36 5.64a9 9 0 0 1 0 12.73" />
+    </>
+  ),
+  volumeOff: (
+    <>
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      <path d="m22 9-6 6" />
+      <path d="m16 9 6 6" />
     </>
   ),
   box: (

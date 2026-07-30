@@ -9,6 +9,7 @@ from app.api.routes import (
     events,
     favorites,
     imports,
+    notifications,
     orders,
     products,
     quotes,
@@ -31,6 +32,7 @@ api_router.include_router(audit.router, prefix="/audit", tags=["audit"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(favorites.router, prefix="/favorites", tags=["favorites"])
 api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 # Sin prefijo: la ruta es /events a secas.
 api_router.include_router(events.router, tags=["events"])

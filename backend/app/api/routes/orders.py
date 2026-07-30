@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.core import audit, events
 from app.core.deps import AdminUser, CurrentUser, DbSession
+from app.core.notify import notificar_a_admins
+from app.core.order_notify import notificar_cambio_de_pedido
 from app.core.ratelimit import LoginRateLimiter
 from app.core.stock import mover_stock
+from app.models.notification import NotificationType
 from app.models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from app.models.product import Product
 from app.models.stock_movement import StockReason
@@ -166,6 +169,15 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession,
     audit.record(db, action="order.create", actor=current_user, entity="order", entity_id=order.id, request=request)
     # Solo al canal de admin: el cliente acaba de crearlo, ya lo sabe.
     events.publicar([events.CANAL_ADMIN], "order.created", order_id=order.id)
+    # Y queda registrado para cada admin. Es lo que arregla el agujero de la
+    # barra de "pedidos nuevos": si no estabas mirando, el aviso te espera.
+    notificar_a_admins(
+        db,
+        tipo=NotificationType.ORDER_STATUS,
+        titulo=f"Pedido nuevo N.\u00ba {order.id:05d}",
+        cuerpo=f"{current_user.full_name} hizo un pedido de {len(order.items)} \u00edtem(s).",
+        enlace="/admin/pedidos",
+    )
     return order
 
 
@@ -287,6 +299,7 @@ def admin_update_order(
     admin: AdminUser,
     db: DbSession,
     request: Request,
+    background: BackgroundTasks,
 ) -> AdminOrderRead:
     """Actualiza estado de entrega, estado de cobro y notas admin de un pedido.
 
@@ -348,6 +361,16 @@ def admin_update_order(
         [events.CANAL_ADMIN, events.canal_usuario(order.user_id)],
         "order.updated",
         order_id=order.id,
+    )
+    # Y el aviso que queda: notificación en la campana del cliente, más el
+    # correo si la transición lo amerita. Al admin no se le notifica -- acaba de
+    # hacer el cambio él mismo.
+    notificar_cambio_de_pedido(
+        db,
+        order,
+        entrega_anterior=previous_status,
+        cobro_anterior=previous_payment,
+        background=background,
     )
     # Devuelve la forma de admin (con cliente y total) y no `OrderRead`: es la
     # respuesta que la lista del panel necesita para actualizar la fila sin

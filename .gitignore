@@ -28,6 +28,11 @@ backend/**/.pytest_cache/
 .env
 .env.local
 .env.production
+# Respaldos: un .env.bak suelto es un archivo con todas las credenciales
+# que no está cubierto por el patrón `.env` de arriba.
+.env.bak
+.env.*.bak
+*.env.bak
 docker-compose.override.yml
 
 # ─── Base de datos / volúmenes ────────────────────────────────────────────────

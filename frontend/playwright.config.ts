@@ -1,4 +1,41 @@
+import { readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * Carga el `.env` de la raíz del repo dentro de `process.env`.
+ *
+ * Existe para que **la credencial del admin que usan los tests salga del mismo
+ * lugar que siembra la base**. Antes estaba escrita a mano en `helpers.ts`, y
+ * el día que se cambió `SEED_ADMIN_EMAIL` los 23 tests empezaron a fallar con
+ * "expected /admin, got /login" -- un error que no dice en ningún momento que
+ * el problema es una credencial desincronizada.
+ *
+ * Lo que ya viene en el entorno gana: así se puede sobreescribir con
+ * `$env:E2E_ADMIN_EMAIL=...` sin editar archivos, y en CI -- donde no hay
+ * `.env` -- manda lo que define el workflow.
+ *
+ * Se parsea a mano en vez de sumar `dotenv`: son diez líneas y una dependencia
+ * menos que mantener por algo que solo usa este archivo.
+ */
+function cargarEnvDeLaRaiz() {
+  try {
+    const crudo = readFileSync(new URL("../.env", import.meta.url), "utf8");
+    for (const linea of crudo.split("\n")) {
+      const limpia = linea.trim();
+      if (!limpia || limpia.startsWith("#") || !limpia.includes("=")) continue;
+      const [clave, ...resto] = limpia.split("=");
+      const nombre = clave.trim();
+      if (process.env[nombre] !== undefined) continue;
+      // Se quitan las comillas: `SMTP_FROM="Crow Repuestos <...>"` las necesita
+      // para que Docker Compose lo parsee, pero el valor no las incluye.
+      process.env[nombre] = resto.join("=").trim().replace(/^["']|["']$/g, "");
+    }
+  } catch {
+    // Sin `.env` no pasa nada: los helpers caen a sus defaults. Es el caso de CI.
+  }
+}
+
+cargarEnvDeLaRaiz();
 
 /**
  * Config de Playwright para Crow Repuestos v3.

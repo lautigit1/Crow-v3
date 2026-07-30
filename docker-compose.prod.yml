@@ -115,6 +115,11 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # Faltaba: sin esto el remitente queda fijo en el default del código
+      # (`noreply@crowrepuestos.com.ar`). Si el envío sale por Gmail y el
+      # dominio no está verificado, ese "De:" no alinea con lo que Gmail firma
+      # y el correo termina en spam.
+      SMTP_FROM: "${SMTP_FROM:-Crow Repuestos <noreply@crowrepuestos.com.ar>}"
       ADMIN_EMAIL: ${ADMIN_EMAIL:-ventas@crowrepuestos.com.ar}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}

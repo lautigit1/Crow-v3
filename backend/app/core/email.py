@@ -136,6 +136,63 @@ def build_quote_notification(
     return {"to": settings.ADMIN_EMAIL, "subject": subject, "html": html, "text": text}
 
 
+def build_order_update_email(
+    *,
+    to: str,
+    name: str,
+    order_id: int,
+    titulo: str,
+    resumen: str,
+    estado_entrega: str | None = None,
+    estado_cobro: str | None = None,
+    detalle: str | None = None,
+) -> dict:
+    """Aviso al cliente de que su pedido se movió.
+
+    `estado_entrega` y `estado_cobro` son opcionales por separado: se pasa solo
+    el eje que cambió. Mostrar el otro como "sin cambios" agregaría ruido a un
+    correo que tiene una sola cosa que decir.
+
+    `resumen` es el preheader -- la línea que la bandeja muestra al lado del
+    asunto. Va explícito y no derivado del título porque son dos textos con
+    trabajos distintos: uno tiene que identificar, el otro tiene que dar la
+    novedad completa en un renglón.
+    """
+    subject = f"Crow Repuestos — Pedido N.º {order_id:05d}: {titulo}"
+
+    ctx = {
+        "name": name,
+        "order_id": order_id,
+        "titulo": titulo,
+        "resumen": resumen,
+        "estado_entrega": estado_entrega,
+        "estado_cobro": estado_cobro,
+        "detalle": detalle,
+        "orders_url": f"{settings.FRONTEND_URL}/cuenta/pedidos",
+    }
+    return {
+        "to": to,
+        "subject": subject,
+        "html": _render("order_update.html.jinja", **ctx),
+        "text": _render("order_update.txt.jinja", **ctx),
+    }
+
+
+def build_quote_answered_email(
+    *, to: str, name: str, quote_id: int, vehicle: str | None = None
+) -> dict:
+    """Aviso al cliente de que su cotización fue respondida."""
+    subject = f"Crow Repuestos — Respondimos tu consulta N.º {quote_id:05d}"
+
+    ctx = {"name": name, "quote_id": quote_id, "vehicle": vehicle}
+    return {
+        "to": to,
+        "subject": subject,
+        "html": _render("quote_answered.html.jinja", **ctx),
+        "text": _render("quote_answered.txt.jinja", **ctx),
+    }
+
+
 def build_reset_email(*, to: str, reset_url: str, name: str) -> dict:
     """Returns kwargs for send_email() — password reset link."""
     subject = "Crow Repuestos — Recuperación de contraseña"

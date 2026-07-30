@@ -11,8 +11,22 @@ import { expect } from "@playwright/test";
  *
  *   E2E_ADMIN_PASSWORD=admin1234 npm run e2e
  */
-export const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "admin@crowrepuestos.com";
-export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "AdminCrow2026!";
+// Orden de precedencia, de más específico a más general:
+//
+//   1. E2E_ADMIN_*     — para forzar algo puntual en una corrida
+//   2. SEED_ADMIN_*    — LA MISMA variable que usa el seed para crear al admin
+//   3. el default      — lo que trae `.env.example`
+//
+// El punto 2 es el que importa: `playwright.config.ts` carga el `.env` de la
+// raíz, así que si cambiás `SEED_ADMIN_EMAIL` los tests siguen entrando sin que
+// haya que acordarse de tocar este archivo. Antes estaba escrito a mano acá y
+// el día que cambió el mail del admin los 23 tests fallaron con "expected
+// /admin, got /login", que no insinúa en ningún momento que el problema sea una
+// credencial desincronizada.
+export const ADMIN_EMAIL =
+  process.env.E2E_ADMIN_EMAIL ?? process.env.SEED_ADMIN_EMAIL ?? "admin@crowrepuestos.com";
+export const ADMIN_PASSWORD =
+  process.env.E2E_ADMIN_PASSWORD ?? process.env.SEED_ADMIN_PASSWORD ?? "AdminCrow2026!";
 
 /** Sufijo único para no chocar con datos de corridas anteriores contra la misma DB. */
 export function unique(): string {
@@ -35,7 +49,10 @@ export function fieldControl(scope: Page | Locator, label: string): Locator {
 }
 
 /** Primer nombre tal cual queda en el trigger de AccountMenu (`full_name.split(" ")[0]`). */
-export const ADMIN_FIRST_NAME = "Administrador"; // seed.py: full_name="Administrador"
+// El seed crea al admin con `full_name="Administrador"` sea cual sea el mail, así
+// que el default sirve igual si cambiás `SEED_ADMIN_EMAIL`. La variable existe
+// para el caso de un admin creado a mano con otro nombre.
+export const ADMIN_FIRST_NAME = process.env.E2E_ADMIN_FIRST_NAME ?? "Administrador";
 
 /**
  * Locators de los campos de /login y /registro.

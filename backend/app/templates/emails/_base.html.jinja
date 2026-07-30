@@ -1,0 +1,105 @@
+{#
+  Layout base de todos los correos.
+
+  Existe para no tener dos maneras de maquetar un mail en el mismo proyecto: la
+  plantilla de reset ya tenía este diseño y copiarlo en cada aviso nuevo
+  garantizaba que en tres meses hubiera tres variantes distintas y ninguna razón
+  visible para elegir entre ellas.
+
+  Las reglas del HTML de correo, que no son las de la web:
+
+  * TABLAS para maquetar. Outlook usa el motor de Word: no soporta flex ni grid
+    y un layout con divs se desarma justo en el cliente de escritorio que más
+    usa la gente que compra por catálogo.
+  * ESTILOS EN LÍNEA. Gmail descarta buena parte de lo que va en <style>.
+  * SIN TIPOGRAFÍAS WEB. Unbounded y DM Sans no cargan en un cliente de correo,
+    así que el peso visual se construye con tamaño, espaciado y color.
+  * COLORES EXPLÍCITOS en cada celda. Varios clientes en modo oscuro invierten
+    lo que no está declarado y dejan texto gris sobre gris.
+  * 600px de ancho, el máximo que se ve completo en el panel de lectura de
+    Outlook sin scroll horizontal.
+
+  Bloques que llena cada plantilla:
+    preheader  — la línea que muestra la bandeja al lado del asunto
+    titulo     — el h1
+    entrada    — el párrafo de apertura
+    cuerpo     — contenido libre (filas de datos, avisos)
+    cta        — el botón, opcional
+    cierre     — la nota final antes del pie
+#}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>{% block titulo_documento %}Crow Repuestos{% endblock %}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#EEF2F7; -webkit-font-smoothing:antialiased;">
+
+  {# Sin esto, la bandeja agarra el primer texto que encuentre y se desperdicia
+     el único renglón que decide si alguien abre el mail. #}
+  <div style="display:none; font-size:0; line-height:0; max-height:0; opacity:0; overflow:hidden; mso-hide:all;">
+    {% block preheader %}{% endblock %}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EEF2F7;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+          <tr>
+            <td align="center" style="padding:0 0 20px;">
+              <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:3px; color:#5A6B7F; text-transform:uppercase;">
+                Crow Repuestos
+              </span>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#FFFFFF; border-radius:14px; border:1px solid #E2E8F0;">
+
+              {# Filo de color como celda con alto fijo y no como border-top:
+                 Outlook redondea mal los bordes de una tabla. #}
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#0057D9; height:4px; line-height:4px; font-size:0; border-radius:14px 14px 0 0;">&nbsp;</td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:40px 44px 8px;">
+                    <h1 style="margin:0 0 6px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:26px; line-height:1.2; font-weight:800; letter-spacing:-0.5px; color:#0B1524;">
+                      {% block titulo %}{% endblock %}
+                    </h1>
+                    <p style="margin:0; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#5A6B7F;">
+                      {% block entrada %}{% endblock %}
+                    </p>
+                  </td>
+                </tr>
+
+                {% block cuerpo %}{% endblock %}
+
+                {% block cta %}{% endblock %}
+
+                {% block cierre %}{% endblock %}
+              </table>
+
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:24px 20px 8px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.6; color:#8496A9;">
+              Crow Repuestos &middot; Mendoza, Argentina<br />
+              {% block motivo %}Recibís este correo por tu actividad en Crow Repuestos.{% endblock %}
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

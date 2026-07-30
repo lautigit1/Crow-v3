@@ -1,0 +1,22 @@
+{# Versión en texto plano. Un correo solo-HTML puntúa peor en los filtros de
+   spam, y hay clientes y lectores de pantalla que muestran esta versión. Tiene
+   que decir lo mismo y servir por sí sola. #}
+CROW REPUESTOS
+{{ titulo }}
+
+Hola {{ name }}, hay novedades de tu pedido.
+
+Pedido N.º {{ '%05d' % order_id }}
+{% if estado_entrega %}Entrega: {{ estado_entrega }}
+{% endif %}{% if estado_cobro %}Pago: {{ estado_cobro }}
+{% endif %}
+{% if detalle %}{{ detalle }}
+
+{% endif %}Ver tu pedido:
+{{ orders_url }}
+
+Cualquier duda respondé este correo o escribinos por WhatsApp.
+
+--
+Crow Repuestos · Mendoza, Argentina
+Recibís este correo porque hiciste un pedido en Crow Repuestos.

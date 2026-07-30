@@ -3,6 +3,7 @@ from app.models.brand import Brand
 from app.models.category import Category
 from app.models.favorite import UserFavorite
 from app.models.import_batch import ImportBatch, ImportLine, ImportStatus, LineResolution
+from app.models.notification import Notification, NotificationType
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Product
 from app.models.quote import Quote, QuoteStatus
@@ -14,6 +15,7 @@ from app.models.user import User, UserRole
 __all__ = [
     "AuditLog", "Brand", "Category", "UserFavorite",
     "ImportBatch", "ImportLine", "ImportStatus", "LineResolution",
+    "Notification", "NotificationType",
     "Order", "OrderItem", "OrderStatus",
     "Product", "Quote", "QuoteStatus", "Setting",
     "StockMovement", "StockReason",

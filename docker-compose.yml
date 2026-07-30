@@ -60,6 +60,32 @@ services:
       # rango entero cubre a nginx aunque el contenedor se recree con otra IP.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.28.0.0/16}
       REDIS_URL: redis://crow_redis:6379/0
+      # SMTP. Antes estas variables solo se pasaban en el compose de
+      # producción, así que en desarrollo no llegaban al contenedor y era
+      # imposible probar un envío: el módulo de email omite el envío en
+      # silencio cuando SMTP_USER o SMTP_PASSWORD están vacíos, y eso pasaba
+      # siempre acá, incluso con las credenciales cargadas en .env.
+      #
+      # SMTP_FROM importa más de lo que parece: si el remitente es una
+      # dirección de tu dominio pero el envío sale por Gmail, el dominio del
+      # "De:" no coincide con el que Gmail autentica y el correo se va a spam
+      # (alineación DMARC). Con Gmail sin dominio verificado, poné acá la misma
+      # dirección @gmail.com de SMTP_USER.
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: "${SMTP_FROM:-Crow Repuestos <noreply@crowrepuestos.com.ar>}"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-ventas@crowrepuestos.com.ar}
+      # Base de los links que van DENTRO de los correos (ej. el de reset de
+      # contraseña). Tampoco se pasaba en desarrollo, así que quedaba en el
+      # default del código (5173) y el link no servía si estabas probando
+      # contra el stack de docker, que sirve el frontend en 8080.
+      #
+      # El default sigue siendo 5173 para no cambiarle el comportamiento a quien
+      # trabaja con `npm run dev`. Si probás por el 8080, poné
+      # FRONTEND_URL=http://localhost:8080 en tu .env.
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       # En desarrollo todas las peticiones llegan desde la misma IP (la del
       # host o la de nginx), así que el tope por IP no separa personas: separa
       # corridas de tests. La suite E2E completa registra 10 clientes, o sea

@@ -1,0 +1,54 @@
+{% extends "_base.html.jinja" %}
+
+{% block titulo_documento %}Respondimos tu consulta{% endblock %}
+
+{% block preheader %}Ya tenemos una respuesta para tu consulta #{{ quote_id }}.{% endblock %}
+
+{% block titulo %}Respondimos tu consulta{% endblock %}
+
+{% block entrada %}Hola {{ name }}, revisamos lo que nos pediste y ya tenemos una respuesta.{% endblock %}
+
+{% block cuerpo %}
+<tr>
+  <td style="padding:24px 44px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F4F7FC; border-radius:10px;">
+      <tr>
+        <td style="padding:16px 18px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#8496A9;">
+          Consulta
+        </td>
+        <td align="right" style="padding:16px 18px; font-family:Consolas,Monaco,'Courier New',monospace; font-size:14px; font-weight:700; color:#0B1524;">
+          N.&ordm; {{ '%05d' % quote_id }}
+        </td>
+      </tr>
+      {% if vehicle %}
+      <tr>
+        <td colspan="2" style="padding:0 18px 16px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13.5px; color:#5A6B7F;">
+          Vehículo: <strong style="color:#0B1524;">{{ vehicle }}</strong>
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+  </td>
+</tr>
+<tr>
+  <td style="padding:20px 44px 0; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14.5px; line-height:1.6; color:#3D4C5F;">
+    Te contactamos para pasarte el detalle. Si preferís, respondé este correo
+    y seguimos por acá.
+  </td>
+</tr>
+{% endblock %}
+
+{% block cierre %}
+<tr>
+  <td style="padding:28px 44px 0;">
+    <div style="height:1px; line-height:1px; font-size:0; background-color:#E8EDF4;">&nbsp;</div>
+  </td>
+</tr>
+<tr>
+  <td style="padding:18px 44px 40px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#8496A9;">
+    Gracias por consultarnos.
+  </td>
+</tr>
+{% endblock %}
+
+{% block motivo %}Recibís este correo porque pediste una cotización en Crow Repuestos.{% endblock %}
