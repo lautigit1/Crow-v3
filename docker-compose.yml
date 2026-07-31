@@ -86,6 +86,17 @@ services:
       # trabaja con `npm run dev`. Si probás por el 8080, poné
       # FRONTEND_URL=http://localhost:8080 en tu .env.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      # Cloudinary. Mismo caso que SMTP: estaban solo en el compose de
+      # producción, así que en desarrollo el endpoint de subida respondía 503
+      # aunque las credenciales estuvieran en el .env -- y el 503 dice
+      # "Cloudinary no está configurado", que es cierto desde el punto de vista
+      # del contenedor y desorientador desde el de quien las cargó.
+      #
+      # Vacías = la subida queda deshabilitada y el form de admin cae al campo
+      # de URL manual. Es un modo válido, no un error.
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       # En desarrollo todas las peticiones llegan desde la misma IP (la del
       # host o la de nginx), así que el tope por IP no separa personas: separa
       # corridas de tests. La suite E2E completa registra 10 clientes, o sea

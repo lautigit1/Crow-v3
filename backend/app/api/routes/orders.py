@@ -98,7 +98,13 @@ def my_order_detail(order_id: int, current_user: CurrentUser, db: DbSession) -> 
 
 
 @router.post("", response_model=OrderRead, status_code=status.HTTP_201_CREATED)
-def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession, request: Request) -> Order:
+def create_order(
+    payload: OrderCreate,
+    current_user: CurrentUser,
+    db: DbSession,
+    request: Request,
+    background: BackgroundTasks,
+) -> Order:
     """Crea un nuevo pedido con los ítems indicados, validando y descontando stock."""
     ip = audit.client_ip(request)
     locked_for = _order_limiter.check(ip, current_user.email)
@@ -168,7 +174,12 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession,
     _order_limiter.register_failure(ip, current_user.email)
     audit.record(db, action="order.create", actor=current_user, entity="order", entity_id=order.id, request=request)
     # Solo al canal de admin: el cliente acaba de crearlo, ya lo sabe.
-    events.publicar([events.CANAL_ADMIN], "order.created", order_id=order.id)
+    #
+    # En background para que salga DESPUÉS del commit: el evento dice "andá a
+    # buscar", y si sale antes, el panel pregunta y el pedido todavía no está.
+    background.add_task(
+        events.publicar, [events.CANAL_ADMIN], "order.created", order_id=order.id
+    )
     # Y queda registrado para cada admin. Es lo que arregla el agujero de la
     # barra de "pedidos nuevos": si no estabas mirando, el aviso te espera.
     notificar_a_admins(
@@ -177,12 +188,19 @@ def create_order(payload: OrderCreate, current_user: CurrentUser, db: DbSession,
         titulo=f"Pedido nuevo N.\u00ba {order.id:05d}",
         cuerpo=f"{current_user.full_name} hizo un pedido de {len(order.items)} \u00edtem(s).",
         enlace="/admin/pedidos",
+        background=background,
     )
     return order
 
 
 @router.patch("/me/{order_id}/cancel", response_model=OrderRead)
-def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession, request: Request) -> Order:
+def cancel_my_order(
+    order_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+    request: Request,
+    background: BackgroundTasks,
+) -> Order:
     """Cancela un pedido propio si está en estado Pendiente y devuelve el stock."""
     order = _get_order_or_404(order_id, db)
     if order.user_id != current_user.id:
@@ -198,7 +216,9 @@ def cancel_my_order(order_id: int, current_user: CurrentUser, db: DbSession, req
     db.refresh(order)
     audit.record(db, action="order.cancel", actor=current_user, entity="order", entity_id=order.id, request=request)
     # Al admin, que necesita enterarse de que ese pedido ya no va.
-    events.publicar([events.CANAL_ADMIN], "order.updated", order_id=order.id)
+    background.add_task(
+        events.publicar, [events.CANAL_ADMIN], "order.updated", order_id=order.id
+    )
     return order
 
 
@@ -357,7 +377,8 @@ def admin_update_order(
     # A los dos lados: al panel, por si hay otro admin con la lista abierta, y
     # al dueño del pedido, que ve moverse el estado en "Mis pedidos" sin
     # recargar. Es el evento que justifica el alcance "admin y clientes".
-    events.publicar(
+    background.add_task(
+        events.publicar,
         [events.CANAL_ADMIN, events.canal_usuario(order.user_id)],
         "order.updated",
         order_id=order.id,

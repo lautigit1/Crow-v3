@@ -31,9 +31,25 @@ export const uploadApi = {
       method: "POST",
       body: form,
     });
+
     if (!res.ok) {
-      throw new Error("No se pudo subir la imagen a Cloudinary");
+      // Se propaga el motivo que devuelve Cloudinary en vez de un texto
+      // genérico. Antes acá se tiraba "No se pudo subir la imagen" y se perdía
+      // el único dato que explica el fallo: Cloudinary responde cosas muy
+      // concretas -- "Invalid Signature", "Invalid api_key", "Unknown API key",
+      // "File size too large" -- y cada una lleva a un arreglo distinto.
+      // Sin eso, cualquier problema se ve igual desde afuera.
+      let motivo = `${res.status} ${res.statusText}`;
+      try {
+        const err = await res.json();
+        motivo = err?.error?.message ?? motivo;
+      } catch {
+        // Respuesta sin JSON: queda el código de estado, que ya es algo.
+      }
+      console.error("[upload] Cloudinary rechazó la subida:", motivo);
+      throw new Error(`Cloudinary rechazó la imagen: ${motivo}`);
     }
+
     const json = await res.json();
     return json.secure_url as string;
   },

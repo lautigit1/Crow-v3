@@ -64,20 +64,47 @@ class TestNotificar:
         assert len(enviados) == 1
         assert enviados[0]["to"] == "a@b.com"
 
-    def test_usa_background_tasks_si_se_lo_pasan(self, db, user):
-        """Sin esto el cliente espera al SMTP dentro de su propia request."""
+    def test_difiere_el_evento_y_el_email_al_background(self, db, user):
+        """Las dos cosas se difieren, por razones distintas.
+
+        El **email**, para que el cliente no espere al SMTP dentro de su propia
+        request.
+
+        El **evento**, porque es una señal que dice "andá a buscar los datos": si
+        se publica antes de que la transacción confirme, el navegador pregunta y
+        todavía no hay nada, y como no llega un segundo evento la campana se
+        queda en cero para siempre. Las tareas de background corren después de
+        que `get_db` hizo commit.
+        """
         class FakeBackground:
             def __init__(self):
                 self.tareas = []
 
-            def add_task(self, fn, **kw):
-                self.tareas.append((fn, kw))
+            def add_task(self, fn, *args, **kw):
+                self.tareas.append((fn, args, kw))
 
         bg = FakeBackground()
         notify.notificar(
             db, user_id=user.id, tipo=NotificationType.ORDER_STATUS, titulo="x",
             email={"to": "a@b.com", "subject": "s", "html": "h", "text": "t"},
             background=bg,
+        )
+
+        assert len(bg.tareas) == 2
+        destinatarios = [kw.get("to") for _fn, _a, kw in bg.tareas]
+        assert "a@b.com" in destinatarios
+
+    def test_sin_email_solo_difiere_el_evento(self, db, user):
+        class FakeBackground:
+            def __init__(self):
+                self.tareas = []
+
+            def add_task(self, fn, *args, **kw):
+                self.tareas.append((fn, args, kw))
+
+        bg = FakeBackground()
+        notify.notificar(
+            db, user_id=user.id, tipo=NotificationType.ORDER_STATUS, titulo="x", background=bg
         )
         assert len(bg.tareas) == 1
 

@@ -10,6 +10,7 @@ Tests for authentication flows:
   - Reset-password (success, invalid token, reuse rejected)
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.security import create_reset_token, hash_password
@@ -19,10 +20,15 @@ from app.models.user import User, UserRole
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _register(client: TestClient, email: str = "new@test.com", password: str = "Password1!"):
+def _register(
+    client: TestClient,
+    email: str = "new@test.com",
+    password: str = "Password1!",
+    phone: str = "261 660-0569",
+):
     return client.post(
         "/api/auth/register",
-        json={"full_name": "New User", "email": email, "password": password},
+        json={"full_name": "New User", "email": email, "password": password, "phone": phone},
     )
 
 
@@ -63,7 +69,7 @@ class TestRegister:
         # un 503 en vez de un 422 -- ver RegisterRequest en schemas/auth.py.
         r = client.post(
             "/api/auth/register",
-            json={"full_name": "A" * 121, "email": "toolong@test.com", "password": "Password1!"},
+            json={"full_name": "A" * 121, "email": "toolong@test.com", "password": "Password1!", "phone": "2616600569"},
         )
         assert r.status_code == 422
 
@@ -78,6 +84,42 @@ class TestRegister:
             },
         )
         assert r.status_code == 422
+
+    def test_register_sin_telefono_rechazado(self, client, db):
+        """Pasó a ser obligatorio: sin teléfono el botón de WhatsApp del panel
+        no tiene a dónde ir, y WhatsApp es el canal de todos los pedidos."""
+        r = client.post(
+            "/api/auth/register",
+            json={"full_name": "New User", "email": "sintel@test.com", "password": "Password1!"},
+        )
+        assert r.status_code == 422
+
+    @pytest.mark.parametrize(
+        "telefono",
+        ["261 660-0569", "+54 9 261 660 0569", "(261) 4660569", "2616600569"],
+    )
+    def test_register_acepta_los_formatos_que_usa_la_gente(self, client, db, telefono):
+        """La validación es deliberadamente permisiva: **rechazar un número
+        válido es peor que aceptar uno raro**. El que no puede registrarse se
+        va; el número mal escrito se corrige hablando."""
+        r = _register(client, email=f"ok{abs(hash(telefono))}@test.com", phone=telefono)
+        assert r.status_code == 201
+
+    @pytest.mark.parametrize("telefono", ["", "123", "no tengo"])
+    def test_register_rechaza_lo_que_no_es_un_telefono(self, client, db, telefono):
+        r = _register(client, email="malo@test.com", phone=telefono)
+        assert r.status_code == 422
+
+    def test_el_telefono_se_guarda_tal_cual_lo_escribieron(self, client, db):
+        """No se normaliza: la persona lo reconoce en el formato que lo tipeó.
+        La conversión a dígitos ocurre recién al armar el link de WhatsApp."""
+        from sqlalchemy import select
+
+        from app.models.user import User
+
+        _register(client, email="formato@test.com", phone="261 660-0569")
+        guardado = db.scalar(select(User).where(User.email == "formato@test.com"))
+        assert guardado.phone == "261 660-0569"
 
 
 # ---------------------------------------------------------------------------

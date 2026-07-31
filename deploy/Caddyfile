@@ -12,6 +12,27 @@
 # (la subnet fija 172.28.0.0/16 del compose).
 
 {$DOMAIN} {
-	encode gzip
-	reverse_proxy web:8080
+	# El canal de eventos (SSE) se sirve SIN compresión.
+	#
+	# `encode gzip` acumula la respuesta para comprimirla, y una respuesta que no
+	# termina nunca -- que es exactamente lo que es un stream SSE -- queda
+	# atrapada en ese buffer: los eventos no llegan, o llegan en lotes minutos
+	# después.
+	#
+	# Esto NO se reproduce en desarrollo: ahí el navegador entra directo al nginx
+	# del contenedor `web`, donde ya hay un `gzip off` para este location. Caddy
+	# solo existe en producción, así que sin este bloque la feature andaría en
+	# local y fallaría en el servidor, que es el peor lugar para descubrirlo.
+	#
+	# `handle` en vez de `route`: los bloques son mutuamente excluyentes, así que
+	# el primero que matchea es el único que corre.
+	@sse path /api/events
+	handle @sse {
+		reverse_proxy web:8080
+	}
+
+	handle {
+		encode gzip
+		reverse_proxy web:8080
+	}
 }

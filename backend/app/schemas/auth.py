@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.schemas.user import UserRead
 
@@ -31,4 +31,34 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(min_length=1, max_length=120)
     email: EmailStr
     password: str
-    phone: str | None = Field(default=None, max_length=40)
+    # Obligatorio desde el change de notificaciones: sin teléfono, el botón de
+    # WhatsApp del panel no tiene a dónde ir, y WhatsApp es el canal por el que
+    # se coordina el pago y la entrega de todos los pedidos.
+    #
+    # El lugar importa: se pide acá y NO en el checkout. En el registro la
+    # persona ya está completando un formulario y un campo más es marginal; en
+    # el checkout sería fricción justo antes de confirmar la compra.
+    #
+    # `User.phone` sigue siendo nullable en la base a propósito -- los usuarios
+    # que ya existen no tienen teléfono y no hay de dónde sacarlo. Lo obligatorio
+    # es el alta, no el modelo, y por eso el panel conserva su fallback a mail.
+    phone: str = Field(min_length=1, max_length=40)
+
+    @field_validator("phone")
+    @classmethod
+    def phone_parece_un_telefono(cls, v: str) -> str:
+        """Validación deliberadamente permisiva.
+
+        Solo se exige que haya al menos 8 dígitos. La gente escribe su número de
+        mil formas -- "261 660-0569", "+54 9 261 660 0569", "(261) 4660569" -- y
+        **rechazar un número válido es peor que aceptar uno raro**: el que no
+        puede registrarse se va, y el número mal escrito se corrige hablando.
+
+        No se normaliza el formato guardado: se guarda tal cual lo escribió la
+        persona, que es como lo va a reconocer si lo ve. La normalización a
+        dígitos ocurre recién al armar el link de WhatsApp (`waLinkCliente`).
+        """
+        digitos = sum(c.isdigit() for c in v)
+        if digitos < 8:
+            raise ValueError("Ingresá un teléfono válido (al menos 8 dígitos)")
+        return v.strip()

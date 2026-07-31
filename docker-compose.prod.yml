@@ -16,8 +16,29 @@
 #     cambiar `IMAGE_TAG` en `.env` y `pull` + `up -d`, sin rebuildear nada en
 #     el servidor (que además borraría la imagen vieja del cache local).
 
+# Rotación de logs, aplicada a TODOS los servicios.
+#
+# Docker usa el driver `json-file` sin límite de tamaño por defecto: los logs
+# crecen hasta llenar el disco. Con 4 workers de uvicorn escribiendo una línea
+# JSON por request, más los accesos de nginx y de Caddy, en un VPS chico eso son
+# semanas, no años.
+#
+# Y cuando el disco se llena no falla una cosa: **Postgres deja de poder escribir
+# y se cae todo junto**, sin aviso previo y en el peor momento. Es de los pocos
+# problemas de operación que se previenen con seis líneas y que, si no están, no
+# hay forma de arreglar en caliente.
+#
+# 10 MB × 3 archivos = 30 MB por servicio como techo. Suficiente para investigar
+# un incidente reciente sin guardar historia que nadie va a leer.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
+    logging: *logging
     image: postgres:16-alpine
     container_name: crow_db
     restart: unless-stopped
@@ -36,6 +57,7 @@ services:
       retries: 10
 
   redis:
+    logging: *logging
     image: redis:7-alpine
     container_name: crow_redis
     restart: unless-stopped
@@ -65,6 +87,7 @@ services:
   # database.py) y el código no usa features de sesión (LISTEN/NOTIFY,
   # advisory locks, temp tables) que ese modo no soporta.
   pgbouncer:
+    logging: *logging
     image: edoburu/pgbouncer:1.24.1-p1
     container_name: crow_pgbouncer
     restart: unless-stopped
@@ -86,6 +109,7 @@ services:
       retries: 10
 
   api:
+    logging: *logging
     image: ghcr.io/lautigit1/crow-v3-api:${IMAGE_TAG:-latest}
     container_name: crow_api
     restart: unless-stopped
@@ -141,6 +165,7 @@ services:
       start_period: 30s
 
   web:
+    logging: *logging
     # VITE_SENTRY_DSN ya quedó compilado dentro de este bundle en el momento
     # del build en CI (.github/workflows/release.yml, build-arg) -- no es un
     # env var de runtime, así que no hay nada que pasarle acá.
@@ -154,6 +179,7 @@ services:
       - crow_net
 
   caddy:
+    logging: *logging
     image: caddy:2-alpine
     container_name: crow_caddy
     restart: unless-stopped

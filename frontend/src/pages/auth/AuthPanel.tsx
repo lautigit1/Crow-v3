@@ -33,7 +33,11 @@ type Key = "full_name" | "email" | "phone" | "password";
 const ALL_FIELDS: (Omit<FieldDef, "index"> & { modes: Mode[] })[] = [
   { key: "full_name", label: "Nombre completo", type: "text", icon: "users", autoComplete: "name", modes: ["register"] },
   { key: "email", label: "Email", type: "email", icon: "mail", autoComplete: "email", modes: ["login", "register"] },
-  { key: "phone", label: "Teléfono", type: "tel", icon: "phone", autoComplete: "tel", optional: true, modes: ["register"] },
+    // Obligatorio: sin teléfono el botón de WhatsApp del panel no tiene a dónde
+  // ir, y WhatsApp es el canal por el que se coordina el pago de todos los
+  // pedidos. Se pide acá y no en el checkout, donde sería fricción justo
+  // antes de confirmar la compra.
+  { key: "phone", label: "Teléfono", type: "tel", icon: "phone", autoComplete: "tel", modes: ["register"] },
   { key: "password", label: "Contraseña", type: "password", icon: "lock", autoComplete: "current-password", modes: ["login", "register"] },
 ];
 
@@ -137,7 +141,7 @@ export function AuthPanel() {
         const user = await login(form.email, form.password);
         navigate(from ?? (user.role === "ADMIN" ? "/admin" : "/cuenta"), { replace: true });
       } else {
-        await register({ full_name: form.full_name, email: form.email, password: form.password, phone: form.phone || undefined });
+        await register({ full_name: form.full_name, email: form.email, password: form.password, phone: form.phone });
         navigate("/cuenta", { replace: true });
       }
     } catch (err) {

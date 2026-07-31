@@ -54,7 +54,18 @@ test.describe("Centro de notificaciones", () => {
     await fila.getByRole("button", { name: "Gestionar" }).click();
     await admin.page.getByLabel("Entrega", { exact: true }).selectOption("Confirmado");
     await admin.page.getByRole("button", { name: "Guardar cambios" }).click();
-    await expect(fila.getByText("Confirmado")).toBeVisible();
+
+    // Se espera a que el guardado termine, no a que la fila de la tabla se
+    // repinte. El botón se deshabilita solo cuando el formulario deja de estar
+    // sucio, y eso ocurre recién cuando la respuesta del PATCH reemplazó al
+    // pedido de la ficha: es el punto de sincronización propio de esta pantalla.
+    //
+    // Antes acá se verificaba que la fila mostrara "Confirmado", y eso es algo
+    // que este test no debería estar mirando: acá lo que se prueba es la campana
+    // del cliente. Que la fila del panel se actualice ya lo cubren dos
+    // aserciones de `admin-orders.spec.ts`. Verificar dos cosas distintas en un
+    // mismo test lo hace fallar por motivos que no son los suyos.
+    await expect(admin.page.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
 
     // Y al cliente le aparece el contador solo. El nombre accesible dice
     // cuántas hay, así que esta aserción verifica el número y no solo que algo

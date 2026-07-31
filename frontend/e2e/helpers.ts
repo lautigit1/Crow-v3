@@ -115,7 +115,7 @@ export async function logoutFromAdmin(page: Page) {
   await expect(page).toHaveURL("/");
 }
 
-export type NewCustomer = { email: string; password: string; fullName: string; firstName: string };
+export type NewCustomer = { email: string; password: string; fullName: string; firstName: string; phone: string };
 
 /** Registra un usuario nuevo (no-admin) desde /registro y lo deja logueado en /cuenta. */
 export async function registerNewCustomer(page: Page): Promise<NewCustomer> {
@@ -125,11 +125,18 @@ export async function registerNewCustomer(page: Page): Promise<NewCustomer> {
     password: `E2eTest${suffix}!`,
     fullName: `Cliente E2E ${suffix}`,
     firstName: "Cliente",
+    // Número con formato realista (espacios y guion): valida el camino
+    // permisivo del backend, no solo una tira de dígitos.
+    phone: "261 660-0569",
   };
 
   await page.goto("/registro");
   await fullNameField(page).fill(customer.fullName);
   await emailField(page).fill(customer.email);
+  // El teléfono pasó a ser obligatorio en el registro. Sin esta línea fallan
+  // los ~10 specs que registran a alguien, y el error que se ve es un 422 del
+  // backend, que no dice qué campo falta.
+  await page.getByLabel("Teléfono").fill(customer.phone);
   await passwordField(page).fill(customer.password);
   await authSubmit(page).click();
   await expect(page).toHaveURL(/\/cuenta/);

@@ -159,9 +159,20 @@ export function NotificationBell() {
                   // accesible -- para un lector de pantalla y para los tests.
                   aria-label={conSonido ? "Silenciar avisos" : "Activar sonido de avisos"}
                   title={conSonido ? "Silenciar" : "Activar sonido"}
-                  className="text-[rgba(255,255,255,.55)] transition-colors hover:text-white"
+                  // Sin fondo en NINGÚN estado: el ícono va directo sobre el
+                  // azul del encabezado. Antes el estado silenciado tenía un
+                  // fondo claro que, a este tamaño, se veía como un círculo
+                  // blanco tapando el ícono en vez de acompañarlo.
+                  //
+                  // Lo único que cambia entre estados es el ícono y la
+                  // intensidad del color, que es suficiente: la tachadura ya
+                  // dice todo lo que hay que decir.
+                  className={clsx(
+                    "bg-transparent transition-colors duration-150 hover:text-white",
+                    conSonido ? "text-[rgba(255,255,255,.55)]" : "text-[rgba(255,255,255,.35)]",
+                  )}
                 >
-                  <Icon name={conSonido ? "volumeOn" : "volumeOff"} size={15} />
+                  <Icon name={conSonido ? "volumeOn" : "volumeOff"} size={17} strokeWidth={1.6} />
                 </button>
               </div>
             </div>

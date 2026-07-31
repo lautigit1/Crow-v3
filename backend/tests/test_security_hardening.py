@@ -21,7 +21,15 @@ ORDERS = "/api/orders"
 def _register(client: TestClient, email: str):
     return client.post(
         "/api/auth/register",
-        json={"full_name": "New User", "email": email, "password": "Password1!"},
+        # El teléfono es obligatorio desde el change de notificaciones. Sin él
+        # el registro devuelve 422 y el test del tope por IP nunca llegaría a
+        # dispararlo: verificaría un límite que jamás se alcanza.
+        json={
+            "full_name": "New User",
+            "email": email,
+            "password": "Password1!",
+            "phone": "261 660-0569",
+        },
     )
 
 

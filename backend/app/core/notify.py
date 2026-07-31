@@ -67,10 +67,26 @@ def notificar(
     # Canal en vivo: la campana se actualiza sin recargar. El evento no lleva
     # datos -- solo el tipo -- por las mismas razones que los de pedidos: nada
     # sensible viaja por el canal y hay un solo camino de lectura.
-    try:
-        events.publicar([events.canal_usuario(user_id)], "notification.created")
-    except Exception as exc:  # noqa: BLE001 -- deliberado, ver docstring
-        logger.warning("No se pudo publicar la notificación %s: %s", notificacion.id, exc)
+    #
+    # **Se publica DESPUÉS del commit, no acá mismo.** El aviso es una señal que
+    # dice "andá a buscar los datos": si sale antes de que la transacción
+    # confirme, el navegador pregunta y todavía no hay nada. Y como no llega un
+    # segundo evento, la campana se queda en cero para siempre.
+    #
+    # Las tareas de background de FastAPI corren después de que la dependencia
+    # `get_db` hizo commit, así que ahí la lectura siempre encuentra la fila.
+    # Sin `background` se publica al toque -- es el caso de los tests, donde no
+    # hay request de por medio.
+    def _avisar() -> None:
+        try:
+            events.publicar([events.canal_usuario(user_id)], "notification.created")
+        except Exception as exc:  # noqa: BLE001 -- deliberado, ver docstring
+            logger.warning("No se pudo publicar la notificación: %s", exc)
+
+    if background is not None:
+        background.add_task(_avisar)
+    else:
+        _avisar()
 
     if email:
         try:
@@ -93,6 +109,7 @@ def notificar_a_admins(
     titulo: str,
     cuerpo: str | None = None,
     enlace: str | None = None,
+    background: BackgroundTasks | None = None,
 ) -> list[Notification]:
     """Igual que `notificar()`, pero para todos los admins activos.
 
@@ -113,6 +130,14 @@ def notificar_a_admins(
     ).all()
 
     return [
-        notificar(db, user_id=a.id, tipo=tipo, titulo=titulo, cuerpo=cuerpo, enlace=enlace)
+        notificar(
+            db,
+            user_id=a.id,
+            tipo=tipo,
+            titulo=titulo,
+            cuerpo=cuerpo,
+            enlace=enlace,
+            background=background,
+        )
         for a in admins
     ]
