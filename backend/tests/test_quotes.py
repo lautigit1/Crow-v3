@@ -38,12 +38,43 @@ class TestPublicQuote:
         assert r.json()["user_id"] is None
 
     def test_create_quote_minimal(self, client):
-        r = client.post(BASE, json={"customer_name": "Ana", "message": "Consulta"})
+        """Lo mínimo son tres datos: quién, para qué auto, y qué necesita."""
+        r = client.post(
+            BASE, json={"customer_name": "Ana", "vehicle": "Corsa 2008", "message": "Consulta"}
+        )
         assert r.status_code == 201
 
     def test_create_quote_missing_name(self, client):
-        r = client.post(BASE, json={"message": "Sin nombre"})
+        r = client.post(BASE, json={"message": "Sin nombre", "vehicle": "Corsa 2008"})
         assert r.status_code == 422
+
+    def test_create_quote_missing_vehicle(self, client):
+        """Sin vehículo no se puede cotizar un repuesto: la respuesta arrancaría
+        preguntando por WhatsApp lo que el formulario podía haber pedido."""
+        r = client.post(BASE, json={"customer_name": "Ana", "message": "Pastillas"})
+        assert r.status_code == 422
+
+    def test_create_quote_blank_vehicle(self, client):
+        """`min_length=1` no alcanza: tres espacios son tres caracteres."""
+        r = client.post(
+            BASE, json={"customer_name": "Ana", "vehicle": "   ", "message": "Pastillas"}
+        )
+        assert r.status_code == 422
+
+    def test_reading_old_quotes_without_vehicle_still_works(self, admin_client, db):
+        """El vehículo es obligatorio al CREAR, no al leer.
+
+        `QuoteRead` hereda del mismo base que `QuoteCreate`. Si el campo se
+        hubiera vuelto obligatorio ahí, listar el historial -- lleno de
+        cotizaciones anteriores a este cambio -- devolvería un 500.
+        """
+        db.add(Quote(customer_name="Vieja", message="De antes", vehicle=None))
+        db.flush()
+
+        r = admin_client.get(BASE)
+
+        assert r.status_code == 200
+        assert any(q["vehicle"] is None for q in r.json()["items"])
 
 
 # ---------------------------------------------------------------------------

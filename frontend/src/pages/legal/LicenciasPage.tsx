@@ -15,9 +15,12 @@ const LIBS: Lib[] = [
   { name: "Python-Jose", version: "3.x", license: "MIT", url: "https://github.com/mpdavis/python-jose", desc: "Generación y validación de tokens JWT." },
   { name: "PostgreSQL", version: "16", license: "PostgreSQL License", url: "https://www.postgresql.org", desc: "Base de datos relacional." },
   { name: "Nginx", version: "1.27", license: "BSD 2-Clause", url: "https://nginx.org", desc: "Servidor web para el frontend en producción." },
-  { name: "Archivo (fuente)", version: "—", license: "OFL 1.1", url: "https://fonts.google.com/specimen/Archivo", desc: "Tipografía display del sitio." },
-  { name: "Inter (fuente)", version: "—", license: "OFL 1.1", url: "https://rsms.me/inter", desc: "Tipografía de cuerpo del sitio." },
-  { name: "IBM Plex Mono", version: "—", license: "OFL 1.1", url: "https://github.com/IBM/plex", desc: "Tipografía monoespaciada." },
+  // Las tres estaban mal: la página declaraba Archivo, Inter e IBM Plex Mono,
+  // y ninguna de esas se usa ni se distribuye. Es una página de licencias --
+  // atribuir la fuente equivocada es justo lo que no puede pasar acá.
+  { name: "Unbounded (fuente)", version: "—", license: "OFL 1.1", url: "https://fonts.google.com/specimen/Unbounded", desc: "Tipografía display del sitio." },
+  { name: "DM Sans (fuente)", version: "—", license: "OFL 1.1", url: "https://fonts.google.com/specimen/DM+Sans", desc: "Tipografía de cuerpo del sitio." },
+  { name: "Fira Mono (fuente)", version: "—", license: "OFL 1.1", url: "https://fonts.google.com/specimen/Fira+Mono", desc: "Tipografía monoespaciada." },
 ];
 
 // Fixed 5-key set -> precomputed literal badge classes (bg/text/border with

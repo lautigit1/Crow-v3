@@ -44,7 +44,8 @@ export function QuoteModal({ open, onClose, initialMessage = "", productId = nul
       const payload = {
         customer_name: name,
         customer_email: email || null,
-        vehicle: vehicle || null,
+        // Ya no puede viajar en null: el backend lo rechaza con un 422.
+        vehicle: vehicle.trim(),
         message,
         product_id: productId,
       };
@@ -61,12 +62,15 @@ export function QuoteModal({ open, onClose, initialMessage = "", productId = nul
   const whatsappText = `Hola Crow Repuestos, soy ${name || "un cliente"}. Vehículo: ${vehicle || "—"}. Necesito: ${message}`;
 
   return (
-    <Modal open={open} onClose={onClose} eyebrow="SOLICITAR COTIZACIÓN" title="Cuéntanos qué necesitas">
+    // El resto del sitio le habla de "vos" al cliente; este formulario era el
+    // único que había quedado en "tú". Mezclar los dos tratamientos en una
+    // misma sesión se nota, y en Argentina el "tú" suena a traducción.
+    <Modal open={open} onClose={onClose} eyebrow="SOLICITAR COTIZACIÓN" title="Contanos qué necesitás">
       {done ? (
         <div className="text-center pt-2.5 px-0 pb-1.5">
           <div className="font-display text-[20px] font-extrabold text-ink900 mb-2">¡Cotización enviada!</div>
           <p className="font-body text-[14.5px] leading-[1.6] text-textMuted mb-5">
-            Un asesor revisará tu solicitud y te responderá a la brevedad. También puedes acelerar la respuesta por WhatsApp.
+            Revisamos tu solicitud y te respondemos a la brevedad. También podés acelerar la respuesta por WhatsApp.
           </p>
           <div className="flex gap-2.5 justify-center">
             <Button as="a" href={waLink(whatsappText)} target="_blank" rel="noreferrer" variant="whatsapp">
@@ -85,11 +89,14 @@ export function QuoteModal({ open, onClose, initialMessage = "", productId = nul
           <Field label="Email (opcional)">
             <Input type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} placeholder="tu@correo.com" />
           </Field>
-          <Field label="Vehículo (marca · modelo · año)">
-            <Input value={vehicle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle(e.target.value)} placeholder="Ej. Toyota Hilux 2019" />
+          {/* Obligatorio: un repuesto no existe en abstracto, existe para un
+              auto. Sin este dato la respuesta arranca con un ida y vuelta por
+              WhatsApp preguntando lo que el formulario podía haber pedido. */}
+          <Field label="Vehículo (marca · modelo · año) *" hint="Nos sirve para buscar el repuesto exacto.">
+            <Input required value={vehicle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle(e.target.value)} placeholder="Ej. Toyota Hilux 2019" />
           </Field>
-          <Field label="Qué necesitas">
-            <Textarea required rows={3} value={message} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)} placeholder="Repuesto, producto o referencia que buscas" />
+          <Field label="Qué necesitás">
+            <Textarea required rows={3} value={message} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)} placeholder="Repuesto, producto o referencia que buscás" />
           </Field>
           {error && <div className="font-body text-[13px] text-danger">{error}</div>}
           <Button type="submit" fullWidth size="lg" disabled={loading}>

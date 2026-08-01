@@ -43,11 +43,28 @@ html {
   scroll-behavior: smooth;
 }
 
+/*
+ * OJO: acá había dos cosas que adelgazaban TODO el sitio.
+ *
+ * 1. `font-family: "Inter"`. Inter no se carga en ningún lado -- las fuentes
+ *    autohospedadas son DM Sans, Unbounded y Fira Mono (ver main.tsx). Así que
+ *    todo lo que no llevara una clase `font-body` explícita caía al
+ *    `system-ui` del sistema operativo: Segoe UI en Windows, San Francisco en
+ *    Mac. Media aplicación no estaba usando la tipografía del proyecto.
+ *
+ * 2. `-webkit-font-smoothing: antialiased`. Es el ajuste que la gente copia
+ *    sin mirar y que hace exactamente una cosa: renderizar el texto MÁS FINO
+ *    que el default del sistema. Se saca.
+ *
+ * El peso base pasa de 400 a 500. DM Sans 400 es una tipografía de cuerpo de
+ * libro; en pantalla, sobre blanco y en 14-15px, se lee delgada. 500 está
+ * cargado y es el peso con el que esta familia se ve como corresponde.
+ */
 body {
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  font-weight: 500;
   color: #0d1728;
   background: #ffffff;
-  -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 

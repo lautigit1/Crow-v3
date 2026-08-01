@@ -22,7 +22,17 @@ function hueOf(seed: string): number {
 
 /**
  * Real visual for a product: shows the uploaded image when present, otherwise a
- * branded gradient tile with the category icon and SKU — no "[ FOTO ]" mock.
+ * neutral tile with the category icon — no "[ FOTO ]" mock.
+ *
+ * **El tile de reemplazo tenía un tono distinto por producto**, derivado de un
+ * hash del SKU. Con cuatro productos parecía variedad; con una grilla llena era
+ * un mosaico aleatorio, y lo aleatorio se lee como accidental. Ahora es un solo
+ * neutro frío con el ícono muy tenue: se ve deliberado, y cuando las fotos
+ * estén cargadas deja de competir con ellas.
+ *
+ * El SKU salió de acá: la card del catálogo ya lo dibuja sobre la imagen para
+ * los DOS estados (con foto y sin foto), así que acá quedaba duplicado en uno
+ * de los dos.
  *
  * `ratio`, `radius`, and every hue-derived gradient/color below are runtime
  * values (per-product aspect ratio, per-instance radius override, a color
@@ -32,7 +42,10 @@ function hueOf(seed: string): number {
  */
 export function ProductImage({
   name,
-  sku,
+  // `sku` sigue en el tipo -- lo pasan seis pantallas -- pero ya no se
+  // desestructura: era la semilla del hash del color y la etiqueta del tile, y
+  // las dos cosas se fueron. Sacarlo del tipo obligaría a tocar los seis
+  // llamados para no ganar nada.
   category,
   imageUrl,
   ratio = 1.4,
@@ -96,29 +109,18 @@ export function ProductImage({
     );
   }
 
-  const hue = hueOf(sku || name);
   const icon = (category && CATEGORY_ICON[category]) || "box";
 
   return (
     <div
-      className="relative overflow-hidden flex items-center justify-center"
-      style={{
-        aspectRatio: String(ratio),
-        borderRadius: radius,
-        background: `linear-gradient(135deg, hsl(${hue} 70% 96%), hsl(${(hue + 40) % 360} 65% 92%))`,
-      }}
+      className="relative overflow-hidden flex flex-col items-center justify-center gap-2 bg-[#F4F7FB]"
+      style={{ aspectRatio: String(ratio), borderRadius: radius }}
     >
-      {/* subtle grid texture -- solo en tiles grandes, en chicos se ve como ruido */}
-      {!compact && (
-        <div className="absolute inset-0 [background-image:linear-gradient(rgba(13,23,40,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(13,23,40,.04)_1px,transparent_1px)] [background-size:22px_22px]" />
-      )}
-      <span className="relative opacity-90" style={{ color: `hsl(${hue} 55% 42%)` }}>
-        <Icon name={icon} size={compact ? 20 : 44} strokeWidth={compact ? 1.6 : 1.4} />
+      <span className="text-[#C3D0E0]">
+        <Icon name={icon} size={compact ? 20 : 40} strokeWidth={compact ? 1.6 : 1.4} />
       </span>
-      {sku && !compact && (
-        <span className="absolute left-3 bottom-2.5 font-mono text-[10px] font-semibold text-textFaint tracking-[0.04em]">
-          {sku}
-        </span>
+      {!compact && (
+        <span className="font-mono text-[10px] tracking-[.16em] text-[#C3D0E0]">SIN IMAGEN</span>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import type * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Container, Select, EmptyState, Button, Icon, Pagination } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
 import { ProductCard } from "@/entities/product/ProductCard";
@@ -17,18 +17,24 @@ import { useBreakpoint } from "@/shared/lib/useBreakpoint";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 
 // ── Skeleton card ─────────────────────────────────────────────────────────────
+// El esqueleto espeja la tarjeta real: mismo radio, mismo borde, misma
+// proporción de imagen (1.42) y las mismas cuatro filas de texto. Si no
+// coincide, la grilla salta cuando llegan los datos -- y ese salto se nota más
+// que la espera que el esqueleto venía a disimular.
 function SkeletonCard() {
   return (
-    <div className="bg-white border border-border rounded-lg overflow-hidden">
-      <div className="h-[180px] bg-surface relative overflow-hidden">
+    <div className="relative rounded-xl overflow-hidden border border-[#E7EDF4]">
+      <div className="bg-[#F4F7FB] relative overflow-hidden" style={{ aspectRatio: "0.95" }}>
         <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,.6)_50%,transparent_100%)] animate-[shimmer_1.4s_infinite]" />
       </div>
-      <div className="p-4 flex flex-col gap-2.5">
-        <div className="h-2.5 w-[40%] bg-surface rounded-sm" />
-        <div className="h-3.5 w-[85%] bg-surface rounded-sm" />
-        <div className="h-3.5 w-[60%] bg-surface rounded-sm" />
-        <div className="h-5 w-[35%] bg-surface rounded-sm mt-1" />
-        <div className="h-9 bg-surface rounded-md mt-1" />
+      {/* Espeja el panel real: mismo margen, mismo radio y las tres filas de
+          texto. Si el esqueleto no coincide con la tarjeta, la grilla salta
+          cuando llegan los datos -- y ese salto se nota más que la espera que
+          el esqueleto venía a disimular. */}
+      <div className="absolute left-2.5 right-2.5 bottom-2.5 rounded-[10px] bg-white border border-white py-3 px-3.5 flex flex-col gap-2">
+        <div className="h-2.5 w-[55%] bg-[#F1F5FA] rounded-sm" />
+        <div className="h-3.5 w-[90%] bg-[#F1F5FA] rounded-sm" />
+        <div className="h-5 w-[42%] bg-[#F1F5FA] rounded-sm mt-1" />
       </div>
     </div>
   );
@@ -66,34 +72,51 @@ function FilterPanel({
   hasFilters: boolean; clearFilters: () => void;
   onClose?: () => void;
 }) {
+  // Las etiquetas de sección eran Fira Mono 10.5px en mayúscula con .1em de
+  // tracking. Es el mismo gesto que ya se corrigió en `shared/ui/Field.tsx`:
+  // funciona en una palabra suelta y cansa cuando hay cuatro apiladas, porque
+  // la mayúscula borra la silueta que el ojo usa para reconocer una palabra.
+  // Y era mono sobre palabras, que es justo lo que se sacó de la ficha técnica.
+  const etiqueta = "font-body text-[12.5px] font-semibold text-ink800 mb-2.5";
+
   return (
-    <div className="flex flex-col gap-5 py-4 px-[18px]">
-      <div className="flex items-center justify-between">
-        <span className="font-body text-[13px] font-bold text-ink900">Filtros</span>
-        <div className="flex gap-2">
+    // Secciones separadas por líneas, no por huecos: cuatro bloques flotando
+    // en una caja se leen como una lista de cosas sueltas. Con hairlines y
+    // padding parejo se lee como un panel.
+    <div className="divide-y divide-border">
+      <div className="flex items-center justify-between py-3.5 px-[18px]">
+        <span className="font-body text-[14px] font-semibold text-ink900">Filtros</span>
+        <div className="flex items-center gap-1">
           {hasFilters && (
-            <button onClick={clearFilters} className="font-body text-xs text-primary bg-none border-none cursor-pointer p-0 font-semibold">
+            <button
+              onClick={clearFilters}
+              className="font-body text-[12.5px] font-semibold text-textMuted hover:text-primary bg-transparent border-none cursor-pointer py-1 px-2 rounded-md hover:bg-surface transition-colors duration-150"
+            >
               Limpiar
             </button>
           )}
           {onClose && (
-            <button onClick={onClose} aria-label="Cerrar filtros" className="bg-surface border border-border rounded-md w-7 h-7 flex items-center justify-center cursor-pointer text-textMuted">
+            <button
+              onClick={onClose}
+              aria-label="Cerrar filtros"
+              className="bg-transparent hover:bg-surface border-none rounded-md w-7 h-7 flex items-center justify-center cursor-pointer text-textMuted transition-colors duration-150"
+            >
               <Icon name="close" size={14} />
             </button>
           )}
         </div>
       </div>
 
-      <div>
-        <div className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase mb-2.5">Categoría</div>
+      <div className="py-4 px-[18px]">
+        <div className={etiqueta}>Categoría</div>
         <Select value={categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryId(e.target.value ? Number(e.target.value) : "")}>
           <option value="">Todas las categorías</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </Select>
       </div>
 
-      <div>
-        <div className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase mb-2.5">Vehículo</div>
+      <div className="py-4 px-[18px]">
+        <div className={etiqueta}>Vehículo</div>
         <div className="flex flex-wrap gap-1.5">
           {VEHICLE_TYPES.map((t) => {
             const active = vehicleType === t;
@@ -101,9 +124,16 @@ function FilterPanel({
               <button
                 key={t}
                 onClick={() => setVehicleType(t)}
+                // Activo en tinta llena y no en azul suave: el azul de marca ya
+                // es el color del botón principal del sitio, y un filtro
+                // seleccionado no es una acción a punto de ejecutarse.
+                // Borde de 1px -- 1.5px es el grosor que hace ver "formulario
+                // viejo" cuando hay seis controles juntos.
                 className={clsx(
-                  "font-body text-[12.5px] font-semibold py-[5px] px-3 rounded-pill cursor-pointer border-[1.5px] transition-all duration-150",
-                  active ? "border-primary bg-primarySoft text-primary" : "border-border bg-white text-textMuted",
+                  "font-body text-[12.5px] font-medium py-[6px] px-3 rounded-pill cursor-pointer border transition-[background-color,border-color,color] duration-150",
+                  active
+                    ? "border-ink900 bg-ink900 text-white"
+                    : "border-border bg-white text-ink700 hover:border-borderStrong hover:bg-surface",
                 )}
               >
                 {t}
@@ -113,22 +143,40 @@ function FilterPanel({
         </div>
       </div>
 
-      <div>
-        <div className="font-mono text-[10.5px] font-bold tracking-[.1em] text-textFaint uppercase mb-2.5">Marca</div>
+      <div className="py-4 px-[18px]">
+        <div className={etiqueta}>Marca</div>
         <Select value={brandId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBrandId(e.target.value ? Number(e.target.value) : "")}>
           <option value="">Todas las marcas</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </Select>
       </div>
 
-      <label
-        className={clsx(
-          "flex items-center gap-2.5 cursor-pointer py-2.5 px-3 rounded-md border-[1.5px] transition-all duration-150",
-          inStock ? "border-primary bg-primarySoft" : "border-border bg-white",
-        )}
-      >
-        <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="w-[15px] h-[15px] accent-primary shrink-0" />
-        <span className={clsx("font-body text-[13px] font-semibold", inStock ? "text-primary" : "text-ink800")}>Solo en stock</span>
+      {/* Interruptor y no un checkbox metido en una caja con borde. La caja lo
+          hacía parecer un campo de formulario más -- algo que se completa --
+          cuando en realidad es una preferencia que se enciende. */}
+      <label className="flex items-center justify-between gap-3 py-4 px-[18px] cursor-pointer group/sw">
+        <span className="font-body text-[13px] font-medium text-ink800">Solo en stock</span>
+        <span className="relative shrink-0">
+          <input
+            type="checkbox"
+            checked={inStock}
+            onChange={(e) => setInStock(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            className={clsx(
+              "block w-[38px] h-[22px] rounded-pill transition-colors duration-150",
+              "peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2",
+              inStock ? "bg-primary" : "bg-[#DCE3EC] group-hover/sw:bg-borderStrong",
+            )}
+          />
+          <span
+            className={clsx(
+              "absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-[0_1px_3px_rgba(7,17,31,.25)] transition-transform duration-150",
+              inStock && "translate-x-4",
+            )}
+          />
+        </span>
       </label>
     </div>
   );
@@ -137,7 +185,20 @@ function FilterPanel({
 // Tamaño de página del catálogo público. Coordinado con `skip`/`limit` en
 // cada request y reseteado a 0 en cada cambio de filtro (ver `setQPage0` y
 // hermanos) para que nunca se pida una página fuera de rango tras filtrar.
-const PAGE_SIZE = 48;
+// 48 venía de cuando las tarjetas medían 210px con una imagen de 110: entraban
+// 5 por fila y la página eran ~10 filas. Con la tarjeta nueva (258px, imagen a
+// sangre) son 4 por fila y 12 filas -- más de 3.000px de scroll, y 48 fotos
+// cargando en vez de 48 miniaturas.
+//
+// 24 no es un número arbitrario: da 6 filas en escritorio, es divisible por 2,
+// 3 y 4 -- así la última fila nunca queda coja en ningún ancho -- y coincide
+// con el default del endpoint de productos.
+//
+// Para referencia: Tiendanube muestra 12 por defecto (hasta 20), Frávega ~40 y
+// Mercado Libre 50. Los dos últimos son catálogos de navegación con decenas de
+// miles de ítems; acá la gente busca una pieza concreta para su auto, filtra, y
+// no scrollea doscientos productos.
+const PAGE_SIZE = 24;
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function CatalogPage() {
@@ -211,6 +272,18 @@ export function CatalogPage() {
   // Cambiar cualquier filtro vuelve a la página 0 en el mismo batch de
   // estado que el cambio del filtro (React los agrupa en un solo render),
   // así el efecto de arriba dispara un único fetch, no dos.
+  // Cambiar de página tenía que subir el scroll y no lo hacía: si estabas
+  // mirando la última fila y tocabas "siguiente", aparecías en la mitad de la
+  // página nueva sin nada que indicara que había cambiado.
+  //
+  // `auto` y no `smooth`: la lista se reemplaza en cuanto llega la respuesta, y
+  // un scroll animado de 3.000px termina después, así que la persona ve pasar
+  // volando productos que ya no son los que estaba mirando.
+  const irAPagina = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
   const setQPage0 = (v: string) => { setQ(v); setPage(0); };
   const setCategoryIdPage0 = (v: number | "") => { setCategoryId(v); setPage(0); };
   const setBrandIdPage0 = (v: number | "") => { setBrandId(v); setPage(0); };
@@ -248,10 +321,15 @@ export function CatalogPage() {
             generated CSS order, which a conflicting className couldn't
             guarantee (see shared/ui/Field.tsx's comment on the same trap). */}
         <Container className="relative pt-10 pb-0" style={{ paddingLeft: 40, paddingRight: 40 }}>
-          {/* Breadcrumb */}
-          <div className="font-mono text-[11px] text-[#64809E] tracking-[.08em] mb-5">
-            INICIO <span className="mx-1.5 text-[#1E2D3D]">/</span>
-            <span className="text-primary">CATÁLOGO</span>
+          {/* Breadcrumb. Sale de la mono en mayúscula: son dos palabras
+              corrientes y la versión anterior las volvía un código. El
+              separador queda más tenue que el texto para que no compita. */}
+          <div className="font-body text-[13px] text-[#7C97B3] mb-5">
+            <Link to="/" className="text-inherit no-underline hover:text-white transition-colors duration-150">
+              Inicio
+            </Link>
+            <span className="mx-2 text-[#2A3F55]">/</span>
+            <span className="text-white font-medium">Catálogo</span>
           </div>
 
           <div className="flex items-end justify-between gap-10 pb-8">
@@ -312,8 +390,12 @@ export function CatalogPage() {
         </div>
       )}
 
-      {/* ── Body ── */}
-      <section className="bg-surface min-h-[60vh]">
+      {/* ── Body ──
+          Lienzo casi blanco y no `surface` (#F8FAFC). El gris de antes estaba
+          tan cerca del blanco de las tarjetas que lo único que separaba una de
+          otra era el borde, y una grilla definida por bordes se lee como una
+          planilla. Acá la separación la hace el aire: 20px de gap. */}
+      <section className="bg-[#FCFDFE] min-h-[60vh]">
         <Container
           className={clsx(
             "pt-5 pb-[60px] md:pt-7 md:pb-20 items-start gap-7",
@@ -323,7 +405,7 @@ export function CatalogPage() {
 
           {/* ── Sidebar (desktop only) ── */}
           {!isMobile && (
-            <aside className="sticky top-[90px] bg-white border border-border rounded-lg shadow-sm overflow-hidden">
+            <aside className="sticky top-[90px] bg-white border border-[#E7EDF4] rounded-xl shadow-[0_1px_2px_rgba(13,23,40,.04)] overflow-hidden">
               <FilterPanel
                 categories={categories} brands={brands}
                 categoryId={categoryId} setCategoryId={setCategoryIdPage0}
@@ -376,7 +458,10 @@ export function CatalogPage() {
 
             {/* Grid */}
             {isPending ? (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(258px,1fr))] gap-5">
+                {/* 8 y no 24: el esqueleto solo tiene que ocupar lo que se ve
+                    sin scrollear. Pintar una página entera de placeholders
+                    alarga el documento y hace saltar la barra de scroll. */}
                 {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : !products || products.length === 0 ? (
@@ -389,7 +474,7 @@ export function CatalogPage() {
               <>
                 <div
                   className={clsx(
-                    "grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3.5 transition-opacity duration-150",
+                    "grid grid-cols-[repeat(auto-fill,minmax(258px,1fr))] gap-5 transition-opacity duration-150",
                     isFetching && "opacity-60",
                   )}
                 >
@@ -398,7 +483,7 @@ export function CatalogPage() {
                   ))}
                 </div>
                 {total > PAGE_SIZE && (
-                  <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} />
+                  <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={irAPagina} />
                 )}
               </>
             )}

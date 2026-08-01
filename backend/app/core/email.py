@@ -193,6 +193,49 @@ def build_quote_answered_email(
     }
 
 
+def build_account_created_email(
+    *,
+    to: str,
+    name: str,
+    reset_url: str,
+    order_id: int,
+    item_titulo: str,
+    vehicle: str | None = None,
+    lead_time: str | None = None,
+) -> dict:
+    """Le avisa a alguien que le creamos una cuenta porque su cotización se convirtió en pedido.
+
+    **Por qué no se reusa `build_reset_email`.** El mecanismo es el mismo
+    (`create_reset_token`, un solo uso, 60 minutos) pero el texto no puede
+    serlo: el de reset dice "recibimos una solicitud para restablecer la
+    contraseña de tu cuenta", y para alguien que nunca se registró eso es falso
+    dos veces -- no pidió nada y no tenía cuenta. Ese correo se lee como un
+    intento de entrar a una cuenta ajena, que es la forma exacta de un
+    phishing, y la reacción sana es borrarlo. Con él se pierde el único enlace
+    que le permite ver su pedido.
+
+    Lleva el detalle de lo pedido porque además **reemplaza** al correo de
+    "pedido creado": mandarle a alguien que todavía no puede entrar un mail que
+    lo invita a "ver tus pedidos" es mandarlo a una pared.
+    """
+    subject = f"Crow Repuestos — Tomamos tu pedido N.º {order_id:05d}"
+
+    ctx = {
+        "name": name,
+        "reset_url": reset_url,
+        "order_id": order_id,
+        "item_titulo": item_titulo,
+        "vehicle": vehicle,
+        "lead_time": lead_time,
+    }
+    return {
+        "to": to,
+        "subject": subject,
+        "html": _render("account_created.html.jinja", **ctx),
+        "text": _render("account_created.txt.jinja", **ctx),
+    }
+
+
 def build_reset_email(*, to: str, reset_url: str, name: str) -> dict:
     """Returns kwargs for send_email() — password reset link."""
     subject = "Crow Repuestos — Recuperación de contraseña"

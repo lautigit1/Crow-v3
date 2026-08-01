@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CenteredSpinner, EmptyState, Button, Spinner, Icon } from "@/shared/ui";
-import { quoteApi, type Quote } from "@/entities/quote";
+import { quoteApi, optionTotal, type Quote } from "@/entities/quote";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
-import { formatDate } from "@/shared/lib/format";
+import { formatDate, formatPrice } from "@/shared/lib/format";
 import { AccountPageHeader } from "./ui/AccountPageHeader";
 
 const LIMIT = 20;
@@ -40,15 +40,64 @@ function QuoteCard({ quote }: { quote: Quote }) {
             {quote.vehicle}
           </div>
         )}
-        {quote.admin_reply && (
-          <div className="mt-1 py-2.5 px-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-sm">
-            <div className="mb-1.5 font-body text-[12px] font-semibold text-[#92400E]">
-              Respuesta del equipo
+        {/* La respuesta. Reemplaza al bloque que leía `admin_reply`, un campo
+            que el backend nunca devolvió: la caja amarilla "Respuesta del
+            equipo" no se mostró jamás, y el cliente no tenía forma de ver lo
+            que le habíamos cotizado. */}
+        {quote.options.length > 0 && (
+          <div className="mt-1 border border-border rounded-md overflow-hidden">
+            <div className="py-2 px-3.5 bg-primarySoft font-body text-[12px] font-semibold text-primary">
+              {quote.options.length === 1 ? "Lo que te cotizamos" : "Opciones que te ofrecemos"}
             </div>
-            <p className="m-0 font-body text-[13.5px] leading-[1.6] text-[#78350F]">
-              {quote.admin_reply}
-            </p>
+            {quote.options.map((op) => (
+              <div
+                key={op.id}
+                className="flex items-start justify-between gap-3 py-2.5 px-3.5 border-t border-border"
+              >
+                <div className="min-w-0">
+                  <div className="font-body text-[13.5px] font-semibold text-ink900">{op.title}</div>
+                  {op.detail && (
+                    <div className="font-body text-[12.5px] text-textMuted leading-snug">{op.detail}</div>
+                  )}
+                  {op.lead_time && (
+                    <div className="inline-flex items-center gap-1.5 mt-1 font-body text-xs text-textMuted">
+                      <Icon name="clock" size={12} />
+                      {op.lead_time}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right whitespace-nowrap">
+                  <div className="font-mono text-[13.5px] text-ink900">
+                    {formatPrice(optionTotal(op))}
+                  </div>
+                  {/* El unitario solo cuando hay más de uno: con cantidad 1
+                      repetiría el mismo número dos veces. */}
+                  {op.quantity > 1 && (
+                    <div className="font-body text-[11.5px] text-textFaint">
+                      {op.quantity} × {formatPrice(op.unit_price)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {/* Los precios se coordinan por WhatsApp: no hay "aceptar" en el
+                sitio, así que decirlo evita que alguien espere un botón. */}
+            {quote.order_id === null && (
+              <div className="py-2.5 px-3.5 border-t border-border font-body text-[12.5px] text-textMuted">
+                Escribinos por WhatsApp para confirmar cuál querés.
+              </div>
+            )}
           </div>
+        )}
+
+        {quote.order_id !== null && (
+          <Link
+            to="/cuenta/pedidos"
+            className="inline-flex items-center gap-1.5 font-body text-[13px] font-semibold text-primary no-underline hover:underline"
+          >
+            <Icon name="box" size={13} />
+            Ver el pedido N.º {String(quote.order_id).padStart(5, "0")}
+          </Link>
         )}
       </div>
     </div>

@@ -36,7 +36,12 @@ def _register(client: TestClient, email: str):
 def _quote(client: TestClient, email: str):
     return client.post(
         "/api/quotes",
-        json={"customer_name": "Cliente", "customer_email": email, "message": "Necesito un filtro"},
+        json={
+            "customer_name": "Cliente",
+            "customer_email": email,
+            "vehicle": "Corsa 2008",
+            "message": "Necesito un filtro",
+        },
     )
 
 

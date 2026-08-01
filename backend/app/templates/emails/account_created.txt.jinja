@@ -1,0 +1,30 @@
+{# Versión en texto plano -- ver el comentario de reset_password.txt.jinja:
+   un correo que viaja solo como HTML puntúa peor en los filtros de spam, y
+   este en particular lleva el único enlace con el que la persona puede entrar
+   a ver su pedido. Tiene que ser usable por sí sola. #}
+CROW REPUESTOS
+Tomamos tu pedido N.º {{ "%05d"|format(order_id) }}
+
+Hola {{ name }},
+
+Convertimos la consulta que nos hiciste en un pedido. Te abrimos una
+cuenta para que puedas seguirlo.
+
+  {{ item_titulo }}
+{% if vehicle %}  {{ vehicle }}
+{% endif %}{% if lead_time %}  Plazo estimado: {{ lead_time }}
+{% endif %}
+Creá tu contraseña acá:
+
+{{ reset_url }}
+
+El enlace vence en 60 minutos y sirve una sola vez. Si se te pasa,
+entrá a "Olvidé mi contraseña" con este mismo correo.
+
+¿No esperabas este pedido? Escribinos y lo cancelamos. Mientras no
+crees la contraseña, nadie puede entrar a la cuenta.
+
+--
+Crow Repuestos · Mendoza, Argentina
+Recibís este correo porque nos pediste una cotización con esta
+dirección.

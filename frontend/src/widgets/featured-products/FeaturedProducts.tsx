@@ -43,7 +43,11 @@ export function FeaturedProducts({ onQuote }: { onQuote: (p: Product) => void })
             message="Marca productos como destacados desde el panel de administración."
           />
         ) : (
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(258px,1fr))] gap-5">
+            {/* `grid-cols-4` fijo dejaba tarjetas de ~230px en un portátil de
+                1280px y de ~180px en una tablet, sin punto de quiebre: la card
+                nueva no entra ahí. Con `auto-fill` la home usa el mismo mínimo
+                que el catálogo y baja sola a 3 o 2 columnas. */}
             {products.map((p) => (
               <ProductCard key={p.id} product={p} onQuote={onQuote} />
             ))}

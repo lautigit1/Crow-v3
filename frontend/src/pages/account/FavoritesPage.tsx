@@ -59,7 +59,10 @@ export function FavoritesPage() {
           action={<Button as={Link} to="/catalogo">Ir al catálogo</Button>}
         />
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(258px,1fr))] gap-5">
+          {/* Mismo mínimo y mismo gap que el catálogo: es la misma tarjeta, y
+              con 220px las píldoras de acción sobre la imagen quedan
+              apretadas. */}
           {products.map((p) => (
             <ProductCard key={p.id} product={p} onQuote={handleQuote} />
           ))}

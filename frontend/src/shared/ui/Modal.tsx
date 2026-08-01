@@ -94,7 +94,13 @@ export function Modal({ open, onClose, title, eyebrow, children, footer, width =
 
           <button
             onClick={onClose}
-            aria-label="Cerrar"
+            // "Cerrar ventana" y no "Cerrar": varias ventanas traen además un
+            // botón "Cerrar" en el pie, y dos controles con el MISMO nombre
+            // accesible dentro del mismo diálogo son indistinguibles para
+            // quien navega con lector de pantalla -- escucha "Cerrar, botón"
+            // dos veces sin saber cuál es cuál. También es lo que hacía
+            // imposible apuntarle a uno desde un test.
+            aria-label="Cerrar ventana"
             className="absolute right-5 top-5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-textFaint transition-colors duration-150 hover:bg-surface hover:text-ink900"
           >
             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">

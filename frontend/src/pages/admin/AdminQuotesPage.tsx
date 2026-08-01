@@ -1,12 +1,12 @@
-import type * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { Button, DataTable, Select, CenteredSpinner, type Column } from "@/shared/ui";
+import { Button, DataTable, CenteredSpinner, type Column } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
-import { quoteApi, QUOTE_STATUSES, type Quote, type QuoteStatus } from "@/entities/quote";
+import { QuoteSheet } from "./ui/QuoteSheet";
+import { quoteApi, optionTotal, QUOTE_STATUSES, type Quote, type QuoteStatus } from "@/entities/quote";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
 import { useWaLink } from "@/entities/settings/useSiteSettings";
-import { formatDate } from "@/shared/lib/format";
+import { formatDate, formatPrice } from "@/shared/lib/format";
 
 type Filter = "Todas" | QuoteStatus;
 
@@ -14,6 +14,7 @@ export function AdminQuotesPage() {
   const [items, setItems] = useState<Quote[] | null>(null);
   const [filter, setFilter] = useState<Filter>("Todas");
   const [loadError, setLoadError] = useState(false);
+  const [abierta, setAbierta] = useState<number | null>(null);
   const waLink = useWaLink();
 
   const load = () => quoteApi.listAll().then(setItems).catch((err) => {
@@ -23,10 +24,13 @@ export function AdminQuotesPage() {
   });
   useEffect(() => void load(), []);
 
-  const changeStatus = async (q: Quote, status: QuoteStatus) => {
-    const updated = await quoteApi.setStatus(q.id, status);
-    setItems((prev) => prev?.map((x) => (x.id === q.id ? updated : x)) ?? null);
-  };
+  // La ficha se referencia por id y no por objeto: los endpoints de opciones
+  // devuelven la cotización entera, así que guardar el objeto dejaría la ficha
+  // mostrando una copia vieja mientras la tabla de atrás ya se actualizó.
+  const enFicha = items?.find((q) => q.id === abierta) ?? null;
+
+  const reemplazar = (actualizada: Quote) =>
+    setItems((prev) => prev?.map((x) => (x.id === actualizada.id ? actualizada : x)) ?? null);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { Todas: items?.length ?? 0 };
@@ -57,17 +61,45 @@ export function AdminQuotesPage() {
       ),
     },
     { header: "Fecha", render: (q) => <span className="font-mono text-xs text-textFaint">{formatDate(q.created_at)}</span> },
-    { header: "Estado", render: (q) => <StatusBadge status={q.status} /> },
     {
-      header: "Cambiar / contactar",
+      // Lo que se respondió, que es la columna que antes no existía: la lista
+      // mostraba el estado pero no si había un precio detrás.
+      header: "Cotizado",
+      render: (q) =>
+        q.options.length === 0 ? (
+          <span className="font-body text-[12.5px] text-textFaint">Sin responder</span>
+        ) : (
+          <div className="whitespace-nowrap">
+            <span className="font-mono text-[13px] text-ink900">
+              {formatPrice(Math.min(...q.options.map(optionTotal)))}
+            </span>
+            {q.options.length > 1 && (
+              <span className="font-body text-[11.5px] text-textFaint"> · {q.options.length} opciones</span>
+            )}
+          </div>
+        ),
+    },
+    {
+      header: "Estado",
+      render: (q) => (
+        <div className="flex flex-col items-start gap-1">
+          <StatusBadge status={q.status} />
+          {q.order_id !== null && (
+            <span className="font-mono text-[11px] text-textFaint">
+              → pedido {String(q.order_id).padStart(5, "0")}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Gestionar",
       align: "right",
       render: (q) => (
         <div className="inline-flex gap-2 items-center">
-          <div className="w-[150px]">
-            <Select value={q.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => changeStatus(q, e.target.value as QuoteStatus)} className="h-[38px] text-[13px]">
-              {QUOTE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </Select>
-          </div>
+          <Button size="sm" onClick={() => setAbierta(q.id)} aria-label={`Abrir consulta ${q.id}`}>
+            Abrir
+          </Button>
           {q.customer_phone && (
             <Button as="a" href={waLink(`Hola ${q.customer_name}, sobre tu cotización en Crow Repuestos…`)} target="_blank" rel="noreferrer" variant="whatsapp" size="sm">
               WA
@@ -115,6 +147,10 @@ export function AdminQuotesPage() {
           getKey={(q) => q.id}
           empty={loadError ? "No se pudieron cargar las cotizaciones. Recargá la página." : "No hay cotizaciones en este estado."}
         />
+      )}
+
+      {enFicha && (
+        <QuoteSheet quote={enFicha} onClose={() => setAbierta(null)} onChange={reemplazar} />
       )}
     </div>
   );

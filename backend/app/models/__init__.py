@@ -6,7 +6,7 @@ from app.models.import_batch import ImportBatch, ImportLine, ImportStatus, LineR
 from app.models.notification import Notification, NotificationType
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.product import Product
-from app.models.quote import Quote, QuoteStatus
+from app.models.quote import Quote, QuoteOption, QuoteStatus
 from app.models.setting import Setting
 from app.models.stock_movement import StockMovement, StockReason
 from app.models.supplier import Supplier
@@ -17,7 +17,7 @@ __all__ = [
     "ImportBatch", "ImportLine", "ImportStatus", "LineResolution",
     "Notification", "NotificationType",
     "Order", "OrderItem", "OrderStatus",
-    "Product", "Quote", "QuoteStatus", "Setting",
+    "Product", "Quote", "QuoteOption", "QuoteStatus", "Setting",
     "StockMovement", "StockReason",
     "Supplier", "User", "UserRole",
 ]

@@ -6,7 +6,7 @@ import { useFavorites } from "@/shared/lib/useFavorites";
 import { useCart } from "@/app/providers/CartProvider";
 import { formatPrice } from "@/shared/lib/format";
 import { useWaLink } from "@/entities/settings/useSiteSettings";
-import { Container, Badge, Button, Icon, ProductImage, CenteredSpinner, EmptyState } from "@/shared/ui";
+import { Container, Button, Icon, ProductImage, CenteredSpinner, EmptyState } from "@/shared/ui";
 import { QuoteModal } from "@/features/quote/QuoteModal";
 import { useProductQuery } from "@/entities/product/queries";
 
@@ -88,12 +88,18 @@ export function ProductDetailPage() {
       <section className="bg-white min-h-[70vh]">
         <Container className="pt-5 pb-[60px] md:pt-8 md:pb-24">
           {/* Breadcrumb minimalista */}
-          <div className="flex items-center gap-1.5 flex-wrap font-mono text-[11px] tracking-[.05em] text-textFaint mb-5 md:mb-8">
-            <Link to="/" className="text-inherit no-underline">INICIO</Link>
-            <span>/</span>
-            <Link to="/catalogo" className="text-inherit no-underline">CATÁLOGO</Link>
-            <span>/</span>
-            <span className="text-primary">{product.sku}</span>
+          {/* Mismo criterio que el del catálogo: sentence case en DM Sans. El
+              SKU es lo único que queda en mono acá, porque sí es un código. */}
+          <div className="flex items-center gap-2 flex-wrap font-body text-[13px] text-textMuted mb-5 md:mb-8">
+            <Link to="/" className="text-inherit no-underline hover:text-ink900 transition-colors duration-150">
+              Inicio
+            </Link>
+            <span className="text-[#CBD5E1]">/</span>
+            <Link to="/catalogo" className="text-inherit no-underline hover:text-ink900 transition-colors duration-150">
+              Catálogo
+            </Link>
+            <span className="text-[#CBD5E1]">/</span>
+            <span className="font-mono text-[12px] text-ink800">{product.sku}</span>
           </div>
 
           <div className="block md:grid gap-6 md:gap-14 items-start md:grid-cols-[minmax(0,440px)_1fr]">
@@ -121,82 +127,152 @@ export function ProductDetailPage() {
               >
                 <Icon name="star" size={17} />
               </button>
+
+              {/* Ficha técnica. Va bajo la imagen y no en la columna derecha
+                  por dos razones: equilibra el largo de las dos columnas -- la
+                  izquierda terminaba en la foto y dejaba medio metro de blanco
+                  -- y separa lo que se lee de lo que se hace.
+                  `vehicle_type` existe en el modelo desde siempre y no se
+                  mostraba en ninguna parte salvo un badge suelto. */}
+              <dl className="mt-5 border border-border rounded-xl overflow-hidden">
+                {/* Sin mono en ninguna fila, ni siquiera en el código: es una
+                    tabla de lectura, no una consola. La mono acá metía
+                    espacios raros entre letras y hacía que cada valor pesara
+                    distinto que el resto de la página. Toda la ficha en la
+                    misma familia y el peso separa etiqueta de valor. */}
+                {(
+                  [
+                    ["Código", product.sku],
+                    ["Marca", product.brand?.name],
+                    ["Categoría", product.category?.name],
+                    ["Aplicación", product.vehicle_type],
+                  ] as [string, string | undefined][]
+                )
+                  .filter(([, valor]) => !!valor)
+                  .map(([etiqueta, valor]) => (
+                    <div
+                      key={etiqueta}
+                      className="flex items-baseline justify-between gap-4 py-3 px-4 border-b border-border last:border-b-0 odd:bg-[#FCFDFE]"
+                    >
+                      <dt className="font-body text-[13.5px] font-medium text-textMuted shrink-0">{etiqueta}</dt>
+                      <dd className="font-body text-[14px] font-semibold text-ink900 m-0 text-right truncate">
+                        {valor}
+                      </dd>
+                    </div>
+                  ))}
+              </dl>
             </div>
 
             {/* ── Info ── */}
             <div>
-              {/* Meta row */}
-              <div className="flex items-center gap-2 mb-3.5">
-                {product.category?.name && (
-                  <span className="font-mono text-[11px] font-bold tracking-[.06em] uppercase text-primary bg-primarySoft py-[3px] px-[9px] rounded-[3px]">
-                    {product.category.name}
-                  </span>
-                )}
-                <span className="font-mono text-xs text-textFaint">
-                  {product.sku}
+              {/* Marca · categoría a la izquierda, SKU a la derecha. Mismo
+                  renglón que en la tarjeta del catálogo: quien viene de ahí
+                  reconoce la misma información en el mismo lugar. El chip azul
+                  se fue -- competía con el precio y con el botón principal por
+                  el mismo color. */}
+              <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] tracking-[.1em] uppercase text-textFaint mb-3 pb-3 border-b border-border">
+                <span className="truncate">
+                  {[product.brand?.name, product.category?.name].filter(Boolean).join(" · ")}
                 </span>
+                <span className="shrink-0 normal-case tracking-normal text-[#9FB0C4]">{product.sku}</span>
               </div>
 
-              {/* Nombre */}
-              <h1 className="font-display font-black text-[26px] md:text-[34px] leading-[1.15] tracking-[-.02em] text-ink900 m-0 mb-2.5">
+              <h1 className="font-display font-black text-[26px] md:text-[32px] leading-[1.14] tracking-[-.025em] text-ink900 m-0 mb-4">
                 {product.name}
               </h1>
 
-              {/* Marca */}
-              {product.brand?.name && (
-                <div className="font-body text-[14.5px] text-textMuted mb-[22px]">
-                  {product.brand.name}
-                </div>
-              )}
-
-              {/* Precio */}
-              <div className="font-display font-black text-[28px] md:text-[34px] tracking-[-.02em] text-primary mb-4">
-                {formatPrice(product.price)}
-              </div>
-
-              {/* Badges: stock + vehículo */}
-              <div className="flex flex-wrap gap-2 mb-7">
-                <Badge tone={!inStock ? "danger" : product.stock <= 2 ? "danger" : "success"}>
-                  {!inStock ? "Sin stock" : product.stock <= 2 ? `Últimas ${product.stock} unidades` : "En stock"}
-                </Badge>
-                {product.vehicle_type && product.vehicle_type !== "Universal" && (
-                  <Badge tone="neutral">{product.vehicle_type}</Badge>
-                )}
-              </div>
-
-              {/* Descripción */}
+              {/* La descripción sube: antes iba después del precio y los
+                  badges, así que lo primero que se leía del producto era
+                  cuánto sale. Y va en `ink800`, no en `textMuted`: era el
+                  texto más largo de la pantalla y estaba en el gris más claro
+                  que tiene la paleta. */}
               {product.description && (
-                <p className="font-body text-[14.5px] leading-[1.7] text-textMuted m-0 mb-8 max-w-[560px]">
+                <p className="font-body text-[15px] leading-[1.7] text-ink800 m-0 mb-7 max-w-[600px]">
                   {product.description}
                 </p>
               )}
 
-              {/* Compra directa */}
-              {inStock ? (
-                <div className="flex flex-wrap items-center gap-3 mb-3.5">
-                  <QuantityStepper value={qty} max={maxQty} onChange={setQty} />
-                  <Button onClick={handleBuyNow}>Comprar ahora</Button>
-                  <Button variant="outline" onClick={handleAddToCart}>
-                    <Icon name="cart" size={15} /> {added ? "¡Agregado!" : "Agregar al carrito"}
+              {/* ── Panel de compra ──
+                  Todo lo accionable adentro de una caja. Antes eran cinco
+                  controles sueltos sobre el fondo blanco, en dos filas que
+                  envolvían distinto según el ancho: no había forma de saber
+                  cuál era el camino principal. */}
+              <div className="border border-border rounded-xl bg-[#FCFDFE] p-5 max-w-[520px]">
+                <div className="flex items-end justify-between gap-4 flex-wrap">
+                  <div>
+                    {product.price == null ? (
+                      <div className="font-display text-[24px] font-bold text-textMuted">A consultar</div>
+                    ) : (
+                      <div className="whitespace-nowrap leading-none">
+                        {/* El símbolo más chico y gris: el ojo tiene que caer
+                            en la cifra. Y el número en tinta, no en el azul de
+                            marca -- que acá es el color del botón de comprar y
+                            no puede significar dos cosas distintas. */}
+                        <span className="font-body text-[18px] font-semibold text-textFaint align-[3px]">$</span>
+                        <span className="font-display text-[36px] md:text-[40px] font-black tracking-[-.045em] text-ink900">
+                          {formatPrice(product.price).replace(/^\$\s?/, "")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div
+                    className={clsx(
+                      "inline-flex items-center gap-2 font-body text-[13.5px] font-semibold",
+                      !inStock ? "text-textFaint" : product.stock <= 2 ? "text-warning" : "text-success",
+                    )}
+                  >
+                    <span
+                      className={clsx(
+                        "w-2 h-2 rounded-full shrink-0",
+                        !inStock ? "bg-borderStrong" : product.stock <= 2 ? "bg-warning" : "bg-success",
+                      )}
+                      aria-hidden="true"
+                    />
+                    {!inStock
+                      ? "Sin stock"
+                      : product.stock <= 2
+                        ? `Últimas ${product.stock} unidades`
+                        : `${product.stock} disponibles`}
+                  </div>
+                </div>
+
+                {inStock ? (
+                  <div className="mt-5 flex flex-col gap-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="font-body text-[13px] font-semibold text-ink700">Cantidad</span>
+                      <QuantityStepper value={qty} max={maxQty} onChange={setQty} />
+                    </div>
+                    {/* Grilla de dos columnas y no `flex-wrap`: con wrap, los
+                        botones se reacomodaban distinto en cada ancho y la
+                        jerarquía cambiaba sola. */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <Button onClick={handleBuyNow} fullWidth>Comprar ahora</Button>
+                      <Button variant="outline" onClick={handleAddToCart} fullWidth>
+                        <Icon name="cart" size={15} /> {added ? "¡Agregado!" : "Agregar al carrito"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-5">
+                    <Button disabled fullWidth>Sin stock disponible</Button>
+                    <p className="font-body text-[13px] text-textMuted m-0 mt-2.5">
+                      Consultanos por WhatsApp para saber cuándo vuelve a estar disponible.
+                    </p>
+                  </div>
+                )}
+
+                {/* Separador antes de las acciones secundarias: son otra
+                    intención -- preguntar, no comprar -- y sin la línea se
+                    leían como dos botones más del mismo grupo. */}
+                <div className="mt-5 pt-5 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <Button variant="outline" onClick={() => setQuoteOpen(true)} fullWidth>
+                    <Icon name="message" size={15} /> Cotizar
+                  </Button>
+                  <Button as="a" href={waLink(waMsg)} target="_blank" rel="noreferrer" variant="whatsapp" fullWidth>
+                    Consultar por WhatsApp
                   </Button>
                 </div>
-              ) : (
-                <div className="mb-3.5">
-                  <Button disabled>Sin stock disponible</Button>
-                  <p className="font-body text-[12.5px] text-textFaint m-0 mt-2">
-                    Consultanos por WhatsApp para saber cuándo vuelve a estar disponible.
-                  </p>
-                </div>
-              )}
-
-              {/* Acciones secundarias */}
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" onClick={() => setQuoteOpen(true)}>
-                  <Icon name="message" size={15} /> Cotizar
-                </Button>
-                <Button as="a" href={waLink(waMsg)} target="_blank" rel="noreferrer" variant="whatsapp">
-                  Consultar por WhatsApp
-                </Button>
               </div>
             </div>
           </div>
