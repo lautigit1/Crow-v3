@@ -24,7 +24,7 @@ openpyxl==3.1.5
 pdfplumber==0.11.4
 alembic==1.14.0
 redis>=5.0,<6.0
-jinja2==3.1.4
+jinja2==3.1.6
 # Opcional -- solo se activa si SENTRY_DSN está configurada (ver
 # core/error_tracking.py). No-op sin esa variable, pero queda instalada
 # para no tener que reconstruir la imagen cuando se agregue el DSN real.
