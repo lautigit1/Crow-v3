@@ -23,7 +23,7 @@ openpyxl==3.1.5
 # escaneados -- esos van por carga manual, ver design.md.
 pdfplumber==0.11.4
 alembic==1.14.0
-redis>=5.0,<6.0
+redis>=8.1.0,<9.0
 jinja2==3.1.4
 # Opcional -- solo se activa si SENTRY_DSN está configurada (ver
 # core/error_tracking.py). No-op sin esa variable, pero queda instalada
