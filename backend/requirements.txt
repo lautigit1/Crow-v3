@@ -28,4 +28,4 @@ jinja2==3.1.4
 # Opcional -- solo se activa si SENTRY_DSN está configurada (ver
 # core/error_tracking.py). No-op sin esa variable, pero queda instalada
 # para no tener que reconstruir la imagen cuando se agregue el DSN real.
-sentry-sdk[fastapi]>=2.0,<3.0
+sentry-sdk[fastapi]>=2.66.1,<3.0
