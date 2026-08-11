@@ -54,7 +54,7 @@ function StatsSnapshot({ data }: { data: Analytics }) {
         <span className="font-display text-[17px] font-black text-ink900 tracking-[-.01em]">Estado actual</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 max-[900px]:grid-cols-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon="box" label="Productos en stock" value={data.stock_summary.in_stock} tone="success" />
         <StatCard icon="alert" label="Stock bajo" value={data.stock_summary.low_stock} tone="warning" />
         <StatCard icon="alert" label="Sin stock" value={data.stock_summary.out_of_stock} tone="danger" />

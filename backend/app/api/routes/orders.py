@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
@@ -6,6 +6,7 @@ from app.core import audit, events
 from app.core.deps import AdminUser, CurrentUser, DbSession
 from app.core.notify import notificar_a_admins
 from app.core.order_notify import notificar_cambio_de_pedido
+from app.core.post_commit import PostCommit
 from app.core.ratelimit import LoginRateLimiter
 from app.core.stock import mover_stock
 from app.models.notification import NotificationType
@@ -103,7 +104,7 @@ def create_order(
     current_user: CurrentUser,
     db: DbSession,
     request: Request,
-    background: BackgroundTasks,
+    background: PostCommit,
 ) -> Order:
     """Crea un nuevo pedido con los ítems indicados, validando y descontando stock."""
     ip = audit.client_ip(request)
@@ -175,8 +176,9 @@ def create_order(
     audit.record(db, action="order.create", actor=current_user, entity="order", entity_id=order.id, request=request)
     # Solo al canal de admin: el cliente acaba de crearlo, ya lo sabe.
     #
-    # En background para que salga DESPUÉS del commit: el evento dice "andá a
-    # buscar", y si sale antes, el panel pregunta y el pedido todavía no está.
+    # Por la cola post-commit para que salga DESPUÉS del commit: el evento dice
+    # "andá a buscar", y si sale antes, el panel pregunta y el pedido todavía no
+    # está. Ver core/post_commit.py: quién lo vacía y por qué no es background.
     background.add_task(
         events.publicar, [events.CANAL_ADMIN], "order.created", order_id=order.id
     )
@@ -199,7 +201,7 @@ def cancel_my_order(
     current_user: CurrentUser,
     db: DbSession,
     request: Request,
-    background: BackgroundTasks,
+    background: PostCommit,
 ) -> Order:
     """Cancela un pedido propio si está en estado Pendiente y devuelve el stock."""
     order = _get_order_or_404(order_id, db)
@@ -319,7 +321,7 @@ def admin_update_order(
     admin: AdminUser,
     db: DbSession,
     request: Request,
-    background: BackgroundTasks,
+    background: PostCommit,
 ) -> AdminOrderRead:
     """Actualiza estado de entrega, estado de cobro y notas admin de un pedido.
 

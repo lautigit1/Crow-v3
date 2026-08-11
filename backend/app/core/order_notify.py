@@ -20,7 +20,7 @@ from app.models.notification import NotificationType
 from app.models.order import Order, OrderStatus, PaymentStatus
 
 if TYPE_CHECKING:
-    from fastapi import BackgroundTasks
+    from app.core.post_commit import DespuesDelCommit
 
 # ---------------------------------------------------------------------------
 # El interruptor del email
@@ -73,7 +73,7 @@ def notificar_cambio_de_pedido(
     *,
     entrega_anterior: OrderStatus,
     cobro_anterior: PaymentStatus,
-    background: BackgroundTasks | None = None,
+    background: DespuesDelCommit | None = None,
 ) -> None:
     """Avisa al dueño del pedido de los ejes que efectivamente cambiaron.
 

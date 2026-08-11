@@ -151,7 +151,7 @@ export const ProductCard = memo(function ProductCard({
       <div className="relative rounded-[10px] bg-[rgba(255,255,255,.94)] backdrop-blur-[6px] border border-white shadow-[0_4px_16px_rgba(7,17,31,.10)] py-3 px-3.5">
         <div className="flex items-baseline justify-between gap-2 font-mono text-[10.5px] tracking-[.09em] uppercase text-textFaint mb-1.5">
           <span className="truncate">{procedencia}</span>
-          <span className="shrink-0 normal-case tracking-normal text-[#B6C3D3]">{product.sku}</span>
+          <span className="shrink-0 normal-case tracking-normal text-textFaint">{product.sku}</span>
         </div>
 
         {/* Dos líneas como máximo: un nombre largo se comería la foto, y una

@@ -94,11 +94,11 @@ export function ProductDetailPage() {
             <Link to="/" className="text-inherit no-underline hover:text-ink900 transition-colors duration-150">
               Inicio
             </Link>
-            <span className="text-[#CBD5E1]">/</span>
+            <span className="text-[#8E959D]">/</span>
             <Link to="/catalogo" className="text-inherit no-underline hover:text-ink900 transition-colors duration-150">
               Catálogo
             </Link>
-            <span className="text-[#CBD5E1]">/</span>
+            <span className="text-[#8E959D]">/</span>
             <span className="font-mono text-[12px] text-ink800">{product.sku}</span>
           </div>
 
@@ -174,7 +174,7 @@ export function ProductDetailPage() {
                 <span className="truncate">
                   {[product.brand?.name, product.category?.name].filter(Boolean).join(" · ")}
                 </span>
-                <span className="shrink-0 normal-case tracking-normal text-[#9FB0C4]">{product.sku}</span>
+                <span className="shrink-0 normal-case tracking-normal text-textFaint">{product.sku}</span>
               </div>
 
               <h1 className="font-display font-black text-[26px] md:text-[32px] leading-[1.14] tracking-[-.025em] text-ink900 m-0 mb-4">

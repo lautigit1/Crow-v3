@@ -82,6 +82,22 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      // Los specs de mobile corren en su propio proyecto: acá se excluyen para
+      // no ejecutarlos dos veces con el viewport equivocado.
+      testIgnore: /\.mobile\.spec\.ts$/,
+    },
+    {
+      // El panel en pantalla angosta. Los 9 tests de vitest de `DataTable`
+      // corren en jsdom, que **no hace layout**: verifican que las tarjetas
+      // existan y que los clicks funcionen, pero no pueden ver si algo se
+      // desborda, se superpone o queda cortado. Eso solo lo dice un navegador
+      // de verdad con un viewport de verdad.
+      name: "mobile",
+      use: { ...devices["Pixel 7"] },
+      testMatch: /\.mobile\.spec\.ts$/,
+    },
   ],
 });

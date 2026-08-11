@@ -1,0 +1,118 @@
+{#
+  Bienvenida al registrarse.
+
+  No existía: el endpoint de registro creaba el usuario y no mandaba nada. Se
+  agrega porque hace tres trabajos concretos, no porque "un e-commerce manda
+  bienvenida":
+
+   1. Deja el WhatsApp guardado en la casilla. El contacto real con este negocio
+      pasa por ahí, y es lo que la gente después busca en su correo.
+   2. Explica cómo funciona: se cotiza, se trae a pedido, se coordina el pago.
+      Baja las preguntas repetidas antes de que ocurran.
+   3. Deja rastro de la dirección. Si alguien se registró con un error de
+      tipeo, este correo rebota -- y esa es la primera señal de que no va a
+      recibir los avisos de sus pedidos.
+
+  Convenciones de HTML de correo: ver `_base`.
+#}
+{% extends "_base.html.jinja" %}
+
+{% block titulo_documento %}Bienvenido a Crow Repuestos{% endblock %}
+
+{% block preheader %}Tu cuenta está lista. Te contamos cómo conseguimos los repuestos.{% endblock %}
+
+{% block titulo %}Ya sos parte<br />de Crow{% endblock %}
+
+{% block entrada %}Hola {{ name }}, tu cuenta quedó lista. Desde acá vas a poder pedir cotizaciones, seguir tus pedidos y guardar los repuestos que te interesan.{% endblock %}
+
+{% block cuerpo %}
+{# Los tres pasos, numerados. Un párrafo explicando lo mismo se saltea; tres
+   filas cortas con el número grande a la izquierda se leen en diagonal, que es
+   como se lee un correo. #}
+<tr>
+  <td class="caja" style="padding:32px 44px 0;">
+    <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10.5px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; color:#8496A9; padding-bottom:14px;">
+      Cómo trabajamos
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td width="42" valign="top" style="font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:800; color:#C3D0E0; line-height:1.1;">01</td>
+        <td valign="top" style="padding-bottom:16px;">
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; color:#07111F; line-height:1.4;">Nos decís qué necesitás</div>
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#5A6B7F; line-height:1.6; padding-top:2px;">El repuesto y para qué vehículo. Con eso alcanza.</div>
+        </td>
+      </tr>
+      <tr>
+        <td width="42" valign="top" style="font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:800; color:#C3D0E0; line-height:1.1;">02</td>
+        <td valign="top" style="padding-bottom:16px;">
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; color:#07111F; line-height:1.4;">Te cotizamos las opciones</div>
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#5A6B7F; line-height:1.6; padding-top:2px;">Original, alternativo o usado, con precio y plazo de cada uno.</div>
+        </td>
+      </tr>
+      <tr>
+        <td width="42" valign="top" style="font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:800; color:#C3D0E0; line-height:1.1;">03</td>
+        <td valign="top">
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; color:#07111F; line-height:1.4;">Elegís y lo traemos</div>
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#5A6B7F; line-height:1.6; padding-top:2px;">El pago se coordina por WhatsApp. Seguís el pedido desde tu cuenta.</div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+{# El WhatsApp con jerarquía propia. Es el dato por el que este correo se va a
+   volver a abrir dentro de tres meses. #}
+<tr>
+  <td class="caja" style="padding:30px 44px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#07111F; border-radius:12px;">
+      <tr>
+        <td style="padding:20px 22px;">
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10.5px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; color:#7C97B3; padding-bottom:6px;">
+            Escribinos cuando quieras
+          </div>
+          <a href="{{ whatsapp_url }}" style="font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:19px; font-weight:700; letter-spacing:-0.4px; color:#FFFFFF; text-decoration:none;">
+            WhatsApp &rarr;
+          </a>
+          <div style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13.5px; color:#7C97B3; padding-top:6px;">
+            Un asesor real, no un bot.
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+{% endblock %}
+
+{% block cta %}
+<tr>
+  <td class="caja" style="padding:28px 44px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td align="center" bgcolor="#0057D9" style="border-radius:10px;">
+          <a href="{{ catalog_url }}"
+             style="display:inline-block; padding:16px 36px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:700; color:#FFFFFF; text-decoration:none; border-radius:10px;">
+            Ver el catálogo
+          </a>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+{% endblock %}
+
+{% block cierre %}
+<tr>
+  <td class="caja" style="padding:28px 44px 0;">
+    <div style="height:1px; line-height:1px; font-size:0; background-color:#E8EDF4;">&nbsp;</div>
+  </td>
+</tr>
+<tr>
+  <td class="caja" style="padding:20px 44px 0; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#8496A9;">
+    <strong style="color:#3D4C5F;">¿No creaste esta cuenta?</strong>
+    Avisanos respondiendo este correo y la damos de baja.
+  </td>
+</tr>
+{% endblock %}
+
+{% block motivo %}Recibís este correo porque creaste una cuenta en Crow Repuestos.{% endblock %}

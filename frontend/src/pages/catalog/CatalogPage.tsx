@@ -328,7 +328,7 @@ export function CatalogPage() {
             <Link to="/" className="text-inherit no-underline hover:text-white transition-colors duration-150">
               Inicio
             </Link>
-            <span className="mx-2 text-[#2A3F55]">/</span>
+            <span className="mx-2 text-[#436488]">/</span>
             <span className="text-white font-medium">Catálogo</span>
           </div>
 
@@ -337,7 +337,7 @@ export function CatalogPage() {
               <h1 className="font-display text-4xl font-black tracking-[-.025em] text-white mb-2">
                 Catálogo de repuestos
               </h1>
-              <p className="font-body text-[15px] text-[#5E819D] m-0">
+              <p className="font-body text-[15px] text-textOnDarkFaint m-0">
                 Stock actualizado · Cotización directa por WhatsApp
               </p>
             </div>

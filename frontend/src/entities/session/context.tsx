@@ -9,7 +9,7 @@ type AuthContextValue = {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (payload: { full_name: string; email: string; password: string; phone?: string }) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setUser: (user: User) => void;
 };
 
@@ -57,14 +57,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const logout = useCallback(() => {
-    // Clear React state immediately for instant UI feedback
+  const logout = useCallback(async () => {
+    // El estado local se limpia primero: la interfaz responde al instante y no
+    // queda mostrando "Mi cuenta" mientras viaja la petición.
     setUser(null);
-    // Ask the server to clear the HttpOnly cookies (fire and forget --
-    // React state is already cleared above regardless of the outcome).
-    void logoutRequest().catch((err) => {
+
+    // Pero SÍ se espera al servidor antes de resolver.
+    //
+    // Antes era "fire and forget" y eso dejaba una ventana real: las cookies
+    // son HttpOnly y solo el servidor puede borrarlas, así que entre el clic y
+    // la respuesta la sesión seguía siendo válida. Cerrabas sesión, apretabas
+    // F5 enseguida y volvías a estar adentro.
+    //
+    // Los E2E lo destaparon dos veces: después de `logout()` iban a /login y la
+    // app los redirigía a /cuenta porque la sesión no había terminado de
+    // cerrarse. El error que se veía era "no encuentro el campo Email", que no
+    // insinúa en ningún momento el problema real.
+    //
+    // Se sigue tragando el error: si el servidor no responde, la sesión local
+    // ya está cerrada y no hay nada mejor que hacer desde acá.
+    try {
+      await logoutRequest();
+    } catch (err) {
       console.error("[AuthProvider] logout en el servidor falló (sesión local ya se cerró igual):", err);
-    });
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(

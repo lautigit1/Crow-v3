@@ -254,8 +254,8 @@ export function AdminProductsPage() {
   );
 
   const columns: Column<Product>[] = [
-    { header: "Producto", sortKey: "name", render: productNameCell },
-    { header: "Categoría", render: (p) => p.category?.name ?? "—" },
+    { rol: "titulo", header: "Producto", sortKey: "name", render: productNameCell },
+    { rol: "subtitulo", header: "Categoría", render: (p) => p.category?.name ?? "—" },
     { header: "Marca", render: (p) => p.brand?.name ?? "—" },
     {
       header: "Proveedor",
@@ -273,7 +273,7 @@ export function AdminProductsPage() {
       sortKey: "stock",
       render: (p) => <Badge tone={p.stock <= 0 ? "danger" : p.stock <= 5 ? "warning" : "success"}>{p.stock}</Badge>,
     },
-    { header: "Dest.", align: "center", render: (p) => (p.is_featured ? <Icon name="star" size={15} className="inline text-primary" /> : "—") },
+    { rol: "oculta", header: "Dest.", align: "center", render: (p) => (p.is_featured ? <Icon name="star" size={15} className="inline text-primary" /> : "—") },
     {
       // Se muestra como "En catálogo / Borrador" y no como "Activo": en este
       // panel "activo" ya significa otra cosa en proveedores, y en un

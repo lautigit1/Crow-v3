@@ -116,11 +116,15 @@ export function ProductImage({
       className="relative overflow-hidden flex flex-col items-center justify-center gap-2 bg-[#F4F7FB]"
       style={{ aspectRatio: String(ratio), borderRadius: radius }}
     >
-      <span className="text-[#C3D0E0]">
+      {/* Los dos colores salieron de medir, no de elegir a ojo. Sobre el tile
+          (#F4F7FB) el #C3D0E0 original daba 1.46:1 -- por debajo incluso del
+          mínimo de 3:1 que WCAG pide para un gráfico. Ahora el ícono llega a
+          3.05 y la etiqueta, que es texto real, a 4.53. */}
+      <span className="text-[#868F9A]">
         <Icon name={icon} size={compact ? 20 : 40} strokeWidth={compact ? 1.6 : 1.4} />
       </span>
       {!compact && (
-        <span className="font-mono text-[10px] tracking-[.16em] text-[#C3D0E0]">SIN IMAGEN</span>
+        <span className="font-mono text-[10px] tracking-[.16em] text-[#6B727B]">SIN IMAGEN</span>
       )}
     </div>
   );

@@ -260,3 +260,25 @@ class TestRegisterRateLimitDefault:
         from app.core.config import Settings
 
         assert Settings().REGISTER_RATE_LIMIT_PER_IP == 10
+
+
+# ---------------------------------------------------------------------------
+# CSP en /docs -- Swagger carga sus assets desde un CDN
+# ---------------------------------------------------------------------------
+
+class TestCSPDeDocs:
+    def test_docs_permite_el_cdn_de_swagger(self, client):
+        """Con la CSP estricta de la API (`default-src 'none'`), /docs responde
+        200 pero se ve en blanco: el navegador bloquea el JS de jsdelivr."""
+        r = client.get("/docs")
+
+        assert r.status_code == 200
+        csp = r.headers["content-security-policy"]
+        assert "cdn.jsdelivr.net" in csp
+
+    def test_los_endpoints_de_la_api_conservan_la_csp_estricta(self, client):
+        """La excepción es solo para las rutas de documentación. Una API JSON
+        no tiene por qué permitir scripts de ningún lado."""
+        r = client.get("/api/health")
+
+        assert r.headers["content-security-policy"] == "default-src 'none'; frame-ancestors 'none'"

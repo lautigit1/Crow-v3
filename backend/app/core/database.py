@@ -1,9 +1,11 @@
 from collections.abc import Generator
 
+from fastapi import Request
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
+from app.core.post_commit import ejecutar_post_commit
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -21,13 +23,19 @@ class Base(DeclarativeBase):
     """Declarative base shared by all ORM models."""
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db(request: Request) -> Generator[Session, None, None]:
     """
     Unit-of-Work dependency: one session/transaction per request.
 
     Routes and CRUD never call ``commit()`` themselves — they only ``add`` /
     ``flush``. This boundary commits once if the request succeeds, or rolls the
     whole thing back if anything raises, guaranteeing atomicity per request.
+
+    Y es también el único lugar que sabe cuándo la transacción confirmó, así que
+    es el que dispara los efectos que dependen de eso -- correos y eventos de la
+    campana, ver ``core/post_commit.py``. Antes eso lo hacía ``BackgroundTasks``,
+    que corría después del commit hasta FastAPI 0.115 y pasó a correr antes en
+    0.141; atarlo acá lo vuelve independiente de esa versión.
     """
     db = SessionLocal()
     try:
@@ -38,6 +46,11 @@ def get_db() -> Generator[Session, None, None]:
         raise
     finally:
         db.close()
+
+    # Solo se llega a esta línea si el commit salió bien: si algo falló, la
+    # excepción salió por el ``raise`` de arriba (el ``finally`` no la traga) y
+    # las tareas encoladas se descartan junto con la request.
+    ejecutar_post_commit(request)
 
 
 def check_db_connection() -> bool:

@@ -70,6 +70,7 @@ export function AdminCategoriesPage() {
 
   const columns: Column<Category>[] = [
     {
+      rol: "titulo",
       header: "Categoría",
       render: (c) => (
         <div className="flex items-center gap-2.5">
@@ -81,12 +82,14 @@ export function AdminCategoriesPage() {
       ),
     },
     {
+      rol: "subtitulo",
       header: "Descripción",
       render: (c) => c.description
         ? <span className="text-[13px] text-textMuted">{c.description.length > 60 ? c.description.slice(0, 60) + "…" : c.description}</span>
         : <span className="text-textFaint">—</span>,
     },
     {
+      rol: "accion",
       header: "Acciones",
       align: "right",
       render: (c) => (

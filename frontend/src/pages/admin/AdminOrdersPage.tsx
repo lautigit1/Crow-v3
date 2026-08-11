@@ -20,8 +20,10 @@ import {
   waLinkCliente,
   ORDER_STATUSES,
   ORDER_STATUS_COLOR,
+  ORDER_STATUS_TEXT,
   PAYMENT_STATUSES,
   PAYMENT_STATUS_COLOR,
+  PAYMENT_STATUS_TEXT,
   type AdminOrder,
   type OrderStatus,
   type PaymentStatus,
@@ -41,11 +43,14 @@ const PAGE_SIZE = 20;
 
 // ─── Chip de estado ──────────────────────────────────────────────────────────
 
-function EstadoChip({ texto, color }: { texto: string; color: string }) {
+// `color` es el tono vivo: pinta el fondo (a baja opacidad) y el punto.
+// `colorTexto` es ese mismo tono oscurecido para que la etiqueta llegue a
+// 4.5:1 sobre el fondo -- con el vivo quedaba entre 2:1 y 3.7:1.
+function EstadoChip({ texto, color, colorTexto }: { texto: string; color: string; colorTexto: string }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full font-body font-semibold text-[12px] whitespace-nowrap"
-      style={{ backgroundColor: `${color}1a`, color }}
+      style={{ backgroundColor: `${color}1a`, color: colorTexto }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
       {texto}
@@ -354,20 +359,39 @@ export function AdminOrdersPage() {
       cambios.payment_status,
     );
     // El PATCH devuelve la forma de admin completa, así que se parchea la fila
-    // en el cache sin volver a pedir la página.
+    // en el cache sin volver a pedir la página: la tabla se actualiza en el
+    // mismo instante, sin parpadeo.
     queryClient.setQueryData(orderKeys.adminPage(filtros), (prev: typeof data) =>
       prev ? { ...prev, items: prev.items.map((o) => (o.id === pedido.id ? actualizado : o)) } : prev,
     );
     setAbierto(actualizado);
+
+    // Y además se invalida, que NO es redundante.
+    //
+    // `orderKeys.adminPage(filtros)` es una clave armada con la página, los dos
+    // filtros de estado y el texto del buscador (que además viene
+    // debounceado). Si cualquiera de esos cambió entre que se abrió la ficha y
+    // se guardó, el parche de arriba cae en una clave que nadie está leyendo:
+    // el drawer muestra el estado nuevo, la fila se queda con el viejo y no hay
+    // ningún camino de recuperación salvo recargar la página.
+    //
+    // Se vio en un E2E: el drawer con "Entregado" y el botón de guardar
+    // deshabilitado -- señal de que el guardado sí ocurrió -- y la fila detrás
+    // todavía en "Pendiente".
+    void refrescar();
   };
 
   const columns: Column<AdminOrder>[] = [
     {
+      // El número del pedido es el título de la tarjeta: es como lo nombra
+      // todo el mundo por WhatsApp ("el 00042").
+      rol: "titulo",
       header: "#",
       width: 60,
       render: (o) => <span className="font-mono text-xs text-textFaint">{o.id}</span>,
     },
     {
+      rol: "subtitulo",
       header: "Cliente",
       render: (o) => (
         <div className="min-w-0">
@@ -389,15 +413,26 @@ export function AdminOrdersPage() {
     { header: "Total", align: "right", render: (o) => <Total pedido={o} /> },
     {
       header: "Entrega",
-      render: (o) => <EstadoChip texto={o.status} color={ORDER_STATUS_COLOR[o.status]} />,
+      render: (o) => (
+        <EstadoChip
+          texto={o.status}
+          color={ORDER_STATUS_COLOR[o.status]}
+          colorTexto={ORDER_STATUS_TEXT[o.status]}
+        />
+      ),
     },
     {
       header: "Cobro",
       render: (o) => (
-        <EstadoChip texto={o.payment_status} color={PAYMENT_STATUS_COLOR[o.payment_status]} />
+        <EstadoChip
+          texto={o.payment_status}
+          color={PAYMENT_STATUS_COLOR[o.payment_status]}
+          colorTexto={PAYMENT_STATUS_TEXT[o.payment_status]}
+        />
       ),
     },
     {
+      rol: "accion",
       header: "",
       align: "right",
       render: (o) => (

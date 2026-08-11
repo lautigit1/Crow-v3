@@ -277,7 +277,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPI row ── */}
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         <StatCard icon="products" label="Productos" value={stats.total_products} tone="primary" />
         <StatCard icon="alert" label="Sin stock" value={stats.out_of_stock} tone={stats.out_of_stock > 0 ? "danger" : "neutral"} />
         <StatCard icon="quotes" label="Cotiz. pendientes" value={stats.pending_quotes} tone={stats.pending_quotes > 0 ? "warning" : "neutral"} />
@@ -285,7 +285,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPI row 2 ── */}
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         <StatCard icon="categories" label="Categorías" value={stats.total_categories} />
         <StatCard icon="brands" label="Marcas" value={stats.total_brands} />
         <StatCard icon="truck" label="Proveedores" value={stats.total_suppliers} />
@@ -293,7 +293,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Charts ── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Panel title="Productos por categoría" icon="categories" iconColor="#7C3AED">
           <BarChart data={analytics.products_by_category} />
         </Panel>
@@ -302,7 +302,7 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Panel title="Productos por proveedor" icon="truck" iconColor="#D97706">
           <BarChart data={analytics.products_by_supplier} />
         </Panel>
@@ -364,7 +364,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Bottom row: stock + activity ── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Stock crítico */}
         <div className={CARD_CLASS}>

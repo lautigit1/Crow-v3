@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAs, loginAsAdmin, logoutFromAdmin, registerNewCustomer, logout, unique } from "./helpers";
+import { loginAs, loginAsAdmin, registerNewCustomer, logout, unique } from "./helpers";
 
 /**
  * El circuito de cotizaciones, de punta a punta.
@@ -92,9 +92,19 @@ test.describe("Cotizaciones — de la consulta al pedido", () => {
     // cerrar sesión del sidebar existe y es "visible" para Playwright pero
     // ningún clic le llega.
     await page.getByLabel("Cerrar", { exact: true }).click();
-    await logoutFromAdmin(page);
 
     // ── El cliente ve el precio, el plazo y su pedido ────────────────────
+    // Se cierra la sesión borrando las cookies y no con `logoutFromAdmin`.
+    //
+    // Con el botón, este spec falló: el snapshot mostraba "Mi cuenta" y
+    // "Administrador", o sea que la sesión seguía viva -- y `/login` redirige
+    // a `/cuenta` cuando hay sesión, así que el campo Email nunca aparecía y el
+    // error era "no encuentro el input", que no insinúa el problema real.
+    //
+    // Este spec prueba el circuito de cotizaciones, no el botón de cerrar
+    // sesión (que tiene su propia cobertura en `auth.spec.ts`). Cambiar de
+    // usuario de forma determinística es lo correcto acá.
+    await page.context().clearCookies();
     await loginAs(page, customer.email, customer.password);
     // Esperar el redirect ANTES de navegar. Sin esto, el `goto` de abajo sale
     // mientras el POST de login sigue en vuelo, lo aborta, y la app rebota a

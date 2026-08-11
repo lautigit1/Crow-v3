@@ -153,7 +153,7 @@ export function TrendsSection() {
       </div>
 
       {/* Totales del período */}
-      <div className="grid grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <TotalCard label="Ingresos" value={formatPrice(totals.revenue)} dot={REVENUE} />
         <TotalCard label="Pedidos" value={formatNumber(totals.orders)} dot={ORDERS} />
         <TotalCard label="Cotizaciones" value={formatNumber(totals.quotes)} dot={QUOTES} />

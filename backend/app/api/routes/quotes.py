@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
 from app.core import audit, events
@@ -16,6 +16,7 @@ from app.core.email import (
     send_email,
 )
 from app.core.notify import notificar
+from app.core.post_commit import DespuesDelCommit, PostCommit
 from app.core.ratelimit import LoginRateLimiter
 from app.core.security import create_reset_token, hash_password
 from app.models.notification import NotificationType
@@ -58,7 +59,7 @@ _quote_ip_limiter = LoginRateLimiter(
 # ---------------------------------------------------------------------------
 
 @router.post("", response_model=QuoteRead, status_code=status.HTTP_201_CREATED)
-def create_quote(data: QuoteCreate, db: DbSession, request: Request, background_tasks: BackgroundTasks) -> Quote:
+def create_quote(data: QuoteCreate, db: DbSession, request: Request, background_tasks: PostCommit) -> Quote:
     """Public endpoint — anyone can request a quote. Rate-limited by IP."""
     ip = audit.client_ip(request)
     locked_for = _quote_limiter.check(ip, data.customer_email or "anonymous") or _quote_ip_limiter.check(ip, "*")
@@ -158,7 +159,7 @@ def update_quote_status(
     db: DbSession,
     admin: AdminUser,
     request: Request,
-    background: BackgroundTasks,
+    background: PostCommit,
 ) -> Quote:
     quote = db.get(Quote, quote_id)
     if not quote:
@@ -208,7 +209,7 @@ def add_quote_option(
     db: DbSession,
     admin: AdminUser,
     request: Request,
-    background: BackgroundTasks,
+    background: PostCommit,
 ) -> Quote:
     """Agrega una alternativa cotizada y, si es la primera, responde la cotización.
 
@@ -299,7 +300,7 @@ def convert_quote_to_order(
     db: DbSession,
     admin: AdminUser,
     request: Request,
-    background: BackgroundTasks,
+    background: PostCommit,
 ) -> Order:
     """Crea el pedido que sale de una opción cotizada.
 
@@ -463,7 +464,7 @@ def _avisar_pedido_convertido(
     opcion: QuoteOption,
     user: User,
     cuenta_nueva: bool,
-    background: BackgroundTasks,
+    background: DespuesDelCommit,
 ) -> None:
     """Un solo correo, y cuál depende de si la persona ya podía entrar.
 
@@ -512,7 +513,7 @@ def _avisar_pedido_convertido(
     )
 
 
-def _avisar_cotizacion_respondida(db: DbSession, quote: Quote, background: BackgroundTasks) -> None:
+def _avisar_cotizacion_respondida(db: DbSession, quote: Quote, background: DespuesDelCommit) -> None:
     """Avisa que la cotización fue respondida, con lo que haya disponible.
 
     Una cotización puede venir del formulario público, así que `user_id` y

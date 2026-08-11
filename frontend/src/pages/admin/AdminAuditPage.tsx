@@ -40,6 +40,7 @@ export function AdminAuditPage() {
 
   const columns: Column<AuditLog>[] = [
     {
+      rol: "titulo",
       header: "Acción",
       render: (l) => {
         const m = actionMeta(l.action);
@@ -54,6 +55,7 @@ export function AdminAuditPage() {
       },
     },
     {
+      rol: "subtitulo",
       header: "Actor",
       render: (l) => (
         <div className="font-body text-[13.5px] text-ink800">{l.actor_email ?? "—"}</div>
@@ -63,7 +65,8 @@ export function AdminAuditPage() {
       header: "Entidad",
       render: (l) => (l.entity ? <span className="font-mono text-xs text-textFaint">{l.entity}{l.entity_id ? ` #${l.entity_id}` : ""}</span> : "—"),
     },
-    { header: "Detalle", render: (l) => <span className="text-[13px] text-textMuted">{l.detail ?? "—"}</span> },
+    // Texto libre: puede traer un mensaje largo sin espacios (un SKU, una URL).
+    { header: "Detalle", render: (l) => <span className="text-[13px] text-textMuted break-words">{l.detail ?? "—"}</span> },
     { header: "IP", render: (l) => <span className="font-mono text-xs text-textFaint">{l.ip_address ?? "—"}</span> },
     {
       header: "Fecha",

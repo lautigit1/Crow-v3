@@ -12,12 +12,19 @@
     y un layout con divs se desarma justo en el cliente de escritorio que más
     usa la gente que compra por catálogo.
   * ESTILOS EN LÍNEA. Gmail descarta buena parte de lo que va en <style>.
-  * SIN TIPOGRAFÍAS WEB. Unbounded y DM Sans no cargan en un cliente de correo,
-    así que el peso visual se construye con tamaño, espaciado y color.
   * COLORES EXPLÍCITOS en cada celda. Varios clientes en modo oscuro invierten
     lo que no está declarado y dejan texto gris sobre gris.
   * 600px de ancho, el máximo que se ve completo en el panel de lectura de
     Outlook sin scroll horizontal.
+
+  TIPOGRAFÍA: MEJORA PROGRESIVA, NO PROMESA.
+  El <style> de abajo carga Unbounded y DM Sans desde Google Fonts. Apple Mail e
+  iOS Mail las aplican; Gmail y Outlook descartan el bloque entero y caen a la
+  pila del sistema. Por eso CADA elemento declara su `font-family` completa con
+  la pila de respaldo: si la web font no llega, el correo no se rompe, se ve
+  distinto. Todo el peso visual -- tamaños, espaciado, contraste, el bloque
+  oscuro de marca -- funciona igual en los dos casos, que es la única forma
+  honesta de usar tipografía en email.
 
   Bloques que llena cada plantilla:
     preheader  — la línea que muestra la bandeja al lado del asunto
@@ -34,8 +41,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light" />
   <title>{% block titulo_documento %}Crow Repuestos{% endblock %}</title>
+  <style type="text/css">
+    @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=DM+Sans:wght@400;500;700&display=swap');
+    /* En pantallas chicas el padding de 48px deja el texto en una columna
+       angosta e incómoda. Los clientes móviles que importan (Apple Mail, Gmail
+       app en iOS) respetan media queries. */
+    @media only screen and (max-width: 620px) {
+      .marco { padding: 20px 12px !important; }
+      .caja { padding-left: 24px !important; padding-right: 24px !important; }
+      .titulo { font-size: 26px !important; }
+      .cifra { font-size: 30px !important; }
+    }
+  </style>
 </head>
-<body style="margin:0; padding:0; background-color:#EEF2F7; -webkit-font-smoothing:antialiased;">
+<body style="margin:0; padding:0; background-color:#EDF1F7;">
 
   {# Sin esto, la bandeja agarra el primer texto que encuentre y se desperdicia
      el único renglón que decide si alguien abre el mail. #}
@@ -43,37 +62,46 @@
     {% block preheader %}{% endblock %}
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EEF2F7;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EDF1F7;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
+      <td align="center" class="marco" style="padding:36px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
 
+          {# Encabezado de marca sobre fondo oscuro. Antes era una línea de
+             texto gris sobre el fondo gris de la página: se leía como el pie de
+             un formulario. Un bloque oscuro con el logotipo grande da identidad
+             en el primer centímetro, que es todo lo que la mayoría mira. #}
           <tr>
-            <td align="center" style="padding:0 0 20px;">
-              <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:3px; color:#5A6B7F; text-transform:uppercase;">
-                Crow Repuestos
-              </span>
+            <td style="background-color:#07111F; border-radius:16px 16px 0 0; padding:26px 44px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" style="font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:19px; font-weight:800; letter-spacing:-0.4px; color:#FFFFFF;">
+                    CROW<span style="color:#4C8DFF;">.</span>
+                  </td>
+                  <td align="right" style="font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; font-weight:500; letter-spacing:2.4px; text-transform:uppercase; color:#7C97B3;">
+                    Repuestos
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
+          {# Filo de color como celda con alto fijo y no como border-top:
+             Outlook redondea mal los bordes de una tabla. #}
           <tr>
-            <td style="background-color:#FFFFFF; border-radius:14px; border:1px solid #E2E8F0;">
+            <td style="background-color:#0057D9; height:3px; line-height:3px; font-size:0;">&nbsp;</td>
+          </tr>
 
-              {# Filo de color como celda con alto fijo y no como border-top:
-                 Outlook redondea mal los bordes de una tabla. #}
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="background-color:#0057D9; height:4px; line-height:4px; font-size:0; border-radius:14px 14px 0 0;">&nbsp;</td>
-                </tr>
-              </table>
+          <tr>
+            <td style="background-color:#FFFFFF; border-radius:0 0 16px 16px; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0;">
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding:40px 44px 8px;">
-                    <h1 style="margin:0 0 6px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:26px; line-height:1.2; font-weight:800; letter-spacing:-0.5px; color:#0B1524;">
+                  <td class="caja" style="padding:44px 44px 0;">
+                    <h1 class="titulo" style="margin:0 0 12px; font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:31px; line-height:1.16; font-weight:800; letter-spacing:-1.1px; color:#07111F;">
                       {% block titulo %}{% endblock %}
                     </h1>
-                    <p style="margin:0; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#5A6B7F;">
+                    <p style="margin:0; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15.5px; line-height:1.68; color:#5A6B7F;">
                       {% block entrada %}{% endblock %}
                     </p>
                   </td>
@@ -84,15 +112,18 @@
                 {% block cta %}{% endblock %}
 
                 {% block cierre %}{% endblock %}
+
+                <tr><td style="height:44px; line-height:44px; font-size:0;">&nbsp;</td></tr>
               </table>
 
             </td>
           </tr>
 
           <tr>
-            <td align="center" style="padding:24px 20px 8px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.6; color:#8496A9;">
-              Crow Repuestos &middot; Mendoza, Argentina<br />
-              {% block motivo %}Recibís este correo por tu actividad en Crow Repuestos.{% endblock %}
+            <td align="center" style="padding:26px 20px 8px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7; color:#8496A9;">
+              <span style="font-family:'Unbounded','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; font-weight:700; letter-spacing:1.6px; color:#5A6B7F;">CROW REPUESTOS</span><br />
+              Mendoza, Argentina<br />
+              <span style="color:#9FB0C4;">{% block motivo %}Recibís este correo por tu actividad en Crow Repuestos.{% endblock %}</span>
             </td>
           </tr>
 

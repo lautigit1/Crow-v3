@@ -1,9 +1,10 @@
+import logging
 import time
 from datetime import datetime, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jwt import PyJWTError
 from pydantic import BaseModel, EmailStr
@@ -13,8 +14,9 @@ from app.core import audit
 from app.core.config import settings
 from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.core.deps import CurrentUser, DbSession, get_user_from_refresh_token
-from app.core.email import build_reset_email, send_email
+from app.core.email import build_reset_email, build_welcome_email, send_email
 from app.core.passwords import validate_password_strength
+from app.core.post_commit import PostCommit
 from app.core.ratelimit import LoginRateLimiter, login_limiter
 from app.core.security import (
     TOKEN_AUDIENCE,
@@ -27,9 +29,13 @@ from app.core.security import (
     verify_password,
 )
 from app.core.token_blocklist import token_blocklist
+from app.models.setting import Setting
 from app.models.user import User, UserRole
 from app.schemas.auth import AuthResponse, RegisterRequest
+from app.schemas.setting import DEFAULT_SETTINGS
 from app.schemas.user import UserRead
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -63,7 +69,13 @@ def _auth_response(user: User, response: Response) -> AuthResponse:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterRequest, db: DbSession, request: Request, response: Response) -> AuthResponse:
+def register(
+    data: RegisterRequest,
+    db: DbSession,
+    request: Request,
+    response: Response,
+    background_tasks: PostCommit,
+) -> AuthResponse:
     ip = audit.client_ip(request)
     locked_for = _register_limiter.check(ip, data.email) or _register_ip_limiter.check(ip, "*")
     if locked_for:
@@ -96,7 +108,47 @@ def register(data: RegisterRequest, db: DbSession, request: Request, response: R
     db.flush()
     db.refresh(user)
     audit.record(db, action="user.register", actor=user, entity="user", entity_id=user.id, request=request)
+
+    # Por la cola post-commit, como el resto de los correos: sin esto la persona
+    # espera al SMTP para poder entrar, y si el servidor de correo está lento o
+    # caído el registro falla por algo que no tiene nada que ver con registrarse.
+    # Y sale recién con la fila ya confirmada -- que es de dónde salió esta cola:
+    # con `BackgroundTasks` el correo se mandaba antes del commit.
+    #
+    # El número sale de `settings` y no de una constante: es editable desde el
+    # panel, y un correo de bienvenida con un WhatsApp viejo es peor que no
+    # mandarlo.
+    background_tasks.add_task(
+        _enviar_bienvenida, to=user.email, name=user.full_name, whatsapp=_whatsapp_configurado(db)
+    )
     return _auth_response(user, response)
+
+
+def _whatsapp_configurado(db: DbSession) -> str:
+    numero = db.scalar(select(Setting.value).where(Setting.key == "whatsapp_number"))
+    return numero or DEFAULT_SETTINGS["whatsapp_number"]
+
+
+def _enviar_bienvenida(*, to: str, name: str, whatsapp: str) -> None:
+    """Envuelto en try/except a propósito: el mismo criterio que `notificar()`.
+
+    Que no salga la bienvenida es un inconveniente. Que un registro explote
+    porque el SMTP rechazó la conexión es un problema -- y acá ya corre después
+    de la respuesta, así que la excepción no llegaría a nadie: quedaría como un
+    error sin dueño en los logs.
+    """
+    try:
+        # Import adentro y no arriba, igual que en `core/notify.py`: un
+        # `from ... import send_email` a nivel de módulo copia la referencia, y
+        # entonces parchear `app.core.email.send_email` -- que es como los otros
+        # nueve archivos de tests interceptan el correo -- no tiene efecto acá.
+        # Una sola forma de simular el envío en toda la suite vale más que
+        # ahorrar una línea.
+        from app.core.email import send_email as enviar
+
+        enviar(**build_welcome_email(to=to, name=name, whatsapp_number=whatsapp))
+    except Exception as exc:  # noqa: BLE001 -- deliberado, ver docstring
+        logger.warning("No se pudo enviar la bienvenida a %s: %s", to, exc)
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -204,7 +256,7 @@ def forgot_password(
     data: ForgotPasswordRequest,
     db: DbSession,
     request: Request,
-    background_tasks: BackgroundTasks,
+    background_tasks: PostCommit,
 ) -> None:
     """Always returns 204 regardless of whether the email exists (prevents user enumeration)."""
     ip = audit.client_ip(request)

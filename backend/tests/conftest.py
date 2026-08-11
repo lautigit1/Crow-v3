@@ -26,11 +26,13 @@ os.environ["TESTING"] = "1"  # must be set before importing app
 os.environ["REDIS_URL"] = ""
 
 import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base, get_db
+from app.core.post_commit import ejecutar_post_commit
 from app.core.ratelimit import LoginRateLimiter
 from app.core.security import hash_password
 from app.core.token_blocklist import token_blocklist
@@ -90,8 +92,15 @@ def db():
 # ---------------------------------------------------------------------------
 @pytest.fixture()
 def client(db: Session):
-    def _override():
+    def _override(request: Request):
         yield db
+        # El override reemplaza a `get_db`, así que también tiene que cumplir
+        # su otro contrato: vaciar la cola post-commit (core/post_commit.py).
+        # Acá no hay commit -- la sesión vive dentro de una transacción que se
+        # revierte al final del test para aislarlo -- pero el punto del que
+        # cuelgan los efectos es el mismo, y sin esta línea los correos y los
+        # eventos de la campana nunca saldrían durante los tests.
+        ejecutar_post_commit(request)
 
     app.dependency_overrides[get_db] = _override
     # Reset in-memory blocklist and rate limiters between tests — the new

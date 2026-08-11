@@ -106,6 +106,19 @@ services:
       # 2 en dev (suficiente para probar el comportamiento multi-worker sin
       # gastar de más en la máquina local) -- ver backend/Dockerfile.
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+      # Sentry. Estaba solo en el compose de producción, así que en desarrollo
+      # el DSN vivía en el .env y nunca llegaba al contenedor: la app arrancaba
+      # informando "error tracking deshabilitado" y parecía que faltaba
+      # configurarlo. Es la tercera vez que pasa lo mismo en este proyecto
+      # (SMTP_*, CLOUDINARY_*): Compose solo inyecta lo que está listado acá,
+      # tener la variable en el .env no alcanza.
+      #
+      # Pasarlo también en dev sirve para verificar que la integración anda de
+      # verdad antes de depender de ella. Los eventos quedan etiquetados con
+      # `environment: development` (ver core/error_tracking.py), así que no se
+      # mezclan con los de producción.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     networks:
       - crow_net
     ports:
@@ -118,7 +131,17 @@ services:
       start_period: 30s
 
   web:
-    build: ./frontend
+    # `build.args` y no `environment`: el DSN del frontend se compila DENTRO del
+    # bundle (Vite reemplaza `import.meta.env.VITE_*` en tiempo de build), así
+    # que pasarlo como variable de entorno del contenedor no haría nada -- para
+    # cuando nginx sirve los archivos, el JavaScript ya está escrito.
+    #
+    # Corolario incómodo: cambiar este valor exige `--build`, no alcanza con
+    # reiniciar. En producción lo inyecta el workflow de release.
+    build:
+      context: ./frontend
+      args:
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     container_name: crow_web
     restart: unless-stopped
     depends_on:

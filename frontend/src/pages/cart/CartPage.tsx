@@ -128,13 +128,13 @@ function SummaryPanel({ count, subtotal, onContinue }: { count: number; subtotal
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(560px_340px_at_100%_0%,rgba(0,87,217,.24),transparent_65%)]" />
       <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-2 font-mono text-[11.5px] uppercase tracking-[.08em] text-[#63819C]">
+          <div className="mb-2 font-mono text-[11.5px] uppercase tracking-[.08em] text-textOnDarkFaint">
             Subtotal · {count} {count === 1 ? "ítem" : "ítems"}
           </div>
           <div className="font-display text-[36px] font-black leading-none text-white sm:text-[42px]">
             {formatPrice(subtotal)}
           </div>
-          <div className="mt-2.5 font-body text-[13.5px] text-[#63819C]">
+          <div className="mt-2.5 font-body text-[13.5px] text-textOnDarkFaint">
             El pago y la entrega se coordinan al confirmar el pedido.
           </div>
         </div>

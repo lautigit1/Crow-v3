@@ -17,6 +17,15 @@ export const ORDER_STATUSES: OrderStatus[] = [
   "Cancelado",
 ];
 
+/**
+ * Color vivo de cada estado. Se usa para el fondo del chip (el mismo color a
+ * baja opacidad) y para el punto indicador, que es decorativo: el estado
+ * también se lee en palabras al lado, así que el punto no carga información
+ * por sí solo y no le aplica el mínimo de contraste.
+ *
+ * Para el TEXTO va `ORDER_STATUS_TEXT`, no este valor: estos colores sobre su
+ * propio tinte quedan entre 2:1 y 3.7:1, por debajo del 4.5:1 que pide WCAG AA.
+ */
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   Pendiente: "#f59e0b",
   Confirmado: "#3b82f6",
@@ -24,6 +33,20 @@ export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   Enviado: "#06b6d4",
   Entregado: "#22c55e",
   Cancelado: "#ef4444",
+};
+
+/**
+ * El mismo color oscurecido lo mínimo necesario para pasar 4.5:1 sobre el
+ * tinte del chip. Mismo criterio que el tono `danger` de `shared/ui/Badge`.
+ * Verificado contra los dos tintes en uso: `1a` (panel) y `22` (mis pedidos).
+ */
+export const ORDER_STATUS_TEXT: Record<OrderStatus, string> = {
+  Pendiente: "#9a6407",
+  Confirmado: "#3069c7",
+  "En proceso": "#7950d6",
+  Enviado: "#04788c",
+  Entregado: "#167e3c",
+  Cancelado: "#c23737",
 };
 
 export type PaymentMethod =
@@ -62,6 +85,13 @@ export const PAYMENT_STATUS_COLOR: Record<PaymentStatus, string> = {
   "Sin cobrar": "#94a3b8",
   "Link enviado": "#f59e0b",
   Pagado: "#22c55e",
+};
+
+/** Ver `ORDER_STATUS_TEXT`: mismo criterio para el eje del cobro. */
+export const PAYMENT_STATUS_TEXT: Record<PaymentStatus, string> = {
+  "Sin cobrar": "#66707f",
+  "Link enviado": "#9a6407",
+  Pagado: "#167e3c",
 };
 
 export type OrderItem = {

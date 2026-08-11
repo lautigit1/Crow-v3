@@ -6,11 +6,12 @@ Templates are rendered with Jinja2 (app/templates/emails/*.jinja) instead of
 being built as raw Python f-strings — see build_quote_notification() and
 build_reset_email() below for why that matters, not just for maintainability.
 
-All sends run in a ThreadPoolExecutor via FastAPI BackgroundTasks so they
-never block request/response cycles.
+Los envíos salen por la cola post-commit de la request (core/post_commit.py):
+fuera del ciclo request/response, y recién con la transacción confirmada, para
+que no salga un correo anunciando algo que terminó revirtiéndose.
 
 Usage:
-    from fastapi import BackgroundTasks
+    from app.core.post_commit import PostCommit
     from app.core.email import send_email, build_quote_notification, build_reset_email
 
     background_tasks.add_task(send_email, **build_quote_notification(quote))
@@ -71,8 +72,8 @@ def _sanitize_subject(subject: str) -> str:
 
 def send_email(*, to: str, subject: str, html: str, text: str = "") -> None:
     """
-    Send an email synchronously (call from BackgroundTasks so it's off the
-    main thread).  Silently skips if SMTP is not configured.
+    Send an email synchronously (encolar en `PostCommit` para que salga fuera
+    del ciclo request/response).  Silently skips if SMTP is not configured.
     """
     subject = _sanitize_subject(subject)
 
@@ -190,6 +191,31 @@ def build_quote_answered_email(
         "subject": subject,
         "html": _render("quote_answered.html.jinja", **ctx),
         "text": _render("quote_answered.txt.jinja", **ctx),
+    }
+
+
+def build_welcome_email(*, to: str, name: str, whatsapp_number: str) -> dict:
+    """Bienvenida al registrarse.
+
+    **No existía**: el endpoint de registro creaba el usuario y no mandaba nada.
+
+    El número de WhatsApp se recibe como argumento y no se lee acá adentro: es
+    un valor configurable desde el panel (tabla `settings`), y hacer que una
+    función de plantillas consulte la base la ata a una sesión y la vuelve
+    imposible de probar sin una.
+    """
+    subject = "Bienvenido a Crow Repuestos"
+
+    ctx = {
+        "name": name,
+        "whatsapp_url": f"https://wa.me/{whatsapp_number}",
+        "catalog_url": f"{settings.FRONTEND_URL}/catalogo",
+    }
+    return {
+        "to": to,
+        "subject": subject,
+        "html": _render("welcome.html.jinja", **ctx),
+        "text": _render("welcome.txt.jinja", **ctx),
     }
 
 

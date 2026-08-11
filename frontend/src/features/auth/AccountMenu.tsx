@@ -169,9 +169,12 @@ export function AccountMenu() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = (close: () => void) => {
+  const handleLogout = async (close: () => void) => {
     close();
-    logout();
+    // `await` antes de navegar: `logout()` ahora espera a que el servidor borre
+    // las cookies HttpOnly. Sin esperarlo, la pantalla siguiente podía cargar
+    // con la sesión todavía viva.
+    await logout();
     navigate("/");
   };
 

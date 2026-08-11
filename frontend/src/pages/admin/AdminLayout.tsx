@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import { AnimatedOutlet } from "@/shared/ui/AnimatedOutlet";
@@ -86,6 +86,14 @@ export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const breadcrumb = useBreadcrumb();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const loc = useLocation();
+
+  // Cerrar el menú al navegar. Sin esto, tocás una sección y el panel se queda
+  // abierto tapando justo la pantalla que pediste.
+  useEffect(() => {
+    setMenuAbierto(false);
+  }, [loc.pathname]);
 
   // Las páginas públicas actualizan <title> vía usePageMeta(), pero ninguna
   // página del admin lo hacía -- la pestaña del navegador se quedaba
@@ -103,10 +111,33 @@ export function AdminLayout() {
   const hue = user ? (user.full_name.charCodeAt(0) * 17) % 360 : 210;
 
   return (
-    <div className="grid grid-cols-[260px_1fr] min-h-screen bg-[#F1F5F9]">
+    // Una sola columna en el teléfono. Antes eran 260px fijos a cualquier
+    // ancho: en una pantalla de 412px al contenido le quedaban 152px y el panel
+    // desbordaba 138px a lo ancho. Lo encontró el E2E de mobile midiendo
+    // `scrollWidth - clientWidth`, no el ojo.
+    <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] min-h-screen bg-[#F1F5F9]">
+
+      {/* Fondo oscuro detrás del menú abierto. Solo en mobile: en escritorio la
+          barra es parte del layout y no tapa nada. */}
+      {menuAbierto && (
+        <div
+          onClick={() => setMenuAbierto(false)}
+          className="md:hidden fixed inset-0 z-40 bg-[rgba(4,10,20,.6)] backdrop-blur-sm"
+          aria-hidden="true"
+        />
+      )}
 
       {/* ── Sidebar ── */}
-      <aside className="bg-ink900 flex flex-col sticky top-0 h-screen overflow-y-auto border-r border-[rgba(255,255,255,.04)]">
+      <aside
+        className={clsx(
+          "bg-ink900 flex flex-col overflow-y-auto border-r border-[rgba(255,255,255,.04)]",
+          // Mobile: panel deslizante por encima de todo.
+          "fixed inset-y-0 left-0 z-50 w-[260px] transition-transform duration-200",
+          menuAbierto ? "translate-x-0" : "-translate-x-full",
+          // Escritorio: vuelve a ser una columna del grid, siempre visible.
+          "md:static md:z-auto md:w-auto md:h-screen md:sticky md:top-0 md:translate-x-0",
+        )}
+      >
         {/* Glow */}
         <div className="absolute -top-20 -left-20 w-[340px] h-[340px] rounded-full bg-[radial-gradient(circle,rgba(0,87,217,.1)_0%,transparent_70%)] pointer-events-none" />
 
@@ -153,7 +184,7 @@ export function AdminLayout() {
               <div className="font-mono text-[9.5px] text-primary tracking-[.08em]">ADMIN</div>
             </div>
             <button
-              onClick={() => { logout(); navigate("/"); }}
+              onClick={async () => { await logout(); navigate("/"); }}
               title="Cerrar sesión"
               className="bg-transparent border-none cursor-pointer text-[#2A3F52] p-1 flex items-center transition-colors duration-[140ms] hover:text-[#FCA5A5]"
             >
@@ -167,9 +198,17 @@ export function AdminLayout() {
       <div className="flex flex-col min-w-0">
 
         {/* Top bar */}
-        <header className="h-[60px] bg-[rgba(255,255,255,.95)] [backdrop-filter:saturate(180%)_blur(10px)] [-webkit-backdrop-filter:saturate(180%)_blur(10px)] border-b border-border shadow-[0_1px_0_rgba(0,0,0,.03)] flex items-center justify-between px-7 sticky top-0 z-20">
+        <header className="h-[60px] bg-[rgba(255,255,255,.95)] [backdrop-filter:saturate(180%)_blur(10px)] [-webkit-backdrop-filter:saturate(180%)_blur(10px)] border-b border-border shadow-[0_1px_0_rgba(0,0,0,.03)] flex items-center justify-between px-4 md:px-7 sticky top-0 z-20">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMenuAbierto(true)}
+              aria-label="Abrir menú"
+              className="md:hidden -ml-1 mr-1 w-9 h-9 rounded-md flex items-center justify-center border-none bg-transparent text-ink800 cursor-pointer hover:bg-surface"
+            >
+              <Icon name="more" size={20} />
+            </button>
             <span className="font-mono text-[11px] text-textFaint tracking-[.08em]">ADMIN</span>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" className="stroke-border" strokeWidth={2} strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
             <span className="font-mono text-[11px] font-bold text-ink900 tracking-[.06em] uppercase">{breadcrumb}</span>
@@ -177,7 +216,7 @@ export function AdminLayout() {
 
           {/* Right */}
           <div className="flex items-center gap-3.5">
-            <div className="text-right">
+            <div className="text-right hidden sm:block">
               <div className="font-body text-[13.5px] font-semibold text-ink800 leading-[1.2]">{user?.full_name}</div>
               <div className="font-mono text-[10px] text-primary tracking-[.08em]">ADMINISTRADOR</div>
             </div>
@@ -191,7 +230,7 @@ export function AdminLayout() {
         </header>
 
         {/* Page content */}
-        <main className="pt-7 px-8 pb-12 flex-1 min-w-0">
+        <main className="pt-5 px-4 pb-10 md:pt-7 md:px-8 md:pb-12 flex-1 min-w-0">
           <AnimatedOutlet />
         </main>
       </div>

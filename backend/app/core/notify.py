@@ -23,7 +23,7 @@ from app.core import events
 from app.models.notification import Notification, NotificationType
 
 if TYPE_CHECKING:
-    from fastapi import BackgroundTasks
+    from app.core.post_commit import DespuesDelCommit
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def notificar(
     cuerpo: str | None = None,
     enlace: str | None = None,
     email: dict[str, Any] | None = None,
-    background: BackgroundTasks | None = None,
+    background: DespuesDelCommit | None = None,
 ) -> Notification:
     """Registra un aviso y lo reparte a los canales que correspondan.
 
@@ -51,8 +51,10 @@ def notificar(
 
     `email` es el dict que devuelven los builders de `app.core.email` (con
     `to`/`subject`/`html`/`text`), o None si esta notificación no manda correo.
-    `background` es el `BackgroundTasks` de la request: sin él el correo se
-    manda igual, pero de forma sincrónica, y el cliente espera al SMTP.
+    `background` es la cola post-commit de la request: sin ella el correo se
+    manda igual, pero de forma sincrónica y **antes del commit**, con lo que eso
+    implica. Es el camino de los tests y de cualquier llamada fuera de una
+    request; en las rutas siempre se pasa.
     """
     notificacion = Notification(
         user_id=user_id,
@@ -73,8 +75,10 @@ def notificar(
     # confirme, el navegador pregunta y todavía no hay nada. Y como no llega un
     # segundo evento, la campana se queda en cero para siempre.
     #
-    # Las tareas de background de FastAPI corren después de que la dependencia
-    # `get_db` hizo commit, así que ahí la lectura siempre encuentra la fila.
+    # La cola de `core/post_commit.py` la vacía `get_db` justo después del
+    # commit, así que ahí la lectura siempre encuentra la fila. (Esto antes se
+    # apoyaba en `BackgroundTasks`, que corría después del commit por el orden
+    # interno de FastAPI; ese orden se invirtió en 0.141 y dejó de ser cierto.)
     # Sin `background` se publica al toque -- es el caso de los tests, donde no
     # hay request de por medio.
     def _avisar() -> None:
@@ -109,7 +113,7 @@ def notificar_a_admins(
     titulo: str,
     cuerpo: str | None = None,
     enlace: str | None = None,
-    background: BackgroundTasks | None = None,
+    background: DespuesDelCommit | None = None,
 ) -> list[Notification]:
     """Igual que `notificar()`, pero para todos los admins activos.
 

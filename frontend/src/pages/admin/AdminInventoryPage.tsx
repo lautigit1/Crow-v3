@@ -73,6 +73,7 @@ export function AdminInventoryPage() {
 
   const columns: Column<Product>[] = [
     {
+      rol: "titulo",
       header: "Producto",
       render: (p) => (
         <div>
@@ -81,7 +82,7 @@ export function AdminInventoryPage() {
         </div>
       ),
     },
-    { header: "Categoría", render: (p) => p.category?.name ?? "—" },
+    { rol: "subtitulo", header: "Categoría", render: (p) => p.category?.name ?? "—" },
     { header: "Precio", align: "right", render: (p) => formatPrice(p.price) },
     {
       header: "Estado",
@@ -131,7 +132,7 @@ export function AdminInventoryPage() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-[22px]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-[22px]">
         <StatCard icon="alert" label="Sin stock" value={summary.out} tone="danger" />
         <StatCard icon="box" label="Stock bajo (≤ 5)" value={summary.low} tone="warning" />
         <StatCard icon="trendingUp" label="Valor de inventario" value={formatPrice(summary.value)} tone="primary" />

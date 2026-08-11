@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import Lenis from "lenis";
+import { registrarLenis } from "./lenisScroll";
 
 /**
  * Scroll suave con inercia para el sitio público (landing, catálogo, etc.).
@@ -19,6 +20,8 @@ export function LenisProvider({ children }: { children: ReactNode }) {
       smoothWheel: true,
     });
 
+    registrarLenis(lenis);
+
     let rafId: number;
     function raf(time: number) {
       lenis.raf(time);
@@ -29,6 +32,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      registrarLenis(null);
     };
   }, []);
 

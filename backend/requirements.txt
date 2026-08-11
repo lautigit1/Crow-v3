@@ -1,4 +1,23 @@
-fastapi==0.115.5
+# 0.115.5 arrastraba starlette 0.41 con NUEVE avisos de pip-audit. El salto
+# obligó primero a un cambio de fondo: hasta 0.115 las tareas de
+# `BackgroundTasks` corrían DESPUÉS del teardown de las dependencias -- o sea
+# después del commit de `get_db()` -- y en 0.141 ese orden se invirtió
+# (fastapi/fastapi#14099). Todos los correos y eventos de la campana dependían
+# de ese orden sin decirlo, así que el registro empezó a devolver 201 con un
+# token válido para un usuario que todavía no estaba en la base. La solución
+# no fue commitear antes, que rompía la atomicidad del Unit-of-Work, sino
+# mover esos efectos a una cola propia: ver `app/core/post_commit.py`.
+#
+# De lo que 1.0 sí eliminó (`on_startup`, `on_event`, `@app.route`,
+# `@app.middleware`, `@app.exception_handler`, la firma vieja de
+# `TemplateResponse`) este código no usaba nada. `BaseHTTPMiddleware`, que era
+# el miedo original, no se eliminó -- la propuesta (discusión #2160) no entró.
+fastapi==0.141.1
+# Declarada explícita aunque venga de fastapi: antes quedaba a lo que
+# resolviera el build (dio 1.4.1 y 1.5.0 el mismo día) y los avisos recién
+# cierran en 1.3.1, así que la versión que efectivamente se instala no puede
+# ser un detalle del azar.
+starlette==1.5.1
 uvicorn[standard]==0.32.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
@@ -10,9 +29,14 @@ pyjwt==2.13.0
 # instalada de forma transitiva vía `python-jose[cryptography]`; ahora que
 # se fue esa dependencia, se declara explícita porque `core/security.py` la
 # importa directamente (HKDF para derivar secretos de firma por propósito).
-cryptography==48.0.0
+# 48.0.0 tenía cuatro avisos de pip-audit; 50 los cierra.
+cryptography==50.0.0
 bcrypt==4.2.1
-python-multipart==0.0.12
+# 0.0.12 arrastraba SEIS avisos de pip-audit (PYSEC-2026-1851, 3036-3040):
+# todos de denegación de servicio al parsear multipart malicioso. Es la
+# librería que procesa CADA archivo que se sube al panel, así que es de las
+# que menos conviene tener vieja.
+python-multipart==0.0.32
 email-validator==2.2.0
 # Lectura de las facturas en Excel que mandan los proveedores (fase 4 de
 # openspec/changes/supplier-catalog-and-invoice-import). Solo lectura: no se
@@ -21,10 +45,16 @@ openpyxl==3.1.5
 # Extracción de tablas de facturas en PDF digitales (fase 6). Determinístico
 # y local: no manda el archivo a ningún servicio externo. No sirve para
 # escaneados -- esos van por carga manual, ver design.md.
-pdfplumber==0.11.4
+# 0.11.4 arrastraba pdfminer-six 20231228, con dos avisos
+# (PYSEC-2026-1761/1762). Procesa PDFs de proveedores: archivos de terceros
+# que llegan por mail, o sea entrada no confiable.
+pdfplumber==0.11.10
 alembic==1.14.0
 redis>=5.0,<6.0
-jinja2==3.1.4
+# 3.1.4 tenía tres avisos (PYSEC-2026-1471/1472/1475). Renderiza las
+# plantillas de correo; el contenido lo generamos nosotros, así que el riesgo
+# real es bajo, pero actualizar no cuesta nada.
+jinja2==3.1.6
 # Opcional -- solo se activa si SENTRY_DSN está configurada (ver
 # core/error_tracking.py). No-op sin esa variable, pero queda instalada
 # para no tener que reconstruir la imagen cuando se agregue el DSN real.

@@ -139,6 +139,7 @@ export function AdminSuppliersPage() {
 
   const columns: Column<Supplier>[] = [
     {
+      rol: "titulo",
       header: "Proveedor",
       sortKey: "name",
       render: (s) => (
@@ -151,6 +152,7 @@ export function AdminSuppliersPage() {
       ),
     },
     {
+      rol: "subtitulo",
       header: "Contacto",
       render: (s) => (
         <div className="flex flex-col gap-0.5">
@@ -161,7 +163,7 @@ export function AdminSuppliersPage() {
             </a>
           )}
           {s.email && (
-            <a href={`mailto:${s.email}`} className="text-xs text-textMuted no-underline"
+            <a href={`mailto:${s.email}`} className="text-xs text-textMuted no-underline truncate"
               onClick={(e) => e.stopPropagation()}>
               {s.email}
             </a>
@@ -190,6 +192,7 @@ export function AdminSuppliersPage() {
       ),
     },
     {
+      rol: "accion",
       header: "Acciones",
       align: "right",
       render: (s) => (
@@ -231,7 +234,7 @@ export function AdminSuppliersPage() {
       />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <SummaryCard label="Total" value={total} icon="users" />
         <SummaryCard label="Activos" value={items?.filter((s) => s.is_active).length ?? 0} icon="check" tone="success" />
         <SummaryCard label="Inactivos" value={items?.filter((s) => !s.is_active).length ?? 0} icon="close" tone="neutral" />

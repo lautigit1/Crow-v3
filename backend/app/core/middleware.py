@@ -84,11 +84,36 @@ _BASE_SECURITY_HEADERS: dict[str, str] = {
 _HSTS_HEADER = "max-age=31536000; includeSubDomains; preload"
 
 
+# Swagger UI y ReDoc cargan su JavaScript y su CSS desde jsdelivr. Con la CSP
+# de arriba (`default-src 'none'`) el navegador bloquea todo y `/docs` responde
+# 200 pero se ve en blanco -- que es exactamente lo que pasaba.
+#
+# La excepción es acotada a estas tres rutas y **solo existe fuera de
+# producción**: allá `docs_url`, `redoc_url` y `openapi_url` valen `None` (ver
+# main.py), así que estas rutas ni siquiera están registradas y la CSP estricta
+# vuelve a aplicarse a todo sin excepciones.
+_RUTAS_DOCS = frozenset({"/docs", "/redoc", "/docs/oauth2-redirect"})
+_CSP_DOCS = (
+    "default-src 'none'; "
+    "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+    "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+    "img-src 'self' data: https://fastapi.tiangolo.com; "
+    "font-src 'self' https://cdn.jsdelivr.net; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'"
+)
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
         for header, value in _BASE_SECURITY_HEADERS.items():
             response.headers.setdefault(header, value)
+
+        if not settings.is_production and request.url.path in _RUTAS_DOCS:
+            # `setdefault` no alcanza: la clave ya la puso el bucle de arriba.
+            response.headers["Content-Security-Policy"] = _CSP_DOCS
+
         if settings.is_production:
             response.headers.setdefault("Strict-Transport-Security", _HSTS_HEADER)
         return response

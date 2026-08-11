@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PublicLayout } from "@/app/layouts/PublicLayout";
 import { RequireAuth, RequireAdmin, GuestOnly } from "@/app/router/guards";
+import { ScrollAlInicio } from "@/app/router/ScrollAlInicio";
 import { ErrorBoundary } from "@/app/providers/ErrorBoundary";
 import { CenteredSpinner } from "@/shared/ui";
 
@@ -52,6 +53,11 @@ const AccesibilidadPage   = lazy(() => import("@/pages/legal/AccesibilidadPage")
 
 export function App() {
   return (
+    <>
+    {/* Va acá y no dentro de un layout: el problema aparecía en las tres áreas
+        -- sitio público, cuenta y panel -- y montarlo una sola vez arriba de
+        todo evita tres copias que después se desincronizan. */}
+    <ScrollAlInicio />
     <Routes>
       {/* Public site */}
       <Route element={<PublicLayout />}>
@@ -136,5 +142,6 @@ export function App() {
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>
+    </>
   );
 }

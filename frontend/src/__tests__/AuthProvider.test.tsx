@@ -148,5 +148,38 @@ describe("AuthProvider", () => {
       // El estado React se limpia inmediatamente — no espera los 500ms del server
       expect(screen.getByTestId("auth")).toHaveTextContent("false");
     });
+
+    it("pero la promesa NO resuelve hasta que el servidor borró las cookies", async () => {
+      // Antes era "fire and forget", y eso dejaba una ventana real: las cookies
+      // son HttpOnly y solo el servidor puede borrarlas, así que entre el clic
+      // y la respuesta la sesión seguía siendo válida. Cerrabas sesión,
+      // apretabas F5 enseguida y volvías a estar adentro.
+      //
+      // Quien navega después del logout tiene que poder esperarlo.
+      let respondio = false;
+      server.use(
+        http.post("/api/auth/logout", async () => {
+          await new Promise((r) => setTimeout(r, 50));
+          respondio = true;
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+
+      let salir: (() => Promise<void>) | null = null;
+      function LogoutTest() {
+        const { logout } = useAuth();
+        salir = logout;
+        return null;
+      }
+
+      renderWithAuth(<LogoutTest />);
+      await waitFor(() => expect(salir).not.toBeNull());
+
+      await act(async () => {
+        await salir!();
+      });
+
+      expect(respondio).toBe(true);
+    });
   });
 });

@@ -41,8 +41,11 @@ export function AdminQuotesPage() {
   const rows = useMemo(() => (filter === "Todas" ? items ?? [] : (items ?? []).filter((q) => q.status === filter)), [items, filter]);
 
   const columns: Column<Quote>[] = [
-    { header: "#", width: 50, render: (q) => <span className="font-mono text-xs text-textFaint">{q.id}</span> },
+    // El id solo no dice nada en una tarjeta; el cliente sí. La columna "#"
+    // se oculta y "Cliente" pasa a ser el título.
+    { rol: "oculta", header: "#", width: 50, render: (q) => <span className="font-mono text-xs text-textFaint">{q.id}</span> },
     {
+      rol: "titulo",
       header: "Cliente",
       render: (q) => (
         <div>
@@ -52,6 +55,7 @@ export function AdminQuotesPage() {
       ),
     },
     {
+      rol: "subtitulo",
       header: "Solicitud",
       render: (q) => (
         <div className="max-w-[280px]">
@@ -93,6 +97,7 @@ export function AdminQuotesPage() {
       ),
     },
     {
+      rol: "accion",
       header: "Gestionar",
       align: "right",
       render: (q) => (

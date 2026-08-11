@@ -23,29 +23,35 @@ import { formatPrice } from "@/shared/lib/format";
 // `ORDER_STATUS_COLOR` is a fixed 6-status enum (only consumed on this page),
 // so its hex values are mirrored here as complete literal Tailwind classes
 // (bg tint + text) instead of building `hex + "22"` at runtime.
+//
+// El fondo lleva el tono vivo al 13%; el texto lleva ese mismo tono oscurecido
+// (`ORDER_STATUS_TEXT` en `entities/order`, replicado acá por lo mismo de
+// arriba). Con el tono vivo en el texto el badge quedaba entre 2:1 y 3.7:1,
+// por debajo del 4.5:1 de WCAG AA -- estos son 12px, no cuentan como texto
+// grande. Mismo criterio que el tono `danger` de `shared/ui/Badge`.
 const STATUS_BADGE: Record<Order["status"], string> = {
-  Pendiente: "bg-[#f59e0b22] text-[#f59e0b]",
-  Confirmado: "bg-[#3b82f622] text-[#3b82f6]",
-  "En proceso": "bg-[#8b5cf622] text-[#8b5cf6]",
-  Enviado: "bg-[#06b6d422] text-[#06b6d4]",
-  Entregado: "bg-[#22c55e22] text-[#22c55e]",
-  Cancelado: "bg-[#ef444422] text-[#ef4444]",
+  Pendiente: "bg-[#f59e0b22] text-[#9a6407]",
+  Confirmado: "bg-[#3b82f622] text-[#3069c7]",
+  "En proceso": "bg-[#8b5cf622] text-[#7950d6]",
+  Enviado: "bg-[#06b6d422] text-[#04788c]",
+  Entregado: "bg-[#22c55e22] text-[#167e3c]",
+  Cancelado: "bg-[#ef444422] text-[#c23737]",
 };
 
 // Mismo criterio que arriba para el eje del cobro. "Sin cobrar" queda en gris
 // a propósito: es el estado inicial de todos los pedidos y pintarlo de rojo
 // haría que cada compra recién hecha parezca un problema.
 const PAYMENT_BADGE: Record<Order["payment_status"], string> = {
-  "Sin cobrar": "bg-[#94a3b822] text-[#64748b]",
-  "Link enviado": "bg-[#f59e0b22] text-[#f59e0b]",
-  Pagado: "bg-[#22c55e22] text-[#22c55e]",
+  "Sin cobrar": "bg-[#94a3b822] text-[#66707f]",
+  "Link enviado": "bg-[#f59e0b22] text-[#9a6407]",
+  Pagado: "bg-[#22c55e22] text-[#167e3c]",
 };
 
 // El estado es una palabra ("Entregado"), no un dato tabular: en Fira Mono y
 // mayúscula leía como un código de sistema en vez de algo escrito para alguien.
 function StatusBadge({ status }: { status: Order["status"] }) {
   return (
-    <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", STATUS_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
+    <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", STATUS_BADGE[status] ?? "bg-[#6b728022] text-[#656b78]")}>
       {status}
     </span>
   );
@@ -66,7 +72,7 @@ const PAYMENT_LABEL: Record<Order["payment_status"], string> = {
 
 function PaymentBadge({ status }: { status: Order["payment_status"] }) {
   return (
-    <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", PAYMENT_BADGE[status] ?? "bg-[#6b728022] text-[#6b7280]")}>
+    <span className={clsx("inline-block py-1 px-2.5 rounded-pill font-body text-[12px] font-semibold", PAYMENT_BADGE[status] ?? "bg-[#6b728022] text-[#656b78]")}>
       {PAYMENT_LABEL[status] ?? status}
     </span>
   );

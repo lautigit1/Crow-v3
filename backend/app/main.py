@@ -56,6 +56,7 @@ def _wait_for_db(retries: int = 10, delay: float = 2.0) -> None:
 
 
 _INSECURE_SECRET = "change-me-in-production-please"
+_INSECURE_SEED_PASSWORD = "admin1234"
 
 
 @asynccontextmanager
@@ -65,6 +66,20 @@ async def lifespan(app: FastAPI):
             "SECRET_KEY no está configurada. "
             "Seteá la variable de entorno SECRET_KEY antes de iniciar. "
             "Podés generar una clave segura con: openssl rand -hex 32"
+        )
+
+    # El seed crea el admin con esta contraseña si nadie la define. Sin esta
+    # guarda, un deploy que se olvide de `SEED_ADMIN_PASSWORD` arranca con la
+    # cuenta que controla precios, stock y pedidos protegida por "admin1234",
+    # y **no hay ningún síntoma**: la app funciona perfecto. Es el peor tipo de
+    # agujero, el que no se nota.
+    #
+    # Solo en producción: en desarrollo el default es una comodidad real y
+    # además lo usan los tests E2E.
+    if settings.is_production and settings.SEED_ADMIN_PASSWORD == _INSECURE_SEED_PASSWORD:
+        raise RuntimeError(
+            "SEED_ADMIN_PASSWORD sigue en el default de desarrollo. "
+            "Seteá la variable de entorno con una contraseña propia antes de iniciar."
         )
 
     if settings.is_production and settings.has_insecure_cors:

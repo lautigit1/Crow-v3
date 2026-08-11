@@ -70,6 +70,7 @@ export function AdminBrandsPage() {
 
   const columns: Column<Brand>[] = [
     {
+      rol: "titulo",
       header: "Marca",
       render: (b) => (
         <div className="flex items-center gap-3">
@@ -94,6 +95,7 @@ export function AdminBrandsPage() {
       render: (b) => <span className="text-[13px] text-textMuted">{formatDateTime(b.created_at)}</span>,
     },
     {
+      rol: "accion",
       header: "Acciones",
       align: "right",
       render: (b) => (

@@ -1,0 +1,52 @@
+# Unidad systemd que corre el backup de Postgres una vez.
+#
+# Existe porque el pendiente decía "agendar el backup con cron" y una línea de
+# cron en un README no es agendar nada: hay que acordarse de pegarla, y no deja
+# rastro de si corrió. Con systemd el estado queda en `systemctl status` y la
+# salida en el journal, que es donde se mira cuando algo falla.
+#
+# Por qué systemd y no cron:
+#   * `journalctl -u crow-backup` te dice qué pasó las últimas veces. Con cron
+#     el output se pierde salvo que redirijas a un archivo a mano.
+#   * `Persistent=true` en el timer recupera la corrida si el servidor estuvo
+#     apagado a la hora prevista. Cron simplemente la saltea.
+#   * Un fallo queda como unidad "failed", visible sin buscar.
+#
+# Instalación (como root, en el servidor):
+#   cp deploy/crow-backup.{service,timer} /etc/systemd/system/
+#   # Editar WorkingDirectory y User abajo según dónde clonaste el repo
+#   systemctl daemon-reload
+#   systemctl enable --now crow-backup.timer
+#   systemctl list-timers crow-backup.timer      # confirmar la próxima corrida
+#
+# Probar sin esperar al horario:
+#   systemctl start crow-backup.service
+#   journalctl -u crow-backup -n 30
+
+[Unit]
+Description=Backup de la base de datos de Crow Repuestos
+# El backup habla con el contenedor crow_db vía docker exec: sin Docker
+# arriba, el script falla con un error poco claro.
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+
+# AJUSTAR: ruta real del repo en el servidor.
+WorkingDirectory=/opt/crow-v3
+ExecStart=/opt/crow-v3/deploy/backup-postgres.sh
+
+# AJUSTAR: un usuario que pertenezca al grupo `docker`. No usar root si se
+# puede evitar -- el script no necesita privilegios más allá de hablar con el
+# demonio de Docker.
+User=crow
+Group=docker
+
+# El backup no debería tardar más que esto ni con la base bastante más grande.
+# Sin límite, un pg_dump colgado deja la unidad activa para siempre y la
+# corrida siguiente no arranca.
+TimeoutStartSec=30min
+
+[Install]
+WantedBy=multi-user.target

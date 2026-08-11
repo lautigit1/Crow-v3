@@ -134,6 +134,7 @@ export function AdminUsersPage() {
 
   const columns: Column<User>[] = [
     {
+      rol: "titulo",
       header: "Usuario",
       sortKey: "full_name",
       render: (u) => (
@@ -146,12 +147,18 @@ export function AdminUsersPage() {
                 <span className="ml-2 font-mono text-[10px] text-primary bg-primarySoft py-px px-[7px] rounded-full">VOS</span>
               )}
             </div>
-            <div className="font-mono text-[11px] text-textFaint">{u.email}</div>
+            {/* `truncate` no es cosmético: un email no tiene espacios, así que
+                es un bloque indivisible que fuerza su ancho natural y empuja al
+                contenedor. En la tabla no se veía porque tenía 640px y scroll
+                propio; en una tarjeta de 380px desbordaba la pantalla. Lo
+                encontró el E2E de mobile: 72px de sobra en /admin/usuarios. */}
+            <div className="font-mono text-[11px] text-textFaint truncate">{u.email}</div>
           </div>
         </div>
       ),
     },
     {
+      rol: "subtitulo",
       header: "Rol",
       render: (u) => (
         <div className="flex items-center gap-2">
@@ -183,6 +190,7 @@ export function AdminUsersPage() {
       render: (u) => <span className="font-mono text-xs text-textFaint">{formatDate(u.created_at)}</span>,
     },
     {
+      rol: "accion",
       header: "Acciones",
       align: "right",
       render: (u) =>
@@ -219,7 +227,7 @@ export function AdminUsersPage() {
       <AdminHeader title="Usuarios" icon="users" subtitle={`${total} cuentas · ${admins} administradores · ${activos} activos`} />
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3.5 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
         <StatCard label="Total" value={total} icon="users" />
         <StatCard label="Activos" value={activos} icon="check" tone="success" />
         <StatCard label="Inactivos" value={total - activos} icon="close" tone="danger" />

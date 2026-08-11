@@ -1,0 +1,24 @@
+# Cuándo corre el backup. Ver crow-backup.service para la instalación.
+
+[Unit]
+Description=Backup diario de la base de Crow Repuestos
+Documentation=file:///opt/crow-v3/deploy/backup-postgres.sh
+
+[Timer]
+# 3:15 AM hora del servidor. Los :15 y no en punto a propósito: a las horas
+# redondas arranca medio mundo (renovación de certificados, actualizaciones,
+# otros cron) y compiten por disco. Quince minutos después el servidor está
+# tranquilo.
+OnCalendar=*-*-* 03:15:00
+
+# Recupera la corrida si el servidor estuvo apagado a esa hora. Es la
+# diferencia principal con cron, que simplemente la saltea y te deja un hueco
+# sin backup del que no te enterás.
+Persistent=true
+
+# Hasta 10 minutos de dispersión aleatoria. Irrelevante con un solo servidor;
+# importa el día que haya más de uno y no convenga que arranquen todos juntos.
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

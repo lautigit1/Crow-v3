@@ -79,7 +79,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
         extra={"request_id": _request_id(request), "errors": errors},
     )
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={
             "detail": "Datos de entrada inválidos.",
             "errors": errors,
