@@ -26,7 +26,13 @@ afterEach(() => server.close());
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
-function renderGuard(guard: React.ReactNode, initialPath = "/protected") {
+// `initialPath` acepta un objeto además de un string para poder entrar con
+// `state` -- es como los otros guards mandan el `from` al redirigir a /login, y
+// sin eso no hay forma de cubrir que GuestOnly lo respete.
+function renderGuard(
+  guard: React.ReactNode,
+  initialPath: string | { pathname: string; state?: unknown } = "/protected"
+) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <AuthProvider>
@@ -35,6 +41,8 @@ function renderGuard(guard: React.ReactNode, initialPath = "/protected") {
           <Route path="/login" element={<div>login page</div>} />
           <Route path="/" element={<div>home page</div>} />
           <Route path="/cuenta" element={<div>account page</div>} />
+          <Route path="/admin" element={<div>admin page</div>} />
+          <Route path="/carrito" element={<div>cart page</div>} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>
@@ -107,5 +115,35 @@ describe("GuestOnly", () => {
     renderGuard(<GuestOnly><div>página de login</div></GuestOnly>);
     await waitFor(() => expect(screen.getByText("account page")).toBeInTheDocument());
     expect(screen.queryByText("página de login")).not.toBeInTheDocument();
+  });
+
+  // Este caso y el de abajo existen porque el guard tiene que mandar a la
+  // MISMA parte que `AuthPanel` manda al terminar de loguear. No es una
+  // preferencia de diseño: los dos redirigen, y este gana.
+  //
+  // `setUser()` commitea un render en el que la URL todavía es /login pero la
+  // sesión ya está abierta; ahí el guard devuelve su `<Navigate>`, cuyo efecto
+  // queda encolado y se aplica DESPUÉS del `navigate` de AuthPanel. Con el
+  // destino fijo en "/cuenta", el admin apretaba Ingresar y terminaba en la
+  // cuenta de cliente.
+  //
+  // Con un usuario común no se ve: los dos caminos van a /cuenta igual. Por eso
+  // el test de arriba pasaba con el bug puesto y los 23 E2E que arrancan con
+  // `loginAsAdmin` eran lo único que lo delataba.
+  it("manda al panel cuando quien tiene la sesión es admin", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.json(adminFixture)));
+    renderGuard(<GuestOnly><div>página de login</div></GuestOnly>);
+    await waitFor(() => expect(screen.getByText("admin page")).toBeInTheDocument());
+    expect(screen.queryByText("account page")).not.toBeInTheDocument();
+  });
+
+  it("respeta el `from` que dejaron los otros guards, por encima del rol", async () => {
+    server.use(http.get("/api/auth/me", () => HttpResponse.json(userFixture)));
+    renderGuard(
+      <GuestOnly><div>página de login</div></GuestOnly>,
+      { pathname: "/protected", state: { from: "/carrito" } }
+    );
+    await waitFor(() => expect(screen.getByText("cart page")).toBeInTheDocument());
+    expect(screen.queryByText("account page")).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { test, expect, type Browser } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers";
 
 /**
