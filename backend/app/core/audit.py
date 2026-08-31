@@ -27,20 +27,47 @@ def _peer_is_trusted_proxy(peer: str) -> bool:
 
 def client_ip(request: Request) -> str | None:
     """
-    Returns the real client IP.
+    Devuelve la IP real del cliente.
 
-    Only trusts X-Forwarded-For when the direct peer (request.client.host)
-    is inside one of the settings.TRUSTED_PROXIES networks — prevents IP
-    spoofing via forged headers.
+    Solo mira `X-Forwarded-For` si el peer directo está dentro de
+    `TRUSTED_PROXIES`; si no, cualquiera podría inventar el header. En dev
+    (`TRUSTED_PROXIES` vacío) cae a `request.client.host`, así el rate limiting
+    funciona sin configurar nada.
 
-    In local dev (TRUSTED_PROXIES is empty), falls back to request.client.host
-    directly so rate limiting still works without any extra configuration.
+    **Se recorre de derecha a izquierda, y esa es la parte que importa.**
+
+    Cada proxy AGREGA su entrada al final, así que la cadena que llega es
+    `<lo que mandó el cliente>, <lo que vio Caddy>, <lo que vio nginx>`. La
+    primera entrada no la escribió ningún proxy: la escribió quien hizo la
+    petición, y por lo tanto vale exactamente lo que valga su palabra.
+
+    Tomar la primera era la versión anterior de esta función, y hacía que:
+
+      - los limitadores por IP fueran evadibles mandando un
+        `X-Forwarded-For` distinto en cada intento. Los de registro, reset de
+        contraseña y cotizaciones se llavean SOLO por IP, así que quedaban
+        anulados por completo;
+      - la columna `ip` del log de auditoría fuera de escritura libre: se podía
+        firmar cualquier acción con la IP de otro, que es peor que no guardarla,
+        porque parece evidencia.
+
+    Yendo desde el final y descartando los proxies conocidos se llega a la
+    última entrada que un tercero NO pudo elegir: la que agregó nuestro propio
+    borde al ver la conexión de verdad. Es el mismo criterio que ya usa nginx
+    acá al lado con `real_ip_recursive on` (ver `frontend/nginx.conf`), y
+    conviene que las dos capas cuenten la misma historia.
+
+    Si TODAS las entradas caen en `TRUSTED_PROXIES` -- caso raro, tráfico
+    interno -- no queda ninguna IP de cliente que reportar y se devuelve el peer.
     """
     peer = request.client.host if request.client else None
     if peer and _peer_is_trusted_proxy(peer):
         fwd = request.headers.get("x-forwarded-for")
         if fwd:
-            return fwd.split(",")[0].strip()
+            for entrada in reversed(fwd.split(",")):
+                candidata = entrada.strip()
+                if candidata and not _peer_is_trusted_proxy(candidata):
+                    return candidata
     return peer
 
 

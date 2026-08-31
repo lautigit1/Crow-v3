@@ -26,6 +26,7 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, get_logger
 from app.core.middleware import (
     CSRFOriginMiddleware,
+    RateLimitMiddleware,
     RequestIDMiddleware,
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
@@ -122,10 +123,24 @@ async def lifespan(app: FastAPI):
 
     _wait_for_db()
 
-    # Optional Redis — non-fatal if unavailable
     if settings.REDIS_URL:
         from app.core.redis_client import init_redis
-        init_redis(settings.REDIS_URL)
+
+        conectado = init_redis(settings.REDIS_URL)
+        # En producción no arrancamos sin Redis, y no es celo de más: la
+        # comprobación de arriba ya obliga a configurar REDIS_URL ahí, así que
+        # llegar acá sin conexión significa que el store del que dependen la
+        # blocklist y los rate limits NO está. Seguir sería levantar la API con
+        # los fallbacks en memoria puestos -- exactamente el estado que
+        # `sin_redis()` se niega a servir en caliente (ver redis_client.py).
+        # Mejor que el deploy falle fuerte y visible que quedar en pie
+        # atendiendo requests con la revocación de sesiones apagada.
+        if not conectado and settings.is_production:
+            raise RuntimeError(
+                "REDIS_URL está configurada pero no se pudo conectar. "
+                "La revocación de tokens y el rate limiting dependen de Redis; "
+                "el API no arranca sin él en producción."
+            )
     else:
         logger.info("REDIS_URL no configurada — usando stores en memoria")
 
@@ -179,7 +194,16 @@ app = FastAPI(
 )
 
 # Middleware (applied in reverse order -- last added = outermost)
-# Outermost -> innermost: CORS -> CSRF origin check -> Security headers -> Request ID -> Request logging
+# Outermost -> innermost:
+#   CORS -> CSRF origin check -> Security headers -> Request ID -> Request
+#   logging -> Rate limit
+#
+# El rate limit va ÚLTIMO (o sea, el más interno) para que el 429 pase de
+# vuelta por el logging y por las cabeceras de seguridad como cualquier otra
+# respuesta. Rechazar más afuera ahorraría cuatro middlewares que igual no
+# tocan la base, y a cambio dejaría sin traza justo a las requests que uno
+# quiere mirar cuando algo raro pasa.
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)

@@ -10,6 +10,7 @@ Rules:
   - Always log the full exception server-side with the request_id for tracing.
   - IntegrityError (duplicate key, FK violation) → 409 Conflict
   - Generic SQLAlchemyError → 503 Service Unavailable (DB issue)
+  - RedisCaido → 503 Service Unavailable (store de seguridad caído)
   - RequestValidationError → 422 (FastAPI default, but we normalise the shape)
   - Unhandled Exception → 500 Internal Server Error
 """
@@ -20,6 +21,8 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+from app.core.redis_client import RedisCaido
 
 logger = logging.getLogger("crow.exceptions")
 
@@ -88,6 +91,27 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     )
 
 
+async def redis_caido_handler(request: Request, exc: RedisCaido) -> JSONResponse:
+    """Redis obligatorio y caído -> 503, nunca un fallback silencioso.
+
+    Un 503 acá es una decisión, no una falla que se escapó: la alternativa era
+    responder 200 con la blocklist de tokens y los rate limits apagados. Ver
+    `core/redis_client.sin_redis`.
+
+    Se loguea en ERROR y no en WARNING a propósito: mientras dure, la API está
+    fuera de servicio y alguien tiene que enterarse.
+    """
+    logger.error(
+        "RedisCaido",
+        extra={"request_id": _request_id(request), "store": exc.store},
+    )
+    return _error_response(
+        request,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "Servicio temporalmente no disponible. Intente nuevamente en unos momentos.",
+    )
+
+
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.error(
         "UnhandledException",
@@ -110,4 +134,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(SQLAlchemyError, sqlalchemy_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+    # Antes del handler genérico de Exception: RedisCaido es un RuntimeError y
+    # si no, se lo comería el 500 de abajo, que dice justo lo que no es.
+    app.add_exception_handler(RedisCaido, redis_caido_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]

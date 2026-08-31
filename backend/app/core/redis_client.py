@@ -108,3 +108,51 @@ def close_redis() -> None:
         except Exception:
             pass
         _client = None
+
+
+# ---------------------------------------------------------------------------
+# Fallback: cuándo está permitido y cuándo no
+# ---------------------------------------------------------------------------
+class RedisCaido(RuntimeError):
+    """Redis estaba configurado como obligatorio y la operación no se pudo hacer.
+
+    La levantan los stores de seguridad (blocklist de tokens, rate limiters)
+    en vez de caer al fallback en memoria. Se traduce a un 503 en
+    `core/exceptions.py`.
+    """
+
+    def __init__(self, store: str) -> None:
+        super().__init__(f"Redis no disponible en {store}")
+        self.store = store
+
+
+def sin_redis(store: str, exc: Exception | None = None) -> None:
+    """Punto único de decisión para los stores que dependen de Redis.
+
+    Se llama cuando una operación NO pudo pasar por Redis, sea porque no hay
+    cliente conectado o porque el comando falló. Dos caminos:
+
+      * **Producción con `REDIS_URL` configurada** → `RedisCaido` (→ 503).
+        Es la parte que importa: caer al store en memoria acá no es
+        degradarse, es *apagar la seguridad*. La blocklist en memoria arranca
+        vacía, así que todo token revocado (logout) o ya rotado (refresh
+        one-time-use) vuelve a ser válido, y todos los contadores de rate
+        limit se ponen en cero justo cuando el sistema está peor. Un 503
+        mientras Redis está caído es visible y se arregla; lo otro es una
+        ventana de autenticación abierta que no deja ningún rastro.
+
+      * **Cualquier otro caso** (dev, tests, deploy sin Redis a propósito) →
+        se deja pasar al fallback en memoria, que es un modo legítimo con un
+        solo proceso. Se avisa solo si hubo excepción: que no haya cliente
+        cuando nadie configuró `REDIS_URL` es lo esperado, no un incidente.
+
+    Ojo: `settings` se importa acá adentro y no arriba para no invertir la
+    dependencia del módulo (config no debería tirar de redis_client ni al
+    revés en tiempo de import).
+    """
+    from app.core.config import settings
+
+    if settings.is_production and settings.REDIS_URL:
+        raise RedisCaido(store)
+    if exc is not None:
+        warn_fallback(store, exc)

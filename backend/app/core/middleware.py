@@ -6,6 +6,7 @@ Middlewares (applied bottom-up in FastAPI):
   2. SecurityHeadersMiddleware  — security + CSP headers on every response
   3. RequestIDMiddleware        — attaches X-Request-ID to every request/response
   4. RequestLoggingMiddleware   — structured JSON log per request with timing
+  5. RateLimitMiddleware        — tope general de requests por IP sobre /api
 """
 
 import time
@@ -18,8 +19,19 @@ from starlette.responses import JSONResponse, Response
 
 from app.core.config import settings
 from app.core.logging_config import get_logger
+from app.core.ratelimit import IPRateLimiter
 
 logger = get_logger("crow.http")
+
+# Cubetas del tope general por IP (ver RateLimitMiddleware). A nivel de módulo
+# para que haya una sola instancia por proceso, igual que los limitadores de
+# `routes/auth.py`.
+_api_limiter = IPRateLimiter(
+    "api", settings.API_RATE_LIMIT_PER_IP, settings.API_RATE_WINDOW_SECONDS
+)
+_api_write_limiter = IPRateLimiter(
+    "api_write", settings.API_WRITE_RATE_LIMIT_PER_IP, settings.API_RATE_WINDOW_SECONDS
+)
 
 # ---------------------------------------------------------------------------
 # CSRF — Origin validation
@@ -135,6 +147,77 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         return response
+
+
+# ---------------------------------------------------------------------------
+# Rate limit general por IP
+# ---------------------------------------------------------------------------
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Tope general por IP sobre `/api`, como respaldo del `limit_req` de nginx.
+
+    Va acá y no como dependencia de FastAPI porque tiene que aplicar a TODA la
+    superficie, incluidas las rutas que todavía no existen: una dependencia hay
+    que acordarse de ponerla en cada router nuevo, y la que falte no se nota
+    hasta que alguien la usa para algo.
+
+    Dos cubetas sobre la misma IP: una general y otra más chica solo para los
+    métodos que escriben. La separación es lo que hace útil el tope: navegar el
+    catálogo son decenas de GET legítimos por minuto, mientras que sesenta
+    escrituras en el mismo minuto ya no es alguien cargando productos a mano.
+
+    Es el ÚLTIMO middleware de la cadena (el más interno) a propósito: así el
+    429 sale con las cabeceras de seguridad, con su X-Request-ID y queda en el
+    log de accesos como cualquier otra respuesta. Lo que se ahorra rechazando
+    antes -- cuatro middlewares que no tocan la base -- no vale perder la traza
+    justo de las requests que interesa investigar.
+    """
+
+    # Health lo consulta el balanceador cada pocos segundos y no debe fallar
+    # nunca por un vecino ruidoso. `/api/events` es SSE: UNA request que queda
+    # abierta horas, así que contarla no significa nada, y el límite real de
+    # conexiones simultáneas es harina de otro costal.
+    _EXENTAS = frozenset({"/api/health", "/api/events"})
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        ruta = request.url.path
+        if not ruta.startswith("/api") or ruta in self._EXENTAS:
+            return await call_next(request)
+
+        # Import adentro: `core.audit` importa modelos, y a nivel de módulo
+        # esto crearía un ciclo con la cadena de imports de la aplicación.
+        from app.core.audit import client_ip
+        from app.core.redis_client import RedisCaido
+
+        ip = client_ip(request)
+
+        # `RedisCaido` se atiende acá adentro y no con el handler de
+        # `core/exceptions.py`: los handlers de FastAPI solo alcanzan a las
+        # excepciones que salen de una ruta o sus dependencias. Lo que revienta
+        # dentro de un middleware pasa de largo y termina en el 500 genérico,
+        # que diría "error interno" cuando lo que pasa es que Redis está caído.
+        try:
+            espera = _api_limiter.retry_after(ip)
+            if espera is None and request.method in _MUTATING_METHODS:
+                espera = _api_write_limiter.retry_after(ip)
+        except RedisCaido:
+            logger.error("RedisCaido en el rate limit general", extra={"path": ruta})
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Servicio temporalmente no disponible. Intente nuevamente en unos momentos."},
+            )
+
+        if espera is not None:
+            logger.warning(
+                "Rate limit por IP alcanzado",
+                extra={"method": request.method, "path": ruta, "ip": ip, "retry_after": espera},
+            )
+            return JSONResponse(
+                status_code=429,
+                content={"detail": f"Demasiadas solicitudes. Reintentá en {espera} segundos."},
+                headers={"Retry-After": str(espera)},
+            )
+
+        return await call_next(request)
 
 
 # ---------------------------------------------------------------------------

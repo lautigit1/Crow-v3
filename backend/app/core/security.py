@@ -30,6 +30,29 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
+# Hash de un secreto aleatorio que no existe en ningún lado, calculado una vez
+# al importar. Contra este compara `dummy_verify()`; que nadie sepa el original
+# es justamente el punto: la comparación siempre da False.
+_DUMMY_HASH = bcrypt.hashpw(uuid.uuid4().bytes + uuid.uuid4().bytes, bcrypt.gensalt()).decode("utf-8")
+
+
+def dummy_verify(plain: str) -> None:
+    """Gasta el mismo tiempo que una verificación real y descarta el resultado.
+
+    Existe por el login: si el email no está en la base, sin esto no se corre
+    bcrypt y la respuesta sale en menos de un milisegundo, contra los ~250 ms
+    que tarda cuando la cuenta sí existe. Esa diferencia se mide desde afuera
+    con una sola petición y convierte al endpoint en un oráculo de "esta
+    persona es cliente", que es exactamente el dato que hay que proteger antes
+    de que alguien arme la lista para el barrido de contraseñas.
+
+    El costo tiene que salir del MISMO trabajo, no de un `sleep`: bcrypt varía
+    con la carga de la máquina, y una espera fija sería un tiempo constante al
+    lado de uno que fluctúa -- volvería a distinguirse.
+    """
+    verify_password(plain, _DUMMY_HASH)
+
+
 # ---------------------------------------------------------------------------
 # Access token  (short-lived, 30 min by default)
 # ---------------------------------------------------------------------------

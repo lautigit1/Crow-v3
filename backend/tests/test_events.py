@@ -14,6 +14,7 @@ se guarda porque el canal de avisos falló es un problema.
 
 import asyncio
 import contextlib
+import time
 
 import pytest
 
@@ -191,7 +192,7 @@ class TestEndpointSSE:
         events.registrar_loop(asyncio.get_running_loop())
         monkeypatch.setattr(ruta, "_LATIDO_SEGUNDOS", 0.05)
 
-        stream = ruta._stream(["admin"])
+        stream = ruta._stream(["admin"], None, time.time() + 300)
         assert (await anext(stream)).startswith(":")   # saludo
         assert (await anext(stream)).startswith(":")   # latido, sin eventos
         await stream.aclose()
@@ -203,7 +204,7 @@ class TestEndpointSSE:
         events.registrar_loop(asyncio.get_running_loop())
         monkeypatch.setattr(ruta, "_LATIDO_SEGUNDOS", 5.0)
 
-        stream = ruta._stream(["admin"])
+        stream = ruta._stream(["admin"], None, time.time() + 300)
         await anext(stream)  # saludo
 
         siguiente = asyncio.create_task(anext(stream))  # type: ignore[arg-type]

@@ -84,6 +84,33 @@ class Settings(BaseSettings):
     # lo que se estaba probando.
     REGISTER_RATE_LIMIT_PER_IP: int = 10
 
+    # Logins FALLIDOS por hora desde una misma IP, sin importar contra qué
+    # cuenta. El limitador por (ip, email) frena que le peguen a UNA cuenta,
+    # pero no el caso inverso -- una contraseña probada contra miles de
+    # emails -- porque cada email estrena su propia clave. Este es el que
+    # cubre eso.
+    #
+    # Los logins exitosos no cuentan: el tope lo gasta el que se equivoca.
+    # 30 por hora es holgado para un local con varias personas detrás del
+    # mismo IP y de todas formas deja el barrido masivo fuera de alcance.
+    LOGIN_RATE_LIMIT_PER_IP: int = 30
+    LOGIN_RATE_LOCKOUT_SECONDS: int = 900   # 15 min de espera al pasarse
+
+    # ── Rate limit general de la API ─────────────────────────────────────────
+    # Backstop por IP aplicado a todo `/api` desde el middleware (ver
+    # core/middleware.py). Es la red que atrapa lo que no tiene un limitador
+    # propio: catálogo, pedidos, importaciones, panel.
+    #
+    # No reemplaza al `limit_req` de nginx -- lo respalda. El de nginx solo
+    # existe si el tráfico entra por ahí; este viaja con la aplicación.
+    #
+    # Los números son por MINUTO y están puestos para no molestar a nadie
+    # real: una pantalla del panel dispara unas pocas requests, así que 300
+    # deja bastante más de un orden de magnitud de margen sobre el uso normal.
+    API_RATE_LIMIT_PER_IP: int = 300        # lecturas + escrituras
+    API_WRITE_RATE_LIMIT_PER_IP: int = 60   # solo POST/PUT/PATCH/DELETE
+    API_RATE_WINDOW_SECONDS: int = 60
+
     # ── Media uploads (Cloudinary) ───────────────────────────────────────────
     # Dejar vacío para deshabilitar el upload de imágenes (el form admin cae
     # al campo de URL manual). Conseguí las credenciales en cloudinary.com.

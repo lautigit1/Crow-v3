@@ -5,9 +5,15 @@ When Redis is available:
   block()      →  SETEX crow:bl:{jti} {ttl} "1"
   is_blocked() →  EXISTS crow:bl:{jti}
 
-When Redis is not configured or unreachable, falls back to an in-memory
-dict protected by a threading.Lock. Tokens re-become valid after a restart
-in that case (worst-case window = ACCESS_TOKEN_EXPIRE_MINUTES).
+Fuera de producción (o en un deploy sin `REDIS_URL` a propósito) cae a un
+dict en memoria protegido por un `threading.Lock`; los tokens vuelven a ser
+válidos tras un reinicio, con una ventana máxima de
+ACCESS_TOKEN_EXPIRE_MINUTES.
+
+En producción con `REDIS_URL` configurada NO hay fallback: si Redis no
+responde, `sin_redis()` levanta `RedisCaido` (→ 503). El store en memoria
+arranca vacío, así que caer ahí resucitaría cada token revocado en logout y
+cada refresh ya rotado -- ver el docstring de `core/redis_client.sin_redis`.
 """
 
 import time
@@ -28,16 +34,18 @@ class TokenBlocklist:
 
     def block(self, jti: str, expires_at: float) -> None:
         """Revoke a token by JTI. expires_at is a POSIX timestamp."""
-        from app.core.redis_client import get_redis, warn_fallback
+        from app.core.redis_client import get_redis, sin_redis
 
         r = get_redis()
-        if r is not None:
+        if r is None:
+            sin_redis("token_blocklist.block")
+        else:
             ttl = max(1, int(expires_at - time.time()))
             try:
                 r.setex(f"{_KEY_PREFIX}{jti}", ttl, "1")
                 return
             except Exception as exc:
-                warn_fallback("token_blocklist.block", exc)  # fall through to in-memory
+                sin_redis("token_blocklist.block", exc)  # si no levanta, sigue en memoria
 
         with self._lock:
             self._entries[jti] = expires_at
@@ -45,14 +53,16 @@ class TokenBlocklist:
 
     def is_blocked(self, jti: str) -> bool:
         """Return True if the JTI has been revoked and the token hasn't expired."""
-        from app.core.redis_client import get_redis, warn_fallback
+        from app.core.redis_client import get_redis, sin_redis
 
         r = get_redis()
-        if r is not None:
+        if r is None:
+            sin_redis("token_blocklist.is_blocked")
+        else:
             try:
                 return bool(r.exists(f"{_KEY_PREFIX}{jti}"))
             except Exception as exc:
-                warn_fallback("token_blocklist.is_blocked", exc)  # fall through to in-memory
+                sin_redis("token_blocklist.is_blocked", exc)  # si no levanta, sigue en memoria
 
         now = time.time()
         with self._lock:

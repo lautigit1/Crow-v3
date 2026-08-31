@@ -33,7 +33,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base, get_db
 from app.core.post_commit import ejecutar_post_commit
-from app.core.ratelimit import LoginRateLimiter
+from app.core.ratelimit import IPRateLimiter, LoginRateLimiter
 from app.core.security import hash_password
 from app.core.token_blocklist import token_blocklist
 from app.main import app
@@ -108,6 +108,10 @@ def client(db: Session):
     # and would otherwise lock out later tests.
     token_blocklist._entries.clear()
     LoginRateLimiter.reset_all_memory_state()
+    # Igual que arriba, para el tope general por IP del middleware: la suite
+    # entera entra como "testclient", así que sin esto los contadores de un
+    # test se suman a los del siguiente.
+    IPRateLimiter.reset_all_memory_state()
 
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c

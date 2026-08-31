@@ -25,6 +25,7 @@ from app.core.security import (
     create_reset_token,
     decode_refresh_token,
     decode_reset_token,
+    dummy_verify,
     hash_password,
     verify_password,
 )
@@ -50,6 +51,25 @@ _register_ip_limiter = LoginRateLimiter(
     max_attempts=settings.REGISTER_RATE_LIMIT_PER_IP, window_seconds=3600, lockout_seconds=3600
 )
 _reset_ip_limiter    = LoginRateLimiter(max_attempts=15, window_seconds=3600, lockout_seconds=3600)
+
+# El mismo hueco, del lado del login. `login_limiter` se llavea por
+# (ip, email): protege UNA cuenta de que le prueben muchas contraseñas, y no
+# hace absolutamente nada contra el caso inverso, que es el que se usa de
+# verdad -- una contraseña común probada contra miles de emails, donde cada
+# intento estrena una clave nueva y ningún contador llega jamás a cinco.
+#
+# El `limit_req` de nginx sobre /api/auth/ tampoco alcanza: 5 r/s son 18.000
+# intentos por hora, de sobra para barrer una lista de correos filtrada.
+#
+# Solo suma con los FALLIDOS, y a diferencia del limitador por cuenta este no
+# se resetea al entrar bien: si se limpiara con cada éxito, bastaría con tener
+# una cuenta propia e ir intercalando logins válidos para no gastar nunca el
+# tope.
+_login_ip_limiter = LoginRateLimiter(
+    max_attempts=settings.LOGIN_RATE_LIMIT_PER_IP,
+    window_seconds=3600,
+    lockout_seconds=settings.LOGIN_RATE_LOCKOUT_SECONDS,
+)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -155,7 +175,7 @@ def _enviar_bienvenida(*, to: str, name: str, whatsapp: str) -> None:
 def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession, request: Request, response: Response) -> AuthResponse:
     ip = audit.client_ip(request)
 
-    locked_for = login_limiter.check(ip, form.username)
+    locked_for = login_limiter.check(ip, form.username) or _login_ip_limiter.check(ip, "*")
     if locked_for:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -163,8 +183,15 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession, 
         )
 
     user = db.scalar(select(User).where(User.email == form.username))
+    # `dummy_verify` cuando no hay cuenta: sin esa rama, un email inexistente
+    # se responde sin correr bcrypt y vuelve en un milisegundo, contra los
+    # ~250 ms de uno que sí existe. La diferencia se mide con una sola
+    # petición y convierte al login en un oráculo de quién es cliente.
+    if user is None:
+        dummy_verify(form.password)
     if not user or not verify_password(form.password, user.hashed_password):
         login_limiter.register_failure(ip, form.username)
+        _login_ip_limiter.register_failure(ip, "*")
         audit.record_standalone(
             action="login.failure",
             actor_email=form.username,

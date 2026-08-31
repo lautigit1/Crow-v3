@@ -57,6 +57,22 @@ router = APIRouter()
 _MAX_BYTES = 5 * 1024 * 1024
 
 
+async def _leer_acotado(file: UploadFile) -> bytes:
+    """Lee el archivo subido sin pasar de `_MAX_BYTES` en memoria.
+
+    La versión anterior era `await file.read()` y recién después comparaba el
+    largo, o sea que para rechazar un archivo de 2 GB por pasarse de 5 MB
+    primero se lo cargaba entero. El tope estaba escrito pero se aplicaba
+    demasiado tarde para servir de algo.
+
+    Se pide UN byte de más: alcanza para saber que se pasó sin traer el resto.
+    """
+    contenido = await file.read(_MAX_BYTES + 1)
+    if len(contenido) > _MAX_BYTES:
+        raise HTTPException(status_code=413, detail="El archivo supera los 5 MB.")
+    return contenido
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -166,9 +182,7 @@ async def preview_import(
     if supplier is None:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
-    contenido = await file.read()
-    if len(contenido) > _MAX_BYTES:
-        raise HTTPException(status_code=413, detail="El archivo supera los 5 MB.")
+    contenido = await _leer_acotado(file)
 
     try:
         encabezados, _, _ = leer_filas(contenido)
@@ -222,9 +236,7 @@ async def create_import(
     if supplier is None:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
-    contenido = await file.read()
-    if len(contenido) > _MAX_BYTES:
-        raise HTTPException(status_code=413, detail="El archivo supera los 5 MB.")
+    contenido = await _leer_acotado(file)
 
     mapeo = {"sku": mapping_sku, "name": mapping_name, "quantity": mapping_quantity}
     if mapping_unit_cost:
@@ -320,9 +332,7 @@ async def create_manual_import(
     if supplier is None:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
-    contenido = await file.read()
-    if len(contenido) > _MAX_BYTES:
-        raise HTTPException(status_code=413, detail="El archivo supera los 5 MB.")
+    contenido = await _leer_acotado(file)
 
     batch = ImportBatch(
         supplier_id=supplier_id,
