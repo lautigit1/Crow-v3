@@ -7,9 +7,14 @@
 # /api al backend.
 #
 # Caddy agrega X-Forwarded-For con la IP real del cliente; nginx la encadena
-# con $proxy_add_x_forwarded_for, y el backend (client_ip() en audit.py) toma
-# la primera de la cadena porque el peer directo cae en TRUSTED_PROXIES
-# (la subnet fija 172.28.0.0/16 del compose).
+# con $proxy_add_x_forwarded_for, y el backend (client_ip() en audit.py)
+# recorre la cadena DE DERECHA A IZQUIERDA y se queda con la última entrada
+# que no caiga en TRUSTED_PROXIES (la subnet fija 172.28.0.0/16 del compose).
+#
+# De derecha a izquierda y no al revés: la primera entrada de la cadena no la
+# escribió ningún proxy, la escribió quien hizo la petición, así que vale lo
+# que valga su palabra. Tomarla permitía falsear la IP en el log de auditoría
+# y esquivar los limitadores que se llavean solo por IP.
 
 {$DOMAIN} {
 	# El canal de eventos (SSE) se sirve SIN compresión.

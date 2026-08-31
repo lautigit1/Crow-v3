@@ -74,6 +74,54 @@ class TestSitemap:
         assert "<changefreq>weekly</changefreq>" in chunk
 
 
+class TestSitemapCacheado:
+    """El sitemap es el endpoint con la peor relación costo/beneficio del
+    sistema: una request sin autenticar recorre el catálogo ENTERO -- sin
+    paginar, porque un sitemap parcial no sirve -- y arma el XML. Para quien
+    lo pide cuesta un GET; para nosotros crece con cada producto. Esa
+    asimetria es lo que lo vuelve un blanco comodo.
+    """
+
+    def test_manda_cache_control(self, client):
+        """El cache del servidor no alcanza solo: sin esta cabecera, cada
+        crawler y cada proxy del camino vuelven a pedirlo entero."""
+        r = client.get("/sitemap.xml")
+
+        assert r.status_code == 200
+        assert "max-age=3600" in r.headers["cache-control"]
+
+    def test_la_segunda_request_no_toca_la_base(self, client, product, monkeypatch):
+        from app.api.routes import seo
+
+        # Sin Redis (la suite corre con el fallback en memoria) no hay cache,
+        # asi que se simula el store para probar el camino que corre en
+        # produccion.
+        guardado: dict[str, str] = {}
+        monkeypatch.setattr(seo, "cache_get", lambda k: guardado.get(k))
+        monkeypatch.setattr(seo, "cache_set", lambda k, v, ttl: guardado.__setitem__(k, v))
+
+        generaciones = []
+        original = seo._generar_sitemap
+        monkeypatch.setattr(
+            seo, "_generar_sitemap", lambda db: (generaciones.append(1), original(db))[1]
+        )
+
+        primera = client.get("/sitemap.xml")
+        segunda = client.get("/sitemap.xml")
+
+        assert primera.text == segunda.text
+        assert len(generaciones) == 1, "la segunda request volvio a recorrer el catalogo"
+
+    def test_sin_redis_sigue_respondiendo(self, client, product):
+        """Un cache caido significa recalcular, que es lo que pasaba antes de
+        que el cache existiera. Nada se rompe, solo se hace mas lento -- a
+        diferencia de la blocklist, que falla cerrado."""
+        r = client.get("/sitemap.xml")
+
+        assert r.status_code == 200
+        assert f"/producto/{product.id}" in r.text
+
+
 class TestRobots:
     def test_robots_status_and_content_type(self, client):
         r = client.get(BASE_ROBOTS)

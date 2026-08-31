@@ -11,12 +11,31 @@ from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 
+from app.core.cache import cache_get, cache_set
 from app.core.config import settings
 from app.core.deps import DbSession
 from app.models.category import Category
 from app.models.product import Product, producto_publico
 
 router = APIRouter(tags=["seo"])
+
+# Cuánto vive el sitemap cacheado.
+#
+# Es el endpoint más caro y más barato de pedir que tiene el sistema: una
+# request sin autenticar recorre el catálogo ENTERO -- sin paginar, a
+# propósito, porque un sitemap parcial no sirve -- y arma el XML. Para quien
+# lo pide cuesta un GET; para nosotros, una consulta que crece con cada
+# producto. Esa asimetría es lo que lo vuelve un buen blanco: no hace falta
+# volumen, hace falta insistir.
+#
+# Una hora es de sobra: Google no lo relee ni de cerca tan seguido, y un
+# producto nuevo que tarda hasta una hora en aparecer no le cambia la vida a
+# nadie -- la indexación real demora días.
+#
+# Sin Redis no hay cache y se recalcula, como antes. Un sitemap viejo sería
+# peor que uno lento (ver `core/cache.py`).
+_SITEMAP_TTL = 3600
+_SITEMAP_CACHE_KEY = "sitemap"
 
 # Static public routes to include in every sitemap
 _STATIC_ROUTES: list[tuple[str, str, str]] = [
@@ -41,7 +60,27 @@ def _url_entry(loc: str, lastmod: str, changefreq: str, priority: str) -> str:
 
 
 @router.get("/sitemap.xml", response_class=PlainTextResponse)
-def sitemap(db: DbSession) -> str:
+def sitemap(db: DbSession) -> PlainTextResponse:
+    cacheado = cache_get(_SITEMAP_CACHE_KEY)
+    if cacheado is not None:
+        return _respuesta_sitemap(cacheado)
+
+    xml = _generar_sitemap(db)
+    cache_set(_SITEMAP_CACHE_KEY, xml, _SITEMAP_TTL)
+    return _respuesta_sitemap(xml)
+
+
+def _respuesta_sitemap(xml: str) -> PlainTextResponse:
+    """El `Cache-Control` importa tanto como el cache del servidor: sin él,
+    cada crawler y cada proxy del camino vuelven a pedirlo entero."""
+    return PlainTextResponse(
+        content=xml,
+        media_type="application/xml",
+        headers={"Cache-Control": f"public, max-age={_SITEMAP_TTL}"},
+    )
+
+
+def _generar_sitemap(db: DbSession) -> str:
     base = settings.FRONTEND_URL.rstrip("/")
     today = str(date.today())
     entries: list[str] = []
@@ -100,7 +139,7 @@ def sitemap(db: DbSession) -> str:
         + "\n".join(entries)
         + "\n</urlset>"
     )
-    return PlainTextResponse(content=xml, media_type="application/xml")
+    return xml
 
 
 @router.get("/robots.txt", response_class=PlainTextResponse)

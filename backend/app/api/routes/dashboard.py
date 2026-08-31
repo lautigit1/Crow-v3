@@ -5,6 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Response
 from sqlalchemy import func, select
 
+from app.core.cache import cache_delete, cache_get, cache_set
 from app.core.deps import AdminUser, DbSession
 from app.models.brand import Brand
 from app.models.category import Category
@@ -24,27 +25,15 @@ Period = Literal["7d", "30d", "90d", "12m"]
 _TREND_PERIODS: tuple[Period, ...] = ("7d", "30d", "90d", "12m")
 
 # ── Redis cache helpers ────────────────────────────────────────────────────────
+# La implementación se mudó a `core/cache.py` cuando el sitemap necesitó lo
+# mismo. Estos alias quedan para no tocar las diez llamadas de abajo.
 
 def _cache_get(key: str) -> str | None:
-    from app.core.redis_client import get_redis
-    r = get_redis()
-    if r is None:
-        return None
-    try:
-        return r.get(f"crow:cache:{key}")
-    except Exception:
-        return None
+    return cache_get(key)
 
 
 def _cache_set(key: str, value: str, ttl: int = _CACHE_TTL) -> None:
-    from app.core.redis_client import get_redis
-    r = get_redis()
-    if r is None:
-        return
-    try:
-        r.setex(f"crow:cache:{key}", ttl, value)
-    except Exception:
-        pass
+    cache_set(key, value, ttl)
 
 
 def invalidate_dashboard_cache() -> None:
@@ -57,16 +46,7 @@ def invalidate_dashboard_cache() -> None:
     `routes/products.py` que cambia el set de productos activos o su
     stock/precio.
     """
-    from app.core.redis_client import get_redis
-    r = get_redis()
-    if r is None:
-        return
-    try:
-        keys = ["crow:cache:dashboard", "crow:cache:analytics"]
-        keys += [f"crow:cache:trends:{p}" for p in _TREND_PERIODS]
-        r.delete(*keys)
-    except Exception:
-        pass
+    cache_delete("dashboard", "analytics", *[f"trends:{p}" for p in _TREND_PERIODS])
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
