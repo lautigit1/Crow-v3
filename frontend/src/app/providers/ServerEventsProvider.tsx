@@ -81,7 +81,16 @@ export function ServerEventsProvider({ children }: { children: ReactNode }) {
           reabrirMasTarde();
           return;
         }
-        espera = ESPERA_INICIAL_MS;
+        // La espera NO se reinicia acá, aunque el sondeo haya salido bien: se
+        // reinicia en `onopen`, cuando la conexión de verdad quedó abierta.
+        //
+        // La diferencia importa desde que el servidor puede responder 429 por
+        // tope de streams simultáneos (ver `core/sse_limit.py`). En ese caso
+        // el sondeo sale 200 -- la sesión está perfecta, lo que sobra son
+        // pestañas -- y reiniciar la espera ahí dejaría esto reintentando cada
+        // dos segundos para siempre contra un endpoint que va a seguir
+        // diciendo que no.
+        espera = Math.min(espera * 2, ESPERA_MAXIMA_MS);
         conectar();
       }, espera);
     };
@@ -104,6 +113,12 @@ export function ServerEventsProvider({ children }: { children: ReactNode }) {
           return;
         }
         handlers.current.forEach((h) => h(evento));
+      };
+
+      // Único lugar donde se perdona el backoff: la conexión quedó abierta,
+      // así que lo que sea que estaba mal se arregló.
+      fuente.onopen = () => {
+        espera = ESPERA_INICIAL_MS;
       };
 
       fuente.onerror = () => {

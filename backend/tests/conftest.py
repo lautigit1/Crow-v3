@@ -112,6 +112,10 @@ def client(db: Session):
     # entera entra como "testclient", así que sin esto los contadores de un
     # test se suman a los del siguiente.
     IPRateLimiter.reset_all_memory_state()
+    # Y el tope de streams SSE: una conexión que un test dejó anotada le
+    # comería el cupo al siguiente.
+    from app.api.routes.events import limite_de_conexiones
+    limite_de_conexiones.reset_memoria()
 
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c

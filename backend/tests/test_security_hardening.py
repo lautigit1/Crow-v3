@@ -9,6 +9,7 @@ Tests del change `security-hardening`:
   - Login: sin enumeración de usuarios por tiempo de respuesta
   - Subida de archivos: el tope se aplica antes de leer el archivo entero
   - SSE: la sesión se revalida mientras el stream está abierto
+  - SSE: tope de conexiones simultáneas por usuario
   - Sanitización del subject SMTP
   - Pedidos: stock (validación, descuento, devolución), topes, reactivación
   - Resolución de la IP del cliente detrás de proxies (X-Forwarded-For)
@@ -776,3 +777,110 @@ class TestRevalidacionDelStream:
         monkeypatch.setattr("app.api.routes.events.token_blocklist.is_blocked", _explota)
 
         assert _sesion_sigue_viva("cualquiera", time.time() + 300) is False
+
+
+# ---------------------------------------------------------------------------
+# Tope de conexiones SSE simultaneas por usuario
+# ---------------------------------------------------------------------------
+
+class TestTopeDeStreamsSSE:
+    """`/api/events` no es una request, es una que no termina.
+
+    Un rate limit cuenta cuantas se abren por minuto y no dice nada sobre
+    cuantas hay abiertas AHORA, que es lo unico que importa cuando cada una
+    consume un recurso mientras vive. Y consume uno caro: cada suscriptor abre
+    su propia conexion a Redis, contra el `maxclients` del servidor. Desde que
+    los stores fallan cerrado, quedarse sin Redis tira toda la API a 503 --
+    o sea que sin este tope, una sola cuenta alcanza para voltear el sitio.
+    """
+
+    def _limite(self, maximo=3, ttl=90):
+        from app.core.sse_limit import LimiteDeConexiones
+
+        return LimiteDeConexiones(max_por_usuario=maximo, ttl_segundos=ttl)
+
+    def test_deja_entrar_hasta_el_tope_y_ni_una_mas(self):
+        limite = self._limite(maximo=3)
+
+        tokens = [limite.registrar(user_id=1) for _ in range(3)]
+        assert all(tokens), "las tres primeras tenian que entrar"
+        assert limite.registrar(user_id=1) is None
+        assert limite.activas(1) == 3
+
+    def test_cerrar_una_conexion_devuelve_el_lugar(self):
+        """Un tope que no se libera es una cuota que se gasta una sola vez."""
+        limite = self._limite(maximo=2)
+
+        primero = limite.registrar(user_id=1)
+        limite.registrar(user_id=1)
+        assert limite.registrar(user_id=1) is None
+
+        limite.liberar(1, primero)
+
+        assert limite.activas(1) == 1
+        assert limite.registrar(user_id=1) is not None
+
+    def test_el_tope_es_por_usuario_y_no_global(self):
+        """Que alguien tenga sus pestanas abiertas no puede dejar afuera al
+        resto: si el tope fuera global, una sola cuenta apagaria la campana de
+        todos los demas, que es peor que el problema que resuelve."""
+        limite = self._limite(maximo=2)
+
+        assert limite.registrar(user_id=1) is not None
+        assert limite.registrar(user_id=1) is not None
+        assert limite.registrar(user_id=1) is None
+
+        assert limite.registrar(user_id=2) is not None
+
+    def test_las_conexiones_abandonadas_caducan(self):
+        """Un worker que muere de golpe no alcanza a descontar sus conexiones.
+        Sin caducidad el tope se trabaria lleno de conexiones que ya no existen
+        y ese usuario no volveria a recibir eventos nunca."""
+        limite = self._limite(maximo=2, ttl=0)  # todo latido nace vencido
+
+        limite.registrar(user_id=1)
+        limite.registrar(user_id=1)
+
+        assert limite.activas(1) == 0
+        assert limite.registrar(user_id=1) is not None
+
+    def test_el_latido_mantiene_viva_la_reserva(self):
+        """El contrapunto del anterior: mientras el stream late, su lugar no se
+        lo puede quedar nadie."""
+        import time
+
+        limite = self._limite(maximo=1, ttl=1)
+        token = limite.registrar(user_id=1)
+
+        time.sleep(0.6)
+        limite.refrescar(1, token)
+        time.sleep(0.6)
+
+        # Sin el refresh del medio, a los 1.2s ya estaria vencida.
+        assert limite.activas(1) == 1
+        assert limite.registrar(user_id=1) is None
+
+    def test_el_endpoint_responde_429_al_pasarse(self, user_client, monkeypatch):
+        from app.api.routes import events as ruta
+
+        # El cupo se llena "a mano" para no tener que abrir streams de verdad:
+        # lo que se prueba es que la ruta consulta el tope antes de suscribirse
+        # a nada, no el transporte del canal.
+        monkeypatch.setattr(ruta.limite_de_conexiones, "max_por_usuario", 0)
+
+        r = user_client.get("/api/events")
+
+        assert r.status_code == 429
+        assert "conexiones" in r.json()["detail"].lower()
+
+    def test_el_rechazo_no_deja_conexiones_colgadas(self, user_client, monkeypatch):
+        """El lugar se pide ANTES de suscribirse: si el orden fuera al reves,
+        el rechazo llegaria con la conexion a Redis ya abierta -- justo el
+        recurso que esto protege."""
+        from app.api.routes import events as ruta
+
+        monkeypatch.setattr(ruta.limite_de_conexiones, "max_por_usuario", 0)
+
+        user_client.get("/api/events")
+
+        assert ruta.limite_de_conexiones.activas(1) == 0

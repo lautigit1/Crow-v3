@@ -60,6 +60,23 @@ services:
       # rango entero cubre a nginx aunque el contenedor se recree con otra IP.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.28.0.0/16}
       REDIS_URL: redis://crow_redis:6379/0
+      # Topes de rate limit, subidos para este stack.
+      #
+      # Contra este compose es contra lo que corre la suite E2E, y ahí la IP no
+      # identifica a una persona: los 33 tests entran por una sola. Peor todavía
+      # -- con `TRUSTED_PROXIES` cubriendo la subnet entera, el navegador llega
+      # desde el gateway (172.28.0.1), que cae DENTRO del rango de confianza y
+      # se descarta, así que todo termina contabilizado bajo la IP de nginx.
+      # En producción no pasa (las IPs públicas de los clientes no están en
+      # 172.28.0.0/16), pero acá significa que la suite entera comparte un
+      # único balde.
+      #
+      # Los defaults del código son los de producción y no deberían tocarse
+      # ahí; lo que se sube es esto. Si no, un test nuevo rompe la corrida con
+      # un 429 en cualquier lado y el síntoma no se parece en nada a la causa:
+      # un botón que no aparece.
+      API_RATE_LIMIT_PER_IP: ${API_RATE_LIMIT_PER_IP:-100000}
+      API_WRITE_RATE_LIMIT_PER_IP: ${API_WRITE_RATE_LIMIT_PER_IP:-100000}
       # SMTP. Antes estas variables solo se pasaban en el compose de
       # producción, así que en desarrollo no llegaban al contenedor y era
       # imposible probar un envío: el módulo de email omite el envío en

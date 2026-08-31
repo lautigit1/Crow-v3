@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Cookie
+from fastapi import APIRouter, Cookie, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from app.core import events
@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.deps import CurrentUser
 from app.core.redis_client import RedisCaido
 from app.core.security import TOKEN_AUDIENCE
+from app.core.sse_limit import LimiteDeConexiones
 from app.core.token_blocklist import token_blocklist
 from app.models.user import UserRole
 
@@ -37,6 +38,13 @@ _LATIDO_SEGUNDOS = 25.0
 # No debería pasar -- la ruta solo se alcanza con un access token válido --
 # pero un stream sin fecha de corte es un stream para siempre.
 _VIDA_MAXIMA_SEGUNDOS = 3600.0
+
+# Cuántos streams simultáneos puede tener una misma cuenta. Ver el docstring
+# de `core/sse_limit.py` para por qué esto no puede ser un rate limit.
+limite_de_conexiones = LimiteDeConexiones(
+    max_por_usuario=settings.SSE_MAX_CONEXIONES_POR_USUARIO,
+    ttl_segundos=settings.SSE_TTL_CONEXION_SEGUNDOS,
+)
 
 
 def _sesion_sigue_viva(jti: str | None, vence_en: float) -> bool:
@@ -71,7 +79,13 @@ def _sesion_sigue_viva(jti: str | None, vence_en: float) -> bool:
         return False
 
 
-async def _stream(canales: list[str], jti: str | None, vence_en: float) -> AsyncIterator[str]:
+async def _stream(
+    canales: list[str],
+    jti: str | None,
+    vence_en: float,
+    user_id: int | None = None,
+    token_conexion: str | None = None,
+) -> AsyncIterator[str]:
     suscripcion = events.suscribir(canales)
 
     # El primer evento se pide como Task y NO se cancela cuando vence el
@@ -98,6 +112,13 @@ async def _stream(canales: list[str], jti: str | None, vence_en: float) -> Async
                 yield ": sesion terminada\n\n"
                 return
 
+            # El mismo latido renueva la reserva. Si el worker se muere sin
+            # llegar al `finally`, esto deja de pasar y la entrada caduca sola
+            # -- que es lo que evita que un tope se trabe lleno de conexiones
+            # que ya no existen.
+            if user_id is not None and token_conexion:
+                limite_de_conexiones.refrescar(user_id, token_conexion)
+
             if not listas:
                 yield ": ping\n\n"
                 continue
@@ -117,6 +138,11 @@ async def _stream(canales: list[str], jti: str | None, vence_en: float) -> Async
         except Exception as exc:  # noqa: BLE001
             logger.warning("Error cerrando el stream de eventos: %s", exc)
         await suscripcion.aclose()
+        # Devolver el lugar es lo que hace que el tope sea un tope y no una
+        # cuota que se gasta una sola vez. Va en el `finally` porque el camino
+        # normal de salida de acá es una cancelación, no un `return`.
+        if user_id is not None and token_conexion:
+            limite_de_conexiones.liberar(user_id, token_conexion)
 
 
 @router.get("/events")
@@ -139,6 +165,20 @@ async def stream_de_eventos(
     solo recibe los eventos de sus propios pedidos. El navegador no elige a qué
     se suscribe.
     """
+    # El lugar se pide ANTES de suscribirse a nada: si se hiciera después, el
+    # rechazo llegaría con la conexión a Redis ya abierta, que es justo el
+    # recurso que esto protege.
+    token_conexion = limite_de_conexiones.registrar(current_user.id)
+    if token_conexion is None:
+        logger.warning(
+            "Tope de streams SSE alcanzado",
+            extra={"user_id": current_user.id, "max": settings.SSE_MAX_CONEXIONES_POR_USUARIO},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas conexiones abiertas. Cerrá alguna pestaña e intentá de nuevo.",
+        )
+
     canales = [events.canal_usuario(current_user.id)]
     if current_user.role == UserRole.ADMIN:
         canales.append(events.CANAL_ADMIN)
@@ -164,7 +204,7 @@ async def stream_de_eventos(
             logger.warning("No se pudo leer el access token del stream de eventos")
 
     return StreamingResponse(
-        _stream(canales, jti, vence_en),
+        _stream(canales, jti, vence_en, current_user.id, token_conexion),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

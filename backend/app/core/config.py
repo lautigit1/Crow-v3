@@ -104,12 +104,49 @@ class Settings(BaseSettings):
     # No reemplaza al `limit_req` de nginx -- lo respalda. El de nginx solo
     # existe si el tráfico entra por ahí; este viaja con la aplicación.
     #
-    # Los números son por MINUTO y están puestos para no molestar a nadie
-    # real: una pantalla del panel dispara unas pocas requests, así que 300
-    # deja bastante más de un orden de magnitud de margen sobre el uso normal.
-    API_RATE_LIMIT_PER_IP: int = 300        # lecturas + escrituras
-    API_WRITE_RATE_LIMIT_PER_IP: int = 60   # solo POST/PUT/PATCH/DELETE
+    # Los números son por MINUTO y salen de medir, no de estimar. La primera
+    # versión de esto puso 300 "por las dudas" y rompió el E2E: la suite
+    # completa entra por una sola IP y midió un pico de 294 req/min, o sea
+    # que el tope estaba a un 2% del tráfico legítimo de UN navegador. Las
+    # escrituras en la misma corrida picaron en 39.
+    #
+    # De ahí los valores de ahora:
+    #
+    #   - General en 1200/min = los 20 r/s del `limit_req` de nginx. Que las
+    #     dos capas digan lo mismo es a propósito: este tope existe para el
+    #     caso en que nginx NO está adelante (otro proxy, un port-forward),
+    #     no para ser más estricto que el borde. Un límite de aplicación por
+    #     debajo del de nginx solo se dispara en ráfagas que nginx ya suaviza,
+    #     y entonces lo único que hace es cortarle la sesión a alguien real.
+    #
+    #   - Escrituras en 120/min, 3x el pico medido. Es la cubeta que de verdad
+    #     sirve: sesenta escrituras por minuto desde una IP ya no es alguien
+    #     cargando productos a mano, y a diferencia de las lecturas no hay un
+    #     caso legítimo que se acerque.
+    #
+    # Si volvés a tocarlos, medí primero: `docker compose logs api` trae una
+    # línea JSON por request con método y timestamp.
+    API_RATE_LIMIT_PER_IP: int = 1200        # lecturas + escrituras
+    API_WRITE_RATE_LIMIT_PER_IP: int = 120   # solo POST/PUT/PATCH/DELETE
     API_RATE_WINDOW_SECONDS: int = 60
+
+    # ── Conexiones SSE ───────────────────────────────────────────────────────
+    # Streams `/api/events` simultáneos por usuario. Un tope por minuto no
+    # sirve acá: lo que consume recursos no es abrir la conexión, es tenerla
+    # abierta -- y cada una se lleva una conexión a Redis (ver
+    # core/sse_limit.py).
+    #
+    # 8 es holgado para una persona: el provider del frontend abre UNA por
+    # pestaña, así que son ocho pestañas al mismo tiempo entre computadora y
+    # teléfono. Y deja el abuso lejos: sin tope, una sola cuenta alcanza para
+    # agotar el `maxclients` de Redis.
+    SSE_MAX_CONEXIONES_POR_USUARIO: int = 8
+
+    # Cuánto vale el último latido antes de dar una conexión por abandonada.
+    # Bastante más que el intervalo real (25 s): con menos margen, una conexión
+    # sana se daría de baja sola entre latido y latido. Es también lo que tarda
+    # en limpiarse lo que dejó colgado un worker que murió de golpe.
+    SSE_TTL_CONEXION_SEGUNDOS: int = 90
 
     # ── Media uploads (Cloudinary) ───────────────────────────────────────────
     # Dejar vacío para deshabilitar el upload de imágenes (el form admin cae
