@@ -76,6 +76,19 @@ class TestIPRateLimits:
         r = _register(client, "nuevo-11@test.com")
         assert r.status_code == 429
 
+    def test_repeated_duplicates_stop_answering(self, client, user):
+        """El 409 dice si un email tiene cuenta. Que lo diga cinco veces por
+        hora y por IP es una respuesta útil; que lo diga mil, una lista de
+        clientes. Después del tope la IP recibe 429 para CUALQUIER email --
+        también para uno inexistente-- así que deja de servir para sondear."""
+        for _ in range(5):
+            assert _register(client, user.email).status_code == 409
+
+        assert _register(client, user.email).status_code == 429
+        # Lo que cierra la enumeración: un email libre responde igual que uno
+        # tomado. Si acá volviera un 201, el bloqueo sería el oráculo nuevo.
+        assert _register(client, "jamas-visto@test.com").status_code == 429
+
 
 # ---------------------------------------------------------------------------
 # Fix 2 — logout revoca el refresh token

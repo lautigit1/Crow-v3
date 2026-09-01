@@ -52,6 +52,20 @@ _register_ip_limiter = LoginRateLimiter(
 )
 _reset_ip_limiter    = LoginRateLimiter(max_attempts=15, window_seconds=3600, lockout_seconds=3600)
 
+# El 409 de "el email ya está registrado" es, además de una respuesta útil, un
+# oráculo: dice si una dirección tiene cuenta acá. No se puede hacer genérico
+# sin sacar el auto-login del alta (el alta buena devuelve sesión y la repetida
+# no puede), así que en vez de cerrarlo se lo hace inservible para barrer una
+# lista: este limitador cuenta SOLO los duplicados, aparte del cupo general.
+#
+# Que sea un contador separado es el punto. Con uno solo, los duplicados
+# comparten presupuesto con las altas legítimas, y subir el costo de sondear
+# obligaba a bajarle el tope a la gente que se registra de verdad. Así, una IP
+# que recibe cinco "ya existe" en una hora queda bloqueada una hora --y a
+# partir de ahí recibe 429 tanto para los emails con cuenta como para los que
+# no, que es lo que corta la enumeración-- sin tocarle nada al alta normal.
+_register_dup_limiter = LoginRateLimiter(max_attempts=5, window_seconds=3600, lockout_seconds=3600)
+
 # El mismo hueco, del lado del login. `login_limiter` se llavea por
 # (ip, email): protege UNA cuenta de que le prueben muchas contraseñas, y no
 # hace absolutamente nada contra el caso inverso, que es el que se usa de
@@ -97,7 +111,11 @@ def register(
     background_tasks: PostCommit,
 ) -> AuthResponse:
     ip = audit.client_ip(request)
-    locked_for = _register_limiter.check(ip, data.email) or _register_ip_limiter.check(ip, "*")
+    locked_for = (
+        _register_limiter.check(ip, data.email)
+        or _register_ip_limiter.check(ip, "*")
+        or _register_dup_limiter.check(ip, "*")
+    )
     if locked_for:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -110,6 +128,13 @@ def register(
     if exists:
         _register_limiter.register_failure(ip, data.email)
         _register_ip_limiter.register_failure(ip, "*")
+        _register_dup_limiter.register_failure(ip, "*")
+        # Queda asentado para que un barrido se vea. Sin esto, la única huella
+        # de alguien probando mil direcciones es el 429 del final, y recién
+        # cuando ya probó las mil.
+        audit.record_standalone(
+            action="register.duplicate", actor_email=data.email, request=request
+        )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El email ya esta registrado")
 
     # Count successful registrations against the per-IP cap too — otherwise
