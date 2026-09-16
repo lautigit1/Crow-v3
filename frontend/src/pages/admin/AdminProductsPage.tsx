@@ -1,5 +1,6 @@
 import type * as React from "react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
   Button, DataTable, Modal, Drawer, Input, Textarea, Select, Badge, CenteredSpinner, Icon, Pagination,
@@ -9,12 +10,14 @@ import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { StockHistory } from "./ui/StockHistory";
 import { productApi, type Product, type ProductInput, type ProductSort } from "@/entities/product";
-import { categoryApi, type Category } from "@/entities/category";
-import { brandApi, type Brand } from "@/entities/brand";
-import { supplierApi, type Supplier } from "@/entities/supplier";
+import { productKeys, useDeletedProductsQuery, useProductsQuery } from "@/entities/product/queries";
+import { useCategoriesQuery } from "@/entities/category/queries";
+import { useBrandsQuery } from "@/entities/brand/queries";
+import { useSuppliersQuery } from "@/entities/supplier/queries";
 import { uploadApi } from "@/entities/upload";
 import { apiError } from "@/shared/api";
 import { formatPrice, formatDateTime } from "@/shared/lib/format";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { VEHICLE_TYPES } from "@/shared/config";
 
 const PAGE = 10;
@@ -39,12 +42,7 @@ function toSort(s: SortState | undefined): ProductSort {
 
 export function AdminProductsPage() {
   const [tab, setTab] = useState<"active" | "deleted">("active");
-
-  const [items, setItems] = useState<Product[] | null>(null);
-  const [total, setTotal] = useState(0);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const queryClient = useQueryClient();
 
   // filters / paging
   const [q, setQ] = useState("");
@@ -64,61 +62,40 @@ export function AdminProductsPage() {
 
   // drawer (detail)
   const [detail, setDetail] = useState<Product | null>(null);
-  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  useEffect(() => {
-    // Datos de soporte para los selects de filtro/formulario -- si alguno
-    // falla, el select correspondiente queda vacío pero el resto de la
-    // página sigue siendo usable, así que solo se loguea (no bloquea).
-    categoryApi.list().then(setCategories).catch((err) => {
-      console.error("[AdminProductsPage] no se pudieron cargar las categorías para el filtro:", err);
-      setCategories([]);
-    });
-    brandApi.list().then(setBrands).catch((err) => {
-      console.error("[AdminProductsPage] no se pudieron cargar las marcas para el filtro:", err);
-      setBrands([]);
-    });
-    supplierApi.list({ active_only: true, limit: 500 }).then((r) => setSuppliers(r.items)).catch((err) => {
-      console.error("[AdminProductsPage] no se pudieron cargar los proveedores para el filtro:", err);
-      setSuppliers([]);
-    });
-  }, []);
+  // Datos de soporte para los selects de filtro/formulario -- si alguno
+  // falla, el select correspondiente queda vacío pero el resto de la página
+  // sigue siendo usable.
+  const categories = useCategoriesQuery().data ?? [];
+  const brands = useBrandsQuery().data ?? [];
+  const suppliers = useSuppliersQuery({ active_only: true, limit: 500 }).data?.items ?? [];
 
-  const reload = () => {
-    setItems(null);
-    setLoadError(false);
-    const promise =
-      tab === "deleted"
-        ? productApi.listDeleted({ skip: page * PAGE, limit: PAGE })
-        : productApi.list({
-            q: q || undefined,
-            category_id: categoryId || undefined,
-            brand_id: brandId || undefined,
-            supplier_id: supplierId || undefined,
-            in_stock: stockOnly || undefined,
-            sort: toSort(sort),
-            skip: page * PAGE,
-            limit: PAGE,
-          });
-    return promise
-      .then((r) => {
-        setItems(r.items);
-        setTotal(r.total);
-      })
-      .catch((err) => {
-        console.error("[AdminProductsPage] no se pudieron cargar los productos:", err);
-        setItems([]);
-        setTotal(0);
-        setLoadError(true);
-      });
-  };
+  // Solo el texto libre espera a que se deje de tipear; los selects y la
+  // paginación responden al instante.
+  const debouncedQ = useDebouncedValue(q, 200);
+  const activos = useProductsQuery(
+    {
+      q: debouncedQ || undefined,
+      category_id: categoryId || undefined,
+      brand_id: brandId || undefined,
+      supplier_id: supplierId || undefined,
+      in_stock: stockOnly || undefined,
+      sort: toSort(sort),
+      skip: page * PAGE,
+      limit: PAGE,
+    },
+    tab === "active",
+  );
+  const eliminados = useDeletedProductsQuery({ skip: page * PAGE, limit: PAGE }, tab === "deleted");
+  const listado = tab === "deleted" ? eliminados : activos;
+  const items = listado.data?.items ?? null;
+  const total = listado.data?.total ?? 0;
+  const loadError = listado.isError;
 
-  useEffect(() => {
-    const h = setTimeout(reload, 200);
-    return () => clearTimeout(h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, q, categoryId, brandId, supplierId, stockOnly, sort, page]);
+  // Todo lo que cambia un producto invalida la familia entera: el listado,
+  // la papelera y el catálogo público comparten las mismas filas.
+  const reload = () => queryClient.invalidateQueries({ queryKey: productKeys.all });
 
   const resetTo0 = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);

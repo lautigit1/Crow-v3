@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { MyQuotesPage } from "@/pages/account/MyQuotesPage";
+import { renderWithQuery } from "./utils/renderWithQuery";
 import type { Quote, QuoteOption } from "@/entities/quote";
 
 /**
@@ -55,7 +56,7 @@ function cotizacion(over: Partial<Quote> = {}): Quote {
 
 function montar(quotes: Quote[]) {
   mockMine.mockResolvedValue({ items: quotes, total: quotes.length });
-  return render(
+  return renderWithQuery(
     <MemoryRouter>
       <MyQuotesPage />
     </MemoryRouter>,

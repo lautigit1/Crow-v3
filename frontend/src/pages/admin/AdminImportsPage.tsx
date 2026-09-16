@@ -1,5 +1,6 @@
 import type * as React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { Badge, Button, CenteredSpinner, EmptyState, Field, Icon, Input, Modal, Select } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
@@ -13,7 +14,9 @@ import {
   type ImportConfirmResult,
   type ImportPreview,
 } from "@/entities/import";
-import { supplierApi, type Supplier } from "@/entities/supplier";
+import { importKeys, useImportsQuery } from "@/entities/import/queries";
+import { useSuppliersQuery } from "@/entities/supplier/queries";
+import { productKeys } from "@/entities/product/queries";
 import { apiError } from "@/shared/api";
 import { formatDateTime, formatPrice } from "@/shared/lib/format";
 
@@ -40,7 +43,9 @@ const ESTADO_TONO = {
 } as const;
 
 export function AdminImportsPage() {
-  const [batches, setBatches] = useState<ImportBatch[] | null>(null);
+  const queryClient = useQueryClient();
+  const lotes = useImportsQuery(50);
+  const batches = lotes.data?.items ?? (lotes.isError ? [] : null);
   const [revisando, setRevisando] = useState<ImportBatch | null>(null);
   const [error, setError] = useState("");
   const [resultado, setResultado] = useState<ImportConfirmResult | null>(null);
@@ -52,7 +57,7 @@ export function AdminImportsPage() {
 
   // Asistente de subida
   const [abierto, setAbierto] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const suppliers = useSuppliersQuery({ active_only: true, limit: 200 }).data?.items ?? [];
   const [supplierId, setSupplierId] = useState<number | "">("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -70,21 +75,13 @@ export function AdminImportsPage() {
     : esExcel && (!mapping.sku || !mapping.name || !mapping.quantity) ? "asignar las columnas obligatorias"
     : null;
 
-  const reload = useCallback(async () => {
-    try {
-      setBatches((await importApi.list({ limit: 50 })).items);
-    } catch (err) {
-      setBatches([]);
-      setError(apiError(err));
-    }
-  }, []);
-
-  useEffect(() => { void reload(); }, [reload]);
-  useEffect(() => {
-    supplierApi.list({ active_only: true, limit: 200 })
-      .then((r) => setSuppliers(r.items))
-      .catch(() => setSuppliers([]));
-  }, []);
+  // Confirmar o revertir un lote mueve stock y puede crear productos: la
+  // lista de lotes no es lo único que queda vieja.
+  const reload = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: importKeys.all }),
+      queryClient.invalidateQueries({ queryKey: productKeys.all }),
+    ]);
 
   const elegirArchivo = async (f: File) => {
     setFile(f);
@@ -323,7 +320,9 @@ export function AdminImportsPage() {
         action={<Button onClick={() => setAbierto(true)}><Icon name="plus" size={16} /> Nueva importación</Button>}
       />
 
-      {error && !abierto && <div className="mb-4 font-body text-[13px] text-danger">{error}</div>}
+      {(error || lotes.isError) && !abierto && (
+        <div className="mb-4 font-body text-[13px] text-danger">{error || apiError(lotes.error)}</div>
+      )}
 
       {batches === null ? (
         <CenteredSpinner label="Cargando importaciones…" />

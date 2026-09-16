@@ -1,9 +1,12 @@
 import type * as React from "react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, DataTable, Modal, Input, Textarea, CenteredSpinner, Icon, ConfirmModal, type Column } from "@/shared/ui";
 import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { categoryApi, type Category, type CategoryInput } from "@/entities/category";
+import { categoryKeys, useCategoriesQuery } from "@/entities/category/queries";
+import { productKeys } from "@/entities/product/queries";
 import { apiError } from "@/shared/api";
 import { slugify } from "@/shared/lib/slug";
 
@@ -14,20 +17,23 @@ const MAX_DESC = 200;
 const inpCls = "h-9 text-[13px]";
 
 export function AdminCategoriesPage() {
-  const [items, setItems] = useState<Category[] | null>(null);
+  const queryClient = useQueryClient();
+  const listado = useCategoriesQuery();
+  const items = listado.data ?? null;
+  const loadError = listado.isError;
   const [editing, setEditing] = useState<Category | "new" | null>(null);
   const [form, setForm] = useState<CategoryInput>(empty);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const load = () => categoryApi.list().then(setItems).catch((err) => {
-    console.error("[AdminCategoriesPage] no se pudieron cargar las categorías:", err);
-    setItems([]);
-    setLoadError(true);
-  });
-  useEffect(() => void load(), []);
+  // Los productos muestran el nombre de su categoría: renombrar o borrar tiene que
+  // refrescarlos también, no solo esta lista.
+  const load = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all }),
+      queryClient.invalidateQueries({ queryKey: productKeys.all }),
+    ]);
 
   const openNew = () => { setForm(empty); setEditing("new"); setError(""); };
   const openEdit = (c: Category) => {

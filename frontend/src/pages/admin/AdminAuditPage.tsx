@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { DataTable, Badge, Icon, CenteredSpinner, type Column, type IconName } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
-import { auditApi, type AuditLog } from "@/entities/audit";
+import type { AuditLog } from "@/entities/audit";
+import { useAuditLogQuery } from "@/entities/audit/queries";
 
 type Tone = "primary" | "success" | "warning" | "danger" | "neutral";
 
@@ -27,16 +27,9 @@ function actionMeta(action: string): { icon: IconName; tone: Tone; label: string
 }
 
 export function AdminAuditPage() {
-  const [items, setItems] = useState<AuditLog[] | null>(null);
-  const [loadError, setLoadError] = useState(false);
-
-  useEffect(() => {
-    auditApi.list().then(setItems).catch((err) => {
-      console.error("[AdminAuditPage] no se pudo cargar el registro de auditoría:", err);
-      setItems([]);
-      setLoadError(true);
-    });
-  }, []);
+  const registro = useAuditLogQuery();
+  const items = registro.data ?? null;
+  const loadError = registro.isError;
 
   const columns: Column<AuditLog>[] = [
     {

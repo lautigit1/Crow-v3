@@ -1,25 +1,19 @@
 import type * as React from "react";
-import { useEffect, useState } from "react";
 import { Card, CenteredSpinner, Icon } from "@/shared/ui";
 import type { IconName } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
 import { StatCard } from "./ui/StatCard";
 import { BarChart, DonutChart } from "./ui/Charts";
 import { TrendsSection } from "./ui/TrendsSection";
-import { dashboardApi, type Analytics } from "@/entities/dashboard";
+import type { Analytics } from "@/entities/dashboard";
+import { useAnalyticsQuery } from "@/entities/dashboard/queries";
 import { formatPrice } from "@/shared/lib/format";
 import { color } from "@/shared/config";
 
 export function AdminStatsPage() {
-  const [data, setData] = useState<Analytics | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    dashboardApi.analytics().then(setData).catch((err) => {
-      console.error("[AdminStatsPage] no se pudieron cargar las métricas:", err);
-      setError(true);
-    });
-  }, []);
+  const metricas = useAnalyticsQuery();
+  const data = metricas.data ?? null;
+  const error = metricas.isError;
 
   return (
     <div className="flex flex-col gap-7">

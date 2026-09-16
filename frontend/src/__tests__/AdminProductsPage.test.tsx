@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AdminProductsPage } from "@/pages/admin/AdminProductsPage";
+import { renderWithQuery } from "./utils/renderWithQuery";
 import type { Product, ProductList } from "@/entities/product";
 
 /**
@@ -89,14 +90,14 @@ beforeEach(() => {
 
 describe("AdminProductsPage — carga inicial", () => {
   it("renderiza los productos devueltos por la API con nombre y SKU", async () => {
-    render(<AdminProductsPage />);
+    renderWithQuery(<AdminProductsPage />);
     expect(await screen.findByText("Filtro de aceite")).toBeInTheDocument();
     expect(screen.getByText("FILT-001")).toBeInTheDocument();
   });
 
   it("muestra el total en el subtítulo del header", async () => {
     mockList.mockResolvedValue(makeList([makeProduct({ id: 1 }), makeProduct({ id: 2, name: "Bujía NGK", sku: "BUJ-002" })]));
-    render(<AdminProductsPage />);
+    renderWithQuery(<AdminProductsPage />);
     expect(await screen.findByText("2 productos en catálogo")).toBeInTheDocument();
   });
 });
@@ -106,7 +107,7 @@ describe("AdminProductsPage — carga inicial", () => {
 describe("AdminProductsPage — búsqueda", () => {
   it("filtra la lista pasando 'q' a productApi.list (debounced)", async () => {
     const user = userEvent.setup();
-    render(<AdminProductsPage />);
+    renderWithQuery(<AdminProductsPage />);
     await screen.findByText("Filtro de aceite");
     mockList.mockClear();
 
@@ -125,7 +126,7 @@ describe("AdminProductsPage — alta", () => {
   it("crea un producto nuevo y recarga la lista", async () => {
     const user = userEvent.setup();
     mockCreate.mockResolvedValue(makeProduct({ id: 2, name: "Bujía NGK", sku: "BUJ-002" }));
-    render(<AdminProductsPage />);
+    renderWithQuery(<AdminProductsPage />);
     await screen.findByText("Filtro de aceite");
 
     await user.click(screen.getByRole("button", { name: /nuevo producto/i }));
@@ -148,7 +149,7 @@ describe("AdminProductsPage — alta", () => {
 describe("AdminProductsPage — borrado", () => {
   it("pide confirmación y llama a productApi.remove al confirmar", async () => {
     const user = userEvent.setup();
-    render(<AdminProductsPage />);
+    renderWithQuery(<AdminProductsPage />);
     await screen.findByText("Filtro de aceite");
 
     const row = screen.getByText("Filtro de aceite").closest("tr")!;

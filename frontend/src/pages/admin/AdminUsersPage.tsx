@@ -1,5 +1,6 @@
 import type * as React from "react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
   Button, DataTable, Modal, Drawer, Field, Input, Select,
@@ -8,6 +9,7 @@ import {
 import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { userApi, type User, type Role } from "@/entities/user";
+import { userKeys, useUsersQuery } from "@/entities/user/queries";
 import { useAuth } from "@/entities/session";
 import { formatDate, formatDateTime } from "@/shared/lib/format";
 import { apiError } from "@/shared/api";
@@ -40,7 +42,10 @@ type EditForm = { full_name: string; phone: string; role: Role; is_active: boole
 
 export function AdminUsersPage() {
   const { user: me } = useAuth();
-  const [items, setItems] = useState<User[] | null>(null);
+  const queryClient = useQueryClient();
+  const listado = useUsersQuery();
+  const items = listado.data ?? null;
+  const loadError = listado.isError;
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
@@ -50,15 +55,15 @@ export function AdminUsersPage() {
   const [form, setForm] = useState<EditForm>({ full_name: "", phone: "", role: "USER", is_active: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const load = () => userApi.list().then(setItems).catch((err) => {
-    console.error("[AdminUsersPage] no se pudieron cargar los usuarios:", err);
-    setItems([]);
-    setLoadError(true);
-  });
-  useEffect(() => { void load(); }, []);
+  const load = () => queryClient.invalidateQueries({ queryKey: userKeys.all });
+  // El PATCH devuelve el usuario completo: se escribe directo en la lista en
+  // vez de volver a pedirla entera.
+  const reemplazar = (updated: User) =>
+    queryClient.setQueryData<User[]>(userKeys.list(), (prev) =>
+      prev?.map((x) => (x.id === updated.id ? updated : x)),
+    );
 
   const rows = useMemo(() => {
     let list = items ?? [];
@@ -90,7 +95,7 @@ export function AdminUsersPage() {
         role: form.role,
         is_active: form.is_active,
       });
-      setItems((prev) => prev?.map((x) => (x.id === updated.id ? updated : x)) ?? null);
+      reemplazar(updated);
       if (detail?.id === updated.id) setDetail(updated);
       setEditing(null);
     } catch (err) {
@@ -102,13 +107,13 @@ export function AdminUsersPage() {
 
   const quickRole = async (u: User, role: Role) => {
     const updated = await userApi.update(u.id, { role });
-    setItems((prev) => prev?.map((x) => (x.id === u.id ? updated : x)) ?? null);
+    reemplazar(updated);
     if (detail?.id === u.id) setDetail(updated);
   };
 
   const toggleActive = async (u: User) => {
     const updated = await userApi.update(u.id, { is_active: !u.is_active });
-    setItems((prev) => prev?.map((x) => (x.id === u.id ? updated : x)) ?? null);
+    reemplazar(updated);
     if (detail?.id === u.id) setDetail(updated);
   };
 

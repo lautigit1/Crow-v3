@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CenteredSpinner, EmptyState, Button, Spinner, Icon } from "@/shared/ui";
-import { quoteApi, optionTotal, type Quote } from "@/entities/quote";
+import { optionTotal, type Quote } from "@/entities/quote";
+import { useMyQuotesInfiniteQuery } from "@/entities/quote/queries";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
 import { formatDate, formatPrice } from "@/shared/lib/format";
 import { AccountPageHeader } from "./ui/AccountPageHeader";
@@ -105,41 +105,16 @@ function QuoteCard({ quote }: { quote: Quote }) {
 }
 
 export function MyQuotesPage() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [total, setTotal] = useState(0);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-
-  const load = () => {
-    setInitialLoading(true);
-    setLoadError(false);
-    quoteApi
-      .mine({ skip: 0, limit: LIMIT })
-      .then((r) => { setQuotes(r.items); setTotal(r.total); })
-      .catch((err) => {
-        console.error("[MyQuotesPage] no se pudieron cargar las cotizaciones:", err);
-        setQuotes([]);
-        setTotal(0);
-        setLoadError(true);
-      })
-      .finally(() => setInitialLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const loadMore = async () => {
-    setLoadingMore(true);
-    try {
-      const r = await quoteApi.mine({ skip: quotes.length, limit: LIMIT });
-      setQuotes((prev) => [...prev, ...r.items]);
-      setTotal(r.total);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const hasMore = quotes.length < total;
+  const cotizaciones = useMyQuotesInfiniteQuery(LIMIT);
+  const paginas = cotizaciones.data?.pages ?? [];
+  const quotes = paginas.flatMap((p) => p.items);
+  const total = paginas.at(-1)?.total ?? 0;
+  const initialLoading = cotizaciones.isPending;
+  const loadingMore = cotizaciones.isFetchingNextPage;
+  const loadError = cotizaciones.isError;
+  const load = () => void cotizaciones.refetch();
+  const loadMore = () => void cotizaciones.fetchNextPage();
+  const hasMore = cotizaciones.hasNextPage;
 
   return (
     <div className="flex flex-col gap-5">

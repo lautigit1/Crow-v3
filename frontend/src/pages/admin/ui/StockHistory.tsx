@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Icon, Spinner } from "@/shared/ui";
-import { productApi, type StockMovement } from "@/entities/product";
+import { useStockMovementsQuery } from "@/entities/product/queries";
 import { formatDateTime } from "@/shared/lib/format";
 
 /**
@@ -25,27 +24,15 @@ const TONO: Record<string, string> = {
 };
 
 export function StockHistory({ productId }: { productId: number }) {
-  const [items, setItems] = useState<StockMovement[] | null>(null);
-  const [error, setError] = useState(false);
+  // La key incluye el id: si el admin cambia de ficha antes de que llegue la
+  // primera respuesta, esa respuesta queda en su propia entrada y no pisa esta.
+  const { data: items, isPending, isError } = useStockMovementsQuery(productId);
 
-  useEffect(() => {
-    let vigente = true;
-    setItems(null);
-    setError(false);
-    productApi
-      .stockMovements(productId)
-      .then((r) => { if (vigente) setItems(r); })
-      .catch(() => { if (vigente) { setItems([]); setError(true); } });
-    // El flag evita pisar el estado con la respuesta de un producto anterior
-    // si el admin cambia de ficha antes de que llegue la primera.
-    return () => { vigente = false; };
-  }, [productId]);
-
-  if (items === null) return <div className="py-6"><Spinner /></div>;
-
-  if (error) {
+  if (isError) {
     return <p className="m-0 font-body text-[13px] text-danger">No se pudo cargar el historial.</p>;
   }
+
+  if (isPending) return <div className="py-6"><Spinner /></div>;
 
   if (items.length === 0) {
     return (

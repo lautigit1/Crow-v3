@@ -1,28 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { Button, DataTable, CenteredSpinner, type Column } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
 import { QuoteSheet } from "./ui/QuoteSheet";
-import { quoteApi, optionTotal, QUOTE_STATUSES, type Quote, type QuoteStatus } from "@/entities/quote";
+import { optionTotal, QUOTE_STATUSES, type Quote, type QuoteStatus } from "@/entities/quote";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
+import { quoteKeys, useAdminQuotesQuery } from "@/entities/quote/queries";
 import { useWaLink } from "@/entities/settings/useSiteSettings";
 import { formatDate, formatPrice } from "@/shared/lib/format";
 
 type Filter = "Todas" | QuoteStatus;
 
 export function AdminQuotesPage() {
-  const [items, setItems] = useState<Quote[] | null>(null);
   const [filter, setFilter] = useState<Filter>("Todas");
-  const [loadError, setLoadError] = useState(false);
+  const queryClient = useQueryClient();
+  const listado = useAdminQuotesQuery();
+  const items = listado.data ?? null;
+  const loadError = listado.isError;
   const [abierta, setAbierta] = useState<number | null>(null);
   const waLink = useWaLink();
-
-  const load = () => quoteApi.listAll().then(setItems).catch((err) => {
-    console.error("[AdminQuotesPage] no se pudieron cargar las cotizaciones:", err);
-    setItems([]);
-    setLoadError(true);
-  });
-  useEffect(() => void load(), []);
 
   // La ficha se referencia por id y no por objeto: los endpoints de opciones
   // devuelven la cotización entera, así que guardar el objeto dejaría la ficha
@@ -30,7 +27,9 @@ export function AdminQuotesPage() {
   const enFicha = items?.find((q) => q.id === abierta) ?? null;
 
   const reemplazar = (actualizada: Quote) =>
-    setItems((prev) => prev?.map((x) => (x.id === actualizada.id ? actualizada : x)) ?? null);
+    queryClient.setQueryData<Quote[]>(quoteKeys.adminList(), (prev) =>
+      prev?.map((x) => (x.id === actualizada.id ? actualizada : x)),
+    );
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { Todas: items?.length ?? 0 };

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import clsx from "clsx";
 import {
   CenteredSpinner,
@@ -14,7 +14,9 @@ import { type Order, type OrderCreate } from "@/entities/order";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyOrdersQuery, useCreateOrderMutation, useCancelOrderMutation, orderKeys } from "@/entities/order/queries";
 import { useServerEvent } from "@/shared/lib/serverEvents";
-import { productApi, type Product } from "@/entities/product";
+import type { Product } from "@/entities/product";
+import { useProductsQuery } from "@/entities/product/queries";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { formatPrice } from "@/shared/lib/format";
 
 // ---------------------------------------------------------------------------
@@ -251,8 +253,6 @@ export function MyOrdersPage() {
   const [createNotes, setCreateNotes] = useState("");
   const [createItems, setCreateItems] = useState<DraftItem[]>([]);
   const [createSearch, setCreateSearch] = useState("");
-  const [createSearchResults, setCreateSearchResults] = useState<Product[]>([]);
-  const [createSearching, setCreateSearching] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
   // Listado de pedidos vía TanStack Query -- crear/cancelar invalidan esta
@@ -279,24 +279,18 @@ export function MyOrdersPage() {
   const createOrderMutation = useCreateOrderMutation();
   const cancelOrderMutation = useCancelOrderMutation();
 
-  // Debounced product search
-  const doSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setCreateSearchResults([]); return; }
-    setCreateSearching(true);
-    try {
-      const res = await productApi.list({ q, limit: 8, in_stock: false });
-      setCreateSearchResults(res.items.filter((p) => !p.is_deleted));
-    } catch {
-      setCreateSearchResults([]);
-    } finally {
-      setCreateSearching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => doSearch(createSearch), 300);
-    return () => clearTimeout(t);
-  }, [createSearch, doSearch]);
+  // Buscador de productos del alta de pedido: espera a que se deje de tipear,
+  // y con el campo vacío no consulta nada.
+  const busquedaProductos = useDebouncedValue(createSearch.trim(), 300);
+  const resultados = useProductsQuery(
+    { q: busquedaProductos, limit: 8, in_stock: false },
+    busquedaProductos !== "",
+  );
+  // Se mira también el texto sin debounce: al agregar un producto el campo se
+  // vacía y la lista tiene que cerrarse ya, no 300 ms después.
+  const sinBusqueda = createSearch.trim() === "" || busquedaProductos === "";
+  const createSearching = !sinBusqueda && resultados.isFetching;
+  const createSearchResults = sinBusqueda ? [] : (resultados.data?.items ?? []).filter((p) => !p.is_deleted);
 
   const addItem = (product: Product) => {
     setCreateItems((prev) => {
@@ -305,7 +299,6 @@ export function MyOrdersPage() {
       return [...prev, { product, quantity: 1 }];
     });
     setCreateSearch("");
-    setCreateSearchResults([]);
   };
 
   const updateQty = (productId: number, qty: number) => {

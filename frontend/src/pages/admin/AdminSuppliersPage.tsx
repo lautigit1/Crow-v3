@@ -1,5 +1,6 @@
 import type * as React from "react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
   Button, DataTable, Modal, Drawer, Field, Input, Textarea,
@@ -8,8 +9,11 @@ import {
 import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { supplierApi, type Supplier, type SupplierInput } from "@/entities/supplier";
+import { supplierKeys, useSuppliersQuery } from "@/entities/supplier/queries";
+import { productKeys } from "@/entities/product/queries";
 import { apiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib/format";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { SupplierProductsPanel } from "./ui/SupplierProductsPanel";
 import { color } from "@/shared/config";
 
@@ -26,8 +30,7 @@ const empty: SupplierInput = {
 };
 
 export function AdminSuppliersPage() {
-  const [items, setItems] = useState<Supplier[] | null>(null);
-  const [total, setTotal] = useState(0);
+  const queryClient = useQueryClient();
 
   const [q, setQ] = useState("");
   const [activeOnly, setActiveOnly] = useState(false);
@@ -41,28 +44,26 @@ export function AdminSuppliersPage() {
 
   const [detail, setDetail] = useState<Supplier | null>(null);
   const [tab, setTab] = useState<"datos" | "productos">("datos");
-  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const reload = () => {
-    setItems(null);
-    setLoadError(false);
-    return supplierApi
-      .list({ q: q || undefined, active_only: activeOnly || undefined, skip: page * PAGE, limit: PAGE })
-      .then((r) => { setItems(r.items); setTotal(r.total); })
-      .catch((err) => {
-        console.error("[AdminSuppliersPage] no se pudieron cargar los proveedores:", err);
-        setItems([]);
-        setTotal(0);
-        setLoadError(true);
-      });
-  };
+  const debouncedQ = useDebouncedValue(q, 200);
+  const listado = useSuppliersQuery({
+    q: debouncedQ || undefined,
+    active_only: activeOnly || undefined,
+    skip: page * PAGE,
+    limit: PAGE,
+  });
+  const items = listado.data?.items ?? null;
+  const total = listado.data?.total ?? 0;
+  const loadError = listado.isError;
 
-  useEffect(() => {
-    const h = setTimeout(reload, 200);
-    return () => clearTimeout(h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, activeOnly, page]);
+  // Proveedores y productos se invalidan juntos: borrar un proveedor deja
+  // productos sin proveedor, y el conteo de productos vive en esta lista.
+  const reload = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all }),
+      queryClient.invalidateQueries({ queryKey: productKeys.all }),
+    ]);
 
   const resetTo0 = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(0); };
 

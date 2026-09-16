@@ -1,9 +1,12 @@
 import type * as React from "react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, DataTable, Modal, Input, CenteredSpinner, Icon, ConfirmModal, type Column } from "@/shared/ui";
 import { useConfirm } from "@/shared/lib/useConfirm";
 import { AdminHeader } from "./ui/AdminHeader";
 import { brandApi, type Brand, type BrandInput } from "@/entities/brand";
+import { brandKeys, useBrandsQuery } from "@/entities/brand/queries";
+import { productKeys } from "@/entities/product/queries";
 import { apiError } from "@/shared/api";
 import { slugify } from "@/shared/lib/slug";
 import { formatDateTime } from "@/shared/lib/format";
@@ -13,21 +16,24 @@ const empty: BrandInput = { name: "", slug: "", logo_url: "" };
 const inpCls = "h-9 text-[13px]";
 
 export function AdminBrandsPage() {
-  const [items, setItems] = useState<Brand[] | null>(null);
+  const queryClient = useQueryClient();
+  const listado = useBrandsQuery();
+  const items = listado.data ?? null;
+  const loadError = listado.isError;
   const [editing, setEditing] = useState<Brand | "new" | null>(null);
   const [form, setForm] = useState<BrandInput>(empty);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const [loadError, setLoadError] = useState(false);
   const { confirmProps, askConfirm } = useConfirm();
 
-  const load = () => brandApi.list().then(setItems).catch((err) => {
-    console.error("[AdminBrandsPage] no se pudieron cargar las marcas:", err);
-    setItems([]);
-    setLoadError(true);
-  });
-  useEffect(() => void load(), []);
+  // Los productos muestran el nombre de su marca: renombrar o borrar tiene que
+  // refrescarlos también, no solo esta lista.
+  const load = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: brandKeys.all }),
+      queryClient.invalidateQueries({ queryKey: productKeys.all }),
+    ]);
 
   const openNew = () => { setForm(empty); setEditing("new"); setError(""); setLogoError(false); };
   const openEdit = (b: Brand) => {

@@ -1,14 +1,13 @@
 import * as React from "react";
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { CenteredSpinner, Icon } from "@/shared/ui";
 import { StatCard } from "./ui/StatCard";
 import { DonutChart, BarChart } from "./ui/Charts";
 import { StatusBadge } from "@/entities/quote/StatusBadge";
-import { dashboardApi, type Analytics, type DashboardStats } from "@/entities/dashboard";
-import { productApi, type Product } from "@/entities/product";
-import { auditApi, type AuditLog } from "@/entities/audit";
+import { useAnalyticsQuery, useDashboardStatsQuery } from "@/entities/dashboard/queries";
+import { useProductsQuery } from "@/entities/product/queries";
+import { useAuditLogQuery } from "@/entities/audit/queries";
 import { formatDate, formatPrice, formatDateTime } from "@/shared/lib/format";
 import { useAuth } from "@/entities/session";
 import { color } from "@/shared/config";
@@ -168,30 +167,15 @@ function ActionDot({ action }: { action: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [lowStock, setLowStock] = useState<Product[]>([]);
-  const [audit, setAudit] = useState<AuditLog[]>([]);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    Promise.all([dashboardApi.stats(), dashboardApi.analytics()])
-      .then(([s, a]) => { setStats(s); setAnalytics(a); })
-      .catch((err) => {
-        console.error("[DashboardPage] no se pudieron cargar stats/analytics:", err);
-        setError(true);
-      });
-    // Widgets secundarios: si fallan, el dashboard principal sigue siendo
-    // usable -- se loguea y el widget queda vacío en vez de tumbar la página.
-    productApi.list({ sort: "stock_asc", limit: 6 }).then((r) => setLowStock(r.items)).catch((err) => {
-      console.error("[DashboardPage] no se pudo cargar el widget de stock bajo:", err);
-      setLowStock([]);
-    });
-    auditApi.list(7).then(setAudit).catch((err) => {
-      console.error("[DashboardPage] no se pudo cargar el widget de auditoría reciente:", err);
-      setAudit([]);
-    });
-  }, []);
+  const statsQuery = useDashboardStatsQuery();
+  const analyticsQuery = useAnalyticsQuery();
+  const stats = statsQuery.data ?? null;
+  const analytics = analyticsQuery.data ?? null;
+  const error = statsQuery.isError || analyticsQuery.isError;
+  // Widgets secundarios: si fallan, el dashboard principal sigue siendo
+  // usable -- el widget queda vacío en vez de tumbar la página.
+  const lowStock = useProductsQuery({ sort: "stock_asc", limit: 6 }).data?.items ?? [];
+  const audit = useAuditLogQuery(7).data ?? [];
 
   if (error) return (
     <div className={clsx(CARD_CLASS, "p-8 text-danger font-body")}>

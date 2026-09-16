@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AdminQuotesPage } from "@/pages/admin/AdminQuotesPage";
+import { renderWithQuery } from "./utils/renderWithQuery";
 import type { Quote, QuoteOption } from "@/entities/quote";
 
 /**
@@ -72,7 +73,7 @@ function cotizacion(over: Partial<Quote> = {}): Quote {
 }
 
 function montar() {
-  return render(
+  return renderWithQuery(
     <MemoryRouter>
       <AdminQuotesPage />
     </MemoryRouter>,

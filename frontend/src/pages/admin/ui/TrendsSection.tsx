@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -14,7 +14,8 @@ import {
 import { Icon, type IconName } from "@/shared/ui";
 import { color } from "@/shared/config";
 import { formatNumber, formatPrice } from "@/shared/lib/format";
-import { dashboardApi, type TrendPeriod, type Trends } from "@/entities/dashboard";
+import type { TrendPeriod, Trends } from "@/entities/dashboard";
+import { useTrendsQuery } from "@/entities/dashboard/queries";
 
 const CARD_CLASS =
   "bg-white border border-border rounded-lg shadow-[0_1px_3px_rgba(13,23,40,.05)] overflow-hidden";
@@ -92,21 +93,9 @@ const TOOLTIP_STYLE = {
 
 export function TrendsSection() {
   const [period, setPeriod] = useState<TrendPeriod>("30d");
-  const [data, setData] = useState<Trends | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    setError(false);
-    dashboardApi
-      .trends(period)
-      .then((d) => { if (alive) setData(d); })
-      .catch((err) => {
-        console.error("[TrendsSection] no se pudieron cargar las tendencias:", err);
-        if (alive) setError(true);
-      });
-    return () => { alive = false; };
-  }, [period]);
+  const tendencias = useTrendsQuery(period);
+  const data = tendencias.data ?? null;
+  const error = tendencias.isError;
 
   const totals = useMemo(() => {
     const points = data?.points ?? [];

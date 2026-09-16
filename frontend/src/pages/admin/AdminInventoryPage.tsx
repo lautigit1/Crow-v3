@@ -1,44 +1,22 @@
 import type * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, DataTable, Badge, Input, Icon, CenteredSpinner, type Column } from "@/shared/ui";
 import { AdminHeader } from "./ui/AdminHeader";
 import { StatCard } from "./ui/StatCard";
 import { productApi, type Product } from "@/entities/product";
+import { productKeys, useInventoryQuery } from "@/entities/product/queries";
 import { formatPrice } from "@/shared/lib/format";
 
 const LOW = 5;
-// Tope real del backend en GET /products (`le=100` en products.py) --
-// pedir más de esto en una sola llamada devuelve 422 y el catch de abajo
-// lo silenciaba dejando la página vacía sin importar cuántos productos
-// hubiera. Se pagina en bloques de este tamaño hasta traer el catálogo
-// completo, en vez de asumir que siempre entra en una sola página.
-const FETCH_PAGE = 100;
-
-async function fetchAllProducts(): Promise<Product[]> {
-  const all: Product[] = [];
-  let skip = 0;
-  for (;;) {
-    const r = await productApi.list({ limit: FETCH_PAGE, skip });
-    all.push(...r.items);
-    skip += r.items.length;
-    if (r.items.length === 0 || skip >= r.total) break;
-  }
-  return all;
-}
-
 export function AdminInventoryPage() {
-  const [items, setItems] = useState<Product[] | null>(null);
+  const queryClient = useQueryClient();
+  const inventario = useInventoryQuery();
+  const items = inventario.data ?? null;
+  const loadError = inventario.isError;
   const [onlyLow, setOnlyLow] = useState(false);
   const [draft, setDraft] = useState<Record<number, number>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
-  const [loadError, setLoadError] = useState(false);
-
-  const load = () => fetchAllProducts().then(setItems).catch((err) => {
-    console.error("[AdminInventoryPage] no se pudo cargar el inventario:", err);
-    setItems([]);
-    setLoadError(true);
-  });
-  useEffect(() => void load(), []);
 
   const rows = useMemo(() => {
     if (!items) return [];
@@ -60,7 +38,12 @@ export function AdminInventoryPage() {
     setSavingId(p.id);
     try {
       const updated = await productApi.update(p.id, { stock: next });
-      setItems((prev) => prev?.map((x) => (x.id === p.id ? updated : x)) ?? null);
+      queryClient.setQueryData<Product[]>(productKeys.inventory(), (prev) =>
+        prev?.map((x) => (x.id === p.id ? updated : x)),
+      );
+      // El resto de las vistas de productos (listado, catálogo) muestran el
+      // mismo stock: se marcan viejas sin refetchear esta.
+      void queryClient.invalidateQueries({ queryKey: productKeys.lists() });
       setDraft((d) => {
         const next = { ...d };
         delete next[p.id];

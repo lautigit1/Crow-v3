@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { Button, Icon, Input, Spinner } from "@/shared/ui";
-import { productApi, type Product } from "@/entities/product";
+import { productApi } from "@/entities/product";
+import { productKeys, useProductsQuery } from "@/entities/product/queries";
+import { supplierKeys } from "@/entities/supplier/queries";
 import { apiError } from "@/shared/api";
 import { formatPrice } from "@/shared/lib/format";
 
@@ -22,32 +25,29 @@ const LIMIT = 100;
  * cortar la lista en silencio.
  */
 export function SupplierProductsPanel({ supplierId }: { supplierId: number }) {
-  const [items, setItems] = useState<Product[] | null>(null);
-  const [total, setTotal] = useState(0);
+  const queryClient = useQueryClient();
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  const reload = useCallback(async () => {
-    setError("");
-    try {
-      const r = await productApi.list({ supplier_id: supplierId, limit: LIMIT });
-      setItems(r.items);
-      setTotal(r.total);
-    } catch (err) {
-      setItems([]);
-      setError(apiError(err));
-    }
-  }, [supplierId]);
+  const [actionError, setActionError] = useState("");
 
   // Al cambiar de proveedor se limpia la selección: arrastrar ids del
-  // proveedor anterior a una acción en lote sería un desastre silencioso.
-  useEffect(() => {
+  // proveedor anterior a una acción en lote sería un desastre silencioso. Se
+  // ajusta durante el render y no en un efecto, para que no exista ni un
+  // render con la selección vieja sobre la lista nueva.
+  const [supplierDeLaSeleccion, setSupplierDeLaSeleccion] = useState(supplierId);
+  if (supplierDeLaSeleccion !== supplierId) {
+    setSupplierDeLaSeleccion(supplierId);
     setSelected(new Set());
-    setItems(null);
-    void reload();
-  }, [reload]);
+  }
+
+  const listado = useProductsQuery({ supplier_id: supplierId, limit: LIMIT });
+  // Sin `placeholderData` de otro proveedor: mientras carga se ve el spinner,
+  // no los productos del anterior.
+  const cargado = listado.data && !listado.isPlaceholderData ? listado.data : null;
+  const items = cargado?.items ?? (listado.isError ? [] : null);
+  const total = cargado?.total ?? 0;
+  const error = actionError || (listado.isError ? apiError(listado.error) : "");
 
   const visibles = (items ?? []).filter((p) =>
     q ? (p.name + p.sku).toLowerCase().includes(q.toLowerCase()) : true
@@ -64,13 +64,16 @@ export function SupplierProductsPanel({ supplierId }: { supplierId: number }) {
   const publicar = async (ids: number[], is_active: boolean) => {
     if (ids.length === 0) return;
     setBusy(true);
-    setError("");
+    setActionError("");
     try {
       await productApi.bulkActive(ids, is_active);
       setSelected(new Set());
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: productKeys.all }),
+        queryClient.invalidateQueries({ queryKey: supplierKeys.all }),
+      ]);
     } catch (err) {
-      setError(apiError(err));
+      setActionError(apiError(err));
     } finally {
       setBusy(false);
     }
