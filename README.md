@@ -24,10 +24,10 @@ Para trabajar solo en un lado del stack (hot reload de Vite, o la API sin rebuil
 ## Estructura del repo
 
 ```
-backend/            API FastAPI -- 14 módulos de rutas, 11 modelos (ver backend/README.md)
+backend/            API FastAPI (ver backend/README.md)
 frontend/           SPA React (Feature-Sliced Design)
 deploy/             Configuración de Caddy y nginx para producción
-docs/                Documentación adicional
+docs/               Documentación adicional (incluye las auditorías técnicas)
 openspec/           Historial de cambios estructurados (proposal/design/tasks/apply por cambio)
 docker-compose.yml       Stack de desarrollo local
 docker-compose.prod.yml  Stack de producción (pgbouncer, Caddy, sin montar código fuente)
@@ -35,8 +35,8 @@ docker-compose.prod.yml  Stack de producción (pgbouncer, Caddy, sin montar cód
 
 ## Calidad de código
 
-- **Frontend**: `npm run lint` (ESLint + Steiger para arquitectura FSD), `npm run typecheck`, `npm run test:run` (Vitest), `npm run e2e` (Playwright, 12 tests contra el stack completo).
-- **Backend**: `ruff check .`, `pytest` (249 tests).
+- **Frontend**: `npm run lint` (ESLint + Steiger para arquitectura FSD), `npm run typecheck`, `npm run test:run` (Vitest), `npm run e2e` (Playwright, contra el stack completo).
+- **Backend**: `ruff check .`, `pytest` contra Postgres (ver la sección Tests de [`backend/README.md`](backend/README.md)).
 
 Los cuatro corren bloqueantes en CI (`.github/workflows/frontend.yml`, `backend.yml`, `e2e.yml`).
 

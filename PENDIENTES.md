@@ -81,8 +81,10 @@ verificable, para que la consulta con un profesional sea corta.
 - [x] **`npm audit`** — de 5 avisos a 2. Se cerraron los **3 de severidad alta**
       en `undici` (desincronización de respuestas, filtrado entre usuarios,
       inyección CRLF).
-- [ ] ⚠ **Los 2 que quedan son de `react-router` y NO se pueden cerrar sin
-      saltar a la versión 7**, que es un cambio mayor. Se revisó si aplican:
+- [x] **Los 2 de `react-router`**: cerrados con el salto a la versión 7, que ya
+      está hecho (`react-router-dom` 7.18). `npm audit` del frontend en cero,
+      y el CI ahora frena el push ante un aviso de severidad alta. El análisis
+      que se hizo mientras seguían abiertos, por si reaparece algo parecido:
       - *Hidratación SSR*: esta app es una SPA pura, no hay SSR. No aplica.
       - *Redirección abierta vía `<Link>`/`useNavigate`*: se auditaron los
         cuatro llamados dinámicos a `navigate()`. Ninguno recibe algo que venga
@@ -91,8 +93,8 @@ verificable, para que la consulta con un profesional sea corta.
         auth, que viaja por `location.state` y no se puede fabricar desde un
         link. **No es explotable hoy**, pero cualquier `navigate()` nuevo con
         datos de afuera lo vuelve explotable.
-- [x] **`pip-audit` en el CI** — ya estaba (`backend.yml`), el pendiente estaba
-      desactualizado. Corre informativo, sin bloquear.
+- [x] **`pip-audit` en el CI** — ya estaba (`backend.yml`). Ahora es
+      bloqueante: con el backend en cero, un aviso nuevo frena el push.
 - [x] **CVEs del backend: `pip-audit` en cero.** `python-multipart` 0.0.12 →
       0.0.32 (seis avisos, todos de DoS al parsear archivos subidos),
       `jinja2` 3.1.4 → 3.1.6, `pdfplumber` 0.11.4 → 0.11.10 (arrastraba
@@ -170,9 +172,8 @@ verificable, para que la consulta con un profesional sea corta.
       exactamente los flujos que registran o crean algo, así que deberían
       pasar; no se pudieron correr acá porque necesitan el stack levantado.
       **Vale correrlos antes de deployar.**
-- [ ] Menor, apareció con el salto: `starlette.testclient` avisa que usar
-      `httpx` está deprecado y pide `httpx2`. Solo warnings en la suite, nada
-      roto. `requirements-dev.txt` pinea `httpx>=0.27,<0.28`.
+- [x] Menor, apareció con el salto: `starlette.testclient` avisaba que usar
+      `httpx` está deprecado. `requirements-dev.txt` pasó a `httpx2`.
 - [x] **Fail-fast de `SEED_ADMIN_PASSWORD`.** Tenía default `admin1234` y
       ninguna guarda: un deploy que se olvidara de definirla arrancaba con la
       cuenta que controla precios, stock y pedidos protegida por esa clave, y
