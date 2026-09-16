@@ -24,7 +24,14 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // Cada provider exporta su hook al lado (`useCart` junto a
+      // `CartProvider`): separarlos no ganaría nada y dispersaría un contexto
+      // en dos archivos. Se permiten por nombre para que cualquier otro export
+      // que no sea componente siga avisando.
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true, allowExportNames: ["useAuth", "useCart", "useFavorites"] },
+      ],
       // El repo usa `any` puntualmente en unos pocos límites de integración
       // (respuestas de API sin tipar, mocks de test) -- se deja como warning,
       // no error, para no bloquear CI por deuda preexistente puntual mientras

@@ -9,8 +9,8 @@
     "build:ci": "tsc --noEmit -p tsconfig.build.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . && steiger ./src",
-    "lint:eslint": "eslint .",
+    "lint": "eslint . --max-warnings 0 && steiger ./src",
+    "lint:eslint": "eslint . --max-warnings 0",
     "lint:fsd": "steiger ./src",
     "test": "vitest",
     "test:run": "vitest run",
@@ -44,7 +44,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.11",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.38.0",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -58,11 +58,11 @@
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.0.0",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "@emnapi/core": "1.11.2",
     "@emnapi/runtime": "1.11.2",
-    "js-yaml": "4.3.1"
+    "js-yaml": "4.3.2"
   }
 }

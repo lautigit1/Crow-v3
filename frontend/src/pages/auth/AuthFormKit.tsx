@@ -117,7 +117,7 @@ export function FieldRow({
 
 // ── Password strength ─────────────────────────────────────────────────────────
 
-export function passwordStrength(pw: string): number {
+function passwordStrength(pw: string): number {
   if (!pw) return 0;
   let s = 0;
   if (pw.length >= 10) s++;

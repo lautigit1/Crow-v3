@@ -1,4 +1,4 @@
-import { forwardRef, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import clsx from "clsx";
 
 /**
@@ -40,8 +40,6 @@ export function Field({ label, children, hint }: { label?: string; children: Rea
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type InputProps = { style?: CSSProperties; className?: string } & Record<string, any>;
 
 /**
  * Each control below writes its own complete Tailwind class list instead of
@@ -76,7 +74,7 @@ const interactive =
   "transition-[border-color,box-shadow,background-color] duration-150 hover:border-borderStrong " +
   "focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,87,217,.12)]";
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(({ style, className, ...rest }, ref) => (
+export const Input = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<"input">>(({ style, className, ...rest }, ref) => (
   <input
     ref={ref}
     {...rest}
@@ -86,7 +84,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({ style, classNam
 ));
 Input.displayName = "Input";
 
-export function Textarea({ style, className, ...rest }: InputProps) {
+export function Textarea({ style, className, ...rest }: ComponentPropsWithoutRef<"textarea">) {
   return (
     <textarea
       {...rest}
@@ -96,7 +94,7 @@ export function Textarea({ style, className, ...rest }: InputProps) {
   );
 }
 
-export function Select({ style, className, children, ...rest }: InputProps & { children: ReactNode }) {
+export function Select({ style, className, children, ...rest }: ComponentPropsWithoutRef<"select">) {
   return (
     <div className="relative">
       <select

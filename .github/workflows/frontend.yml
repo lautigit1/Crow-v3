@@ -48,6 +48,6 @@ jobs:
         run: npm run build:ci
 
       - name: Audit dependencies for known CVEs
-        # No bloqueante por ahora (mismo criterio que el audit de backend,
-        # ver .github/workflows/backend.yml) -- informativo en los logs.
-        run: npm audit --audit-level=high || true
+        # Bloqueante para severidad alta, mismo criterio que el audit del
+        # backend. Los moderados siguen apareciendo en el log sin frenar.
+        run: npm audit --audit-level=high
