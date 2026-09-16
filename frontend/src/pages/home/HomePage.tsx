@@ -7,6 +7,7 @@ import { CategoryGrid } from "@/widgets/category-grid/CategoryGrid";
 import { AboutSection } from "@/widgets/about/AboutSection";
 import { CtaFinal } from "@/widgets/cta/CtaFinal";
 import { QuoteModal } from "@/features/quote/QuoteModal";
+import { useSiteSettings } from "@/entities/settings/useSiteSettings";
 
 const LOCAL_BUSINESS_LD = {
   "@context": "https://schema.org",
@@ -16,8 +17,6 @@ const LOCAL_BUSINESS_LD = {
   "url": "https://crowrepuestos.com.ar",
   "logo": "https://crowrepuestos.com.ar/logo.png",
   "image": "https://crowrepuestos.com.ar/og-image.png",
-  "telephone": "+54-261-XXX-XXXX",
-  "email": "ventas@crowrepuestos.com.ar",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "Mendoza",
@@ -49,21 +48,30 @@ const LOCAL_BUSINESS_LD = {
     "name": "Mendoza",
     "addressCountry": "AR",
   },
-  "sameAs": [],
 };
 
 export function HomePage() {
   usePageMeta("Crow Repuestos · Distribuidora automotriz", "Repuestos, lubricantes, baterías y detailing para autos, motos y camiones. Atención personalizada en Mendoza ciudad.");
+
+  // Teléfono, mail y redes salen de la configuración del panel y no de un
+  // literal: Google indexa estos datos, y un número de relleno o viejo termina
+  // en la ficha del negocio.
+  const { whatsapp_number, email, instagram, facebook, tiktok } = useSiteSettings();
 
   // Inject JSON-LD on mount, remove on unmount
   useEffect(() => {
     const script = document.createElement("script");
     script.type = "application/ld+json";
     script.id   = "ld-local-business";
-    script.textContent = JSON.stringify(LOCAL_BUSINESS_LD);
+    script.textContent = JSON.stringify({
+      ...LOCAL_BUSINESS_LD,
+      telephone: `+${whatsapp_number}`,
+      email,
+      sameAs: [instagram, facebook, tiktok].filter(Boolean),
+    });
     document.head.appendChild(script);
     return () => { script.remove(); };
-  }, []);
+  }, [whatsapp_number, email, instagram, facebook, tiktok]);
   const [modal, setModal] = useState<{ open: boolean; message: string; productId: number | null }>({
     open: false,
     message: "",
