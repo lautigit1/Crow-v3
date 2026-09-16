@@ -527,10 +527,9 @@ class TestRateLimitGeneral:
 
         monkeypatch.setattr(middleware._api_limiter, "max_requests", 1)
 
-        # Se mira que NO sea 429, no que sea 200: en la suite `/api/health`
-        # responde 503 porque la sonda de base apunta al Postgres real y acá
-        # los tests corren sobre SQLite. Lo que este test verifica es que el
-        # rate limit no lo toca.
+        # Se mira que NO sea 429, no que sea 200: el estado de salud depende
+        # de la base y de Redis, y lo que este test verifica es solamente que
+        # el rate limit no lo toca.
         for _ in range(5):
             assert client.get("/api/health").status_code != 429
 

@@ -1,12 +1,9 @@
 """
-Regresión: las CHECK constraints agregadas en las migraciones 005 y 011
-(products.stock >= 0, products.price > 0, quotes.message no vacío)
-existían solo como SQL crudo en Alembic, sin reflejo en los modelos de
-SQLAlchemy. Como la suite de tests usa SQLite en memoria vía
-`Base.metadata.create_all()` (no corre las migraciones de Postgres), esas
-constraints eran invisibles para los tests -- un bug que dejara stock
-negativo o un precio <= 0 hubiera pasado sin que ningún test lo detectara,
-aunque en producción (Postgres real) sí hubiera fallado.
+Regresión: las CHECK constraints de products y quotes (stock >= 0,
+price > 0, message no vacío) existieron un tiempo solo como SQL crudo en
+Alembic, sin reflejo en los modelos. Los tests arman el esquema desde los
+modelos, así que eran invisibles para la suite: un bug que dejara stock
+negativo o un precio <= 0 pasaba sin que ningún test lo detectara.
 
 Estos tests fuerzan la violación directamente contra la sesión de DB
 (bypaseando la validación de Pydantic en las rutas) para confirmar que el

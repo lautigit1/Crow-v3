@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -10,6 +10,8 @@ class AuditLog(Base):
     """Immutable record of a security-relevant action (logins, CRUD, role changes)."""
 
     __tablename__ = "audit_logs"
+    # El panel de auditoría lista siempre de lo más nuevo a lo más viejo.
+    __table_args__ = (Index("ix_audit_logs_created_at", text("created_at DESC")),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

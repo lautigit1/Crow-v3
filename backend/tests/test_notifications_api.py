@@ -142,7 +142,7 @@ class TestBorradoEnCascada:
 
         Se consulta con un COUNT y no con `db.get()`: `get()` devuelve el objeto
         del identity map de la sesión sin ir a la base, así que pasaría igual
-        aunque la fila siguiera ahí. Hay que preguntarle a Postgres/SQLite.
+        aunque la fila siguiera ahí. Hay que preguntarle a Postgres.
         """
         from sqlalchemy import func, select
 

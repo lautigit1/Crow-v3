@@ -54,9 +54,16 @@ uvicorn app.main:app --reload
 
 ## Lint y tests
 
+La suite corre contra **Postgres**, el mismo motor que producción, y necesita
+`TEST_DATABASE_URL`. Esa base se vacía al empezar cada corrida: nunca la apuntes
+a la de desarrollo.
+
 ```bash
+docker run -d --name crow-test-pg -p 5433:5432 \n  -e POSTGRES_USER=crow -e POSTGRES_PASSWORD=crow -e POSTGRES_DB=crow_test \n  postgres:16-alpine
+
+export TEST_DATABASE_URL=postgresql+psycopg2://crow:crow@localhost:5433/crow_test
 ruff check .        # lint -- bloqueante en CI
-pytest               # 249 tests -- bloqueante en CI
+pytest              # bloqueante en CI
 ```
 
 ## Estructura
@@ -66,26 +73,28 @@ app/
   main.py              App FastAPI, CORS, middlewares, montaje de routers
   core/                config, database, security (JWT/bcrypt), deps (guards),
                        ratelimit, token_blocklist, audit, email, cookies, exceptions
-  models/              SQLAlchemy -- 11 modelos (ver abajo)
+  models/              SQLAlchemy (ver abajo)
   schemas/             Pydantic v2 (request/response)
   crud/                CRUD genérico reutilizable + instancias por entidad
-  api/routes/          14 módulos (ver "Endpoints principales")
+  api/routes/          Un módulo por recurso (ver "Endpoints principales")
   templates/emails/    Plantillas Jinja2 para notificaciones por email
   seed.py              Datos iniciales (idempotente)
 alembic/               Migraciones de base de datos
 scripts/                Scripts operativos (ej. verify_db_integrity.py)
-tests/                 249 tests (pytest)
+tests/                 pytest, contra Postgres
 ```
 
-### Modelos (`app/models/`, 11)
+### Modelos (`app/models/`)
 
-`User`, `Category`, `Brand`, `Product`, `Supplier`, `Quote`, `Order`, `OrderItem`,
-`UserFavorite`, `Setting`, `AuditLog`.
+`User`, `Category`, `Brand`, `Product`, `Supplier`, `Quote`, `QuoteOption`, `Order`,
+`OrderItem`, `UserFavorite`, `Setting`, `AuditLog`, `Notification`, `StockMovement`,
+`ImportBatch`, `ImportLine`.
 
-### Módulos de rutas (`app/api/routes/`, 14)
+### Módulos de rutas (`app/api/routes/`)
 
 `auth`, `users`, `categories`, `brands`, `products`, `suppliers`, `quotes`,
-`orders`, `favorites`, `settings`, `dashboard`, `audit`, `uploads`, `seo`.
+`orders`, `favorites`, `settings`, `dashboard`, `audit`, `uploads`, `imports`,
+`notifications`, `events` (SSE), `seo`.
 
 Todos menos `seo` (que expone `sitemap.xml`/`robots.txt` sin prefijo) cuelgan de `/api/*`.
 

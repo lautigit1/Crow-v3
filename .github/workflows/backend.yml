@@ -17,6 +17,23 @@ jobs:
     name: Tests (Python 3.12)
     runs-on: ubuntu-latest
 
+    # La suite corre contra Postgres, el mismo motor que producción: con SQLite
+    # no se veían enums, índices parciales, JSONB ni bloqueos.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crow
+          POSTGRES_PASSWORD: crow
+          POSTGRES_DB: crow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U crow -d crow_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     defaults:
       run:
         working-directory: backend
@@ -50,13 +67,13 @@ jobs:
         env:
           TESTING: "1"
           SECRET_KEY: "ci-test-secret-key-not-used-in-production"
+          TEST_DATABASE_URL: "postgresql+psycopg2://crow:crow@localhost:5432/crow_test"
         run: pytest
 
       - name: Audit dependencies for known CVEs
-        # No falla el build (--strict lo haría): por ahora es informativo,
-        # para que una CVE nueva en una dependencia aparezca en los logs de
-        # CI sin bloquear cada push mientras se evalúa el fix/upgrade. Se
-        # puede endurecer a bloqueante más adelante si el ruido es bajo.
+        # Bloqueante. Era informativo mientras había avisos abiertos; con el
+        # backend en cero, un aviso nuevo tiene que frenar el push en vez de
+        # quedar perdido en un log que nadie abre.
         run: |
           pip install pip-audit
-          pip-audit -r requirements.txt || true
+          pip-audit -r requirements.txt

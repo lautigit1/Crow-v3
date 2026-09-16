@@ -16,13 +16,14 @@ commit, la segunda sesión no ve la fila y el test falla.
 """
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, delete, select
 from sqlalchemy.orm import sessionmaker
 
 from app.core import database
-from app.core.database import Base, get_db
+from app.core.database import get_db
 from app.core.post_commit import DespuesDelCommit, cola_post_commit
 from app.models.brand import Brand
+from tests.conftest import TEST_DATABASE_URL
 
 
 class _RequestFalsa:
@@ -36,18 +37,19 @@ class _RequestFalsa:
 
 
 @pytest.fixture()
-def base_en_disco(tmp_path, monkeypatch):
-    """SQLite en un archivo, no en memoria.
+def base_en_disco(monkeypatch):
+    """La base de tests, pero con commits reales.
 
-    Hace falta un archivo para poder abrir una **segunda** sesión que vea lo
-    commiteado por la primera: con `sqlite://` a secas cada conexión es una base
-    distinta y la prueba no probaría nada.
+    Estos tests necesitan que `get_db()` commitee de verdad para poder abrir una
+    **segunda** conexión que vea lo commiteado por la primera, así que no pueden
+    usar el fixture `db` (que revierte todo). A cambio, limpian lo suyo al
+    terminar para no dejarle marcas al resto de la suite.
     """
-    url = f"sqlite:///{tmp_path / 'post_commit.db'}"
-    engine = create_engine(url, connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
+    engine = create_engine(TEST_DATABASE_URL)
     monkeypatch.setattr(database, "SessionLocal", sessionmaker(autocommit=False, autoflush=False, bind=engine))
     yield engine
+    with engine.begin() as conn:
+        conn.execute(delete(Brand).where(Brand.slug.in_(("bosch", "fantasma"))))
     engine.dispose()
 
 

@@ -28,14 +28,9 @@ class QuoteStatus(str, enum.Enum):
 class Quote(Base):
     __tablename__ = "quotes"
 
-    # Replica la CHECK constraint de la migración 011 -- ver comentario
-    # equivalente en app/models/product.py. Usa trim() en vez de btrim()
-    # (la función que usa la migración real en Postgres) porque este texto
-    # también se ejecuta contra SQLite en los tests, que no tiene btrim();
-    # trim() sin argumentos es SQL estándar y se comporta igual en ambos
-    # motores (recorta espacios en blanco de los dos extremos).
     __table_args__ = (
         CheckConstraint("length(trim(message)) > 0", name="ck_quotes_message_not_blank"),
+        Index("ix_quotes_user_id", "user_id"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -82,8 +77,6 @@ class QuoteOption(Base):
     __tablename__ = "quote_options"
 
     __table_args__ = (
-        # Espeja el índice de la migración 021: en desarrollo y en los tests
-        # el esquema sale de `create_all()`, no de Alembic.
         Index("ix_quote_options_quote_id", "quote_id"),
     )
 

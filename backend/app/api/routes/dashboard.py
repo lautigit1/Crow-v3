@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Response
@@ -147,13 +147,13 @@ def get_analytics(db: DbSession, _: AdminUser, response: Response) -> Analytics:
 
 
 # ── Trends (series temporales) ─────────────────────────────────────────────────
-# El bucketing se hace en Python a propósito: `date_trunc` es solo de Postgres y
-# `strftime` solo de SQLite (que usan los tests). Fetch + agrupación en memoria
-# funciona igual en ambos y, al volumen de una PyME, el costo es despreciable.
+# El bucketing se hace en Python: al volumen de una PyME traer las filas y
+# agruparlas en memoria cuesta lo mismo que un `date_trunc`, y deja la lógica
+# de períodos (semanas que arrancan en lunes, meses) testeable sin base.
 
 def _bucket_plan(period: Period) -> tuple[list[date], str, Callable[[date], date]]:
     """Devuelve (buckets ordenados, granularidad, fn que mapea una fecha a su bucket)."""
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     if period == "7d":
         start = today - timedelta(days=6)
         return [start + timedelta(days=i) for i in range(7)], "day", lambda d: d

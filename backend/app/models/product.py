@@ -1,6 +1,20 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, Text, and_, func
+from sqlalchemy import (
+    DDL,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    and_,
+    event,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -9,14 +23,33 @@ from app.core.database import Base
 class Product(Base):
     __tablename__ = "products"
 
-    # Replican las CHECK constraints agregadas en la migración 005. Antes
-    # solo existían a nivel de base de datos (Postgres) y no en el modelo,
-    # por lo que create_all() (usado por la suite de tests con SQLite) no
-    # las conocía y un bug que dejara stock negativo o precio <= 0 hubiera
-    # pasado los tests silenciosamente sin tocar Postgres real.
+    # Los modelos son la fuente de verdad del esquema: la migración base y las
+    # que vengan se generan contra esto, y `tests/test_esquema.py` falla si la
+    # base migrada y los modelos se separan. Por eso acá están también los
+    # objetos que antes vivían solo como SQL crudo en las migraciones.
     __table_args__ = (
         CheckConstraint("stock >= 0", name="ck_products_stock_nonnegative"),
         CheckConstraint("price IS NULL OR price > 0", name="ck_products_price_positive"),
+        # Búsqueda por similitud (pg_trgm) sobre los campos del buscador.
+        Index("ix_products_name_trgm", "name", postgresql_using="gin", postgresql_ops={"name": "gin_trgm_ops"}),
+        Index(
+            "ix_products_description_trgm",
+            "description",
+            postgresql_using="gin",
+            postgresql_ops={"description": "gin_trgm_ops"},
+        ),
+        Index("ix_products_sku_trgm", "sku", postgresql_using="gin", postgresql_ops={"sku": "gin_trgm_ops"}),
+        # Parciales: el catálogo nunca lista productos borrados.
+        Index("ix_products_active_category", "category_id", postgresql_where=text("is_deleted = false")),
+        Index("ix_products_active_brand", "brand_id", postgresql_where=text("is_deleted = false")),
+        Index("ix_products_active_vehicle", "vehicle_type", postgresql_where=text("is_deleted = false")),
+        Index("ix_products_active_featured", "is_featured", postgresql_where=text("is_deleted = false")),
+        Index(
+            "ix_products_active_category_stock",
+            "category_id",
+            "stock",
+            postgresql_where=text("is_deleted = false"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -85,3 +118,13 @@ def producto_publico():
     y no solo lo publicado.
     """
     return and_(Product.is_deleted.is_(False), Product.is_active.is_(True))
+
+
+# Los índices trigram necesitan la extensión instalada antes de crear la tabla.
+# La migración base la crea explícitamente; esto cubre a `create_all()`, que
+# siguen usando algunos tests que arman una base propia.
+event.listen(
+    Product.__table__,
+    "before_create",
+    DDL("CREATE EXTENSION IF NOT EXISTS pg_trgm").execute_if(dialect="postgresql"),
+)

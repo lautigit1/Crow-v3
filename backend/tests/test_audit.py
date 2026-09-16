@@ -13,8 +13,8 @@ BASE = "/api/audit"
 
 
 def _log(db, **overrides) -> AuditLog:
-    # created_at explícito -- server_default=func.now() tiene resolución de
-    # segundo en SQLite, así que dos inserts rápidos podrían empatar y el
+    # created_at explícito -- server_default=func.now() es la hora de inicio de
+    # la transacción en Postgres, así que dos inserts del mismo test empatan y el
     # test de orden quedaría flaky si dependiéramos del default.
     defaults = {
         "action": "product.create",

@@ -2,13 +2,21 @@
 Shared pytest fixtures for Crow Repuestos backend tests.
 
 Strategy:
-- SQLite in-memory database (fast, no external deps, resets between sessions)
+- Postgres real (TEST_DATABASE_URL), el mismo motor que producción. Antes era
+  SQLite en memoria, que no ve enums, índices parciales, JSONB ni la semántica
+  de bloqueos de Postgres: un bug de esa clase pasaba la suite en verde.
 - One TestClient per test session; DB tables created once and cleared per test
 - Fixtures for regular user, admin user, auth cookies, and domain objects
 """
 import os
 
 os.environ["TESTING"] = "1"  # must be set before importing app
+
+# El engine de la app se arma al importar `app.core.database`. Apuntarlo a la
+# base de tests evita que algo que abra su propia sesión toque otra base. Si
+# falta la variable, se avisa más abajo (acá solo pueden ir asignaciones a
+# `os.environ` antes de los imports).
+os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "")
 
 # Fuerza el fallback en memoria de rate limiters, blocklist y cache del
 # dashboard, sin importar qué Redis haya alcanzable.
@@ -28,7 +36,7 @@ os.environ["REDIS_URL"] = ""
 import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base, get_db
@@ -44,21 +52,16 @@ from app.models.supplier import Supplier
 from app.models.user import User, UserRole
 
 # ---------------------------------------------------------------------------
-# SQLite in-memory engine
+# Postgres de tests
 # ---------------------------------------------------------------------------
-SQLITE_URL = "sqlite://"  # pure in-memory, no file
+TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+if not TEST_DATABASE_URL:
+    raise RuntimeError(
+        "Falta TEST_DATABASE_URL: la suite corre contra Postgres. Ver la sección "
+        "Tests de backend/README.md. OJO: esa base se vacía al empezar la corrida."
+    )
 
-engine = create_engine(
-    SQLITE_URL,
-    connect_args={"check_same_thread": False},
-)
-
-# Enable foreign key enforcement in SQLite (off by default)
-@event.listens_for(engine, "connect")
-def _set_sqlite_pragma(dbapi_conn, _):
-    dbapi_conn.execute("PRAGMA foreign_keys=ON")
-
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(TEST_DATABASE_URL)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +69,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="session", autouse=True)
 def _create_tables():
+    # Se borra primero por si una corrida anterior se cortó sin teardown.
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
@@ -83,7 +88,10 @@ def db():
     yield session
 
     session.close()
-    transaction.rollback()
+    # En Postgres un error de integridad aborta la transacción entera y la
+    # sesión ya la revirtió; un segundo rollback solo genera un warning.
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()
 
 
@@ -91,7 +99,7 @@ def db():
 # Override FastAPI dependency with the test session
 # ---------------------------------------------------------------------------
 @pytest.fixture()
-def client(db: Session):
+def client(db: Session, monkeypatch):
     def _override(request: Request):
         yield db
         # El override reemplaza a `get_db`, así que también tiene que cumplir
@@ -103,6 +111,18 @@ def client(db: Session):
         ejecutar_post_commit(request)
 
     app.dependency_overrides[get_db] = _override
+    # `audit.record_standalone` abre su propia sesión y commitea: es el camino
+    # de los logins fallidos, que tienen que quedar anotados aunque la request
+    # se revierta. Contra Postgres ese commit escaparía de la transacción del
+    # test y dejaría filas para el siguiente. Atada a la misma conexión con un
+    # savepoint, commitea "de verdad" desde su punto de vista y se revierte igual.
+    from app.core import audit
+
+    monkeypatch.setattr(
+        audit,
+        "SessionLocal",
+        sessionmaker(bind=db.connection(), join_transaction_mode="create_savepoint"),
+    )
     # Reset in-memory blocklist and rate limiters between tests — the new
     # IP-only limiters share the key "testclient:*" across the whole suite
     # and would otherwise lock out later tests.

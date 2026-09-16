@@ -33,9 +33,6 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     __table_args__ = (
-        # Espeja los índices de la migración 020 para que `create_all()` los
-        # cree también -- en desarrollo y en los tests el esquema no sale de
-        # Alembic (ver backend/docker-entrypoint.sh).
         Index("ix_notifications_user_unread", "user_id", "read_at"),
         Index("ix_notifications_user_created", "user_id", "created_at"),
     )
