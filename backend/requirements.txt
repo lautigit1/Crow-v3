@@ -49,7 +49,7 @@ openpyxl==3.1.5
 # (PYSEC-2026-1761/1762). Procesa PDFs de proveedores: archivos de terceros
 # que llegan por mail, o sea entrada no confiable.
 pdfplumber==0.11.10
-alembic==1.14.0
+alembic==1.20.0
 redis>=5.0,<6.0
 # 3.1.4 tenía tres avisos (PYSEC-2026-1471/1472/1475). Renderiza las
 # plantillas de correo; el contenido lo generamos nosotros, así que el riesgo
