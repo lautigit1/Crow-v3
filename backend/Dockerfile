@@ -37,13 +37,10 @@ EXPOSE 8000
 
 # Startup: ver backend/docker-entrypoint.sh.
 #
-# Alembic corre ahora en LOS DOS entornos. Antes solo en producción, y el
-# esquema de desarrollo lo armaba `create_all()` desde el seed -- que crea
-# tablas faltantes pero nunca agrega columnas a una tabla existente. Además
-# de romper el arranque cada vez que alguien sumaba una columna, eso hacía
-# que las migraciones no se ejecutaran nunca en desarrollo: una migración con
-# un error se estrenaba en producción. Ahora cada `docker compose up` las
-# ejerce.
+# Alembic es la única fuente del esquema, en todos los entornos: cada
+# `docker compose up` corre `alembic upgrade head`, también sobre una base
+# vacía. Así una migración con un error aparece en desarrollo y en CI, no en
+# producción.
 #
 # --workers: hallazgo "Alta" #15 de la auditoría técnica del 2026-07-13 --
 # un único proceso uvicorn no usa más de un core de CPU y es un punto único

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.database import Base, SessionLocal, engine
+from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.models.brand import Brand
 from app.models.category import Category
@@ -84,16 +84,10 @@ def seed(db: Session) -> None:
 
 
 def main() -> None:
-    Base.metadata.create_all(bind=engine)
+    # Supone el esquema ya migrado (`alembic upgrade head`): el seed solo carga
+    # datos, no crea ni corrige tablas.
     db = SessionLocal()
     try:
-        # Reconcilia columnas/constraints/indices de migraciones que create_all()
-        # no pudo aplicar porque la tabla ya existia de una corrida anterior
-        # (ver scripts/verify_db_integrity.py). Tiene que correr ANTES de tocar
-        # `products` -- si no, un SELECT sobre una columna que todavia no
-        # existe (ej. cost_price) rompe el seed antes de llegar a arreglarla.
-        from scripts.verify_db_integrity import reconcile
-        reconcile(db)
         seed(db)
     finally:
         db.close()

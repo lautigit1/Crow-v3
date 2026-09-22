@@ -44,16 +44,25 @@ class ImportBatch(Base):
 
     # El archivo original. Se guarda para poder mostrarlo mientras se cargan
     # las líneas a mano (facturas en PDF) y para tener el comprobante junto
-    # al asiento. Ver el razonamiento de por qué va en la base en la
-    # migración 016. `deferred` para que no viaje en cada consulta del
-    # listado: son bytes que solo hacen falta cuando se pide el archivo.
+    # al asiento. `deferred` para que no viaje en cada consulta del listado:
+    # son bytes que solo hacen falta cuando se pide el archivo.
+    #
+    # Va en la base y no en disco ni en Cloudinary. Una factura pesa entre 100
+    # y 500 KB y llegan unas 30 por mes: unos 15 MB al año, nada para Postgres.
+    # Así no hace falta un volumen más, y los backups de la base incluyen las
+    # facturas, que para un comprobante fiscal es una ventaja. Cloudinary queda
+    # descartado porque son documentos con precios de costo, no imágenes
+    # públicas. Si el volumen crece, moverlo es un cambio contenido: la columna
+    # se lee desde un solo endpoint.
     file_content: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
     content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # SHA-256 del archivo. Permite avisar "esta factura ya la importaste"
     # antes de procesar nada. Detección exacta sobre los bytes: si el
     # proveedor reexporta el mismo comprobante, el hash cambia y no lo
-    # detecta -- ver el comentario de la migración 018.
+    # detecta; para eso está el segundo control, el total declarado y la
+    # revisión antes de confirmar. Nullable porque los lotes anteriores a que
+    # se guardara el archivo no tienen de dónde calcularlo.
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     # Total que declara la factura. Es el control cruzado: si la suma de las

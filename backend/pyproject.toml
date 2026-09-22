@@ -41,3 +41,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+# La carpeta `backend/alembic/` (env.py y las migraciones) se llama igual que el
+# paquete. Sin esto ruff trata `from alembic import command` como propio y
+# `from alembic.config import Config` como de terceros, y pide separarlos.
+known-third-party = ["alembic"]

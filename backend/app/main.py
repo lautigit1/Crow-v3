@@ -3,7 +3,8 @@ Crow Repuestos API -- application entry point.
 
 Startup sequence:
   1. Configure structured JSON logging
-  2. Run Alembic migrations (or create_all in development)
+  2. Connect Redis and the event broker (the schema comes from Alembic,
+     applied by docker-entrypoint.sh before the app starts)
   3. Register middleware (order matters -- outermost applied first)
   4. Register global exception handlers
   5. Mount API router
@@ -14,13 +15,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 
 from app import models  # noqa: F401 -- registers models on Base before migrations
 from app.api import api_router
 from app.api.routes.seo import router as seo_router
 from app.core.config import settings
-from app.core.database import Base, check_db_connection, engine
+from app.core.database import check_db_connection, engine
 from app.core.error_tracking import init_sentry
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, get_logger
@@ -31,6 +31,7 @@ from app.core.middleware import (
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
 )
+from app.core.unit_of_work import UnitOfWorkMiddleware
 
 logger = get_logger("crow.startup")
 
@@ -156,25 +157,10 @@ async def lifespan(app: FastAPI):
 
     registrar_loop(_asyncio.get_running_loop())
 
-    import os
-    if os.getenv("TESTING"):
-        pass  # tables already created by conftest fixture
-    elif not settings.is_production:
-        Base.metadata.create_all(bind=engine)
-        logger.info("DB tables ensured (create_all -- dev mode)")
-        # create_all() solo conoce tablas/columnas declaradas en los modelos --
-        # no crea extensiones de Postgres. pg_trgm (migracion 003) vive solo
-        # en Alembic, asi que en una base nueva en modo dev nunca se instala
-        # a menos que la aseguremos aca tambien. Idempotente y no-fatal.
-        if engine.dialect.name == "postgresql":
-            try:
-                with engine.begin() as conn:
-                    conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-                logger.info("pg_trgm extension ensured (dev mode)")
-            except Exception as exc:
-                logger.warning(f"No se pudo asegurar la extension pg_trgm: {exc}")
-    else:
-        logger.info("Production mode -- expecting Alembic migrations to have run")
+    # La app no crea tablas en ningún entorno: el esquema lo arma siempre
+    # Alembic. Crear tablas desde acá volvería a dar dos definiciones del
+    # esquema, que es lo que dejó rota la cadena de migraciones anterior sin
+    # que nadie lo notara (ver alembic/versions/021_esquema_base.py).
 
     yield
 
@@ -196,13 +182,18 @@ app = FastAPI(
 # Middleware (applied in reverse order -- last added = outermost)
 # Outermost -> innermost:
 #   CORS -> CSRF origin check -> Security headers -> Request ID -> Request
-#   logging -> Rate limit
+#   logging -> Rate limit -> Unit of Work
+#
+# El Unit of Work va PRIMERO (el más interno): pegado a la ruta, para que el
+# commit ocurra lo antes posible y para no envolver requests que ni llegan a
+# tocar la base (un 429 del rate limit, por ejemplo). Ver core/unit_of_work.py.
 #
 # El rate limit va ÚLTIMO (o sea, el más interno) para que el 429 pase de
 # vuelta por el logging y por las cabeceras de seguridad como cualquier otra
 # respuesta. Rechazar más afuera ahorraría cuatro middlewares que igual no
 # tocan la base, y a cambio dejaría sin traza justo a las requests que uno
 # quiere mirar cuando algo raro pasa.
+app.add_middleware(UnitOfWorkMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RequestIDMiddleware)

@@ -5,7 +5,8 @@ Strategy:
 - Postgres real (TEST_DATABASE_URL), el mismo motor que producción. Antes era
   SQLite en memoria, que no ve enums, índices parciales, JSONB ni la semántica
   de bloqueos de Postgres: un bug de esa clase pasaba la suite en verde.
-- One TestClient per test session; DB tables created once and cleared per test
+- El esquema lo arma `alembic upgrade head` una vez por sesión; cada test
+  corre en una transacción que se revierte
 - Fixtures for regular user, admin user, auth cookies, and domain objects
 """
 import os
@@ -17,6 +18,9 @@ os.environ["TESTING"] = "1"  # must be set before importing app
 # falta la variable, se avisa más abajo (acá solo pueden ir asignaciones a
 # `os.environ` antes de los imports).
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "")
+# Las migraciones usan ALEMBIC_DATABASE_URL si está definida (ver config.py):
+# vacía, caen a la misma base de tests.
+os.environ["ALEMBIC_DATABASE_URL"] = ""
 
 # Fuerza el fallback en memoria de rate limiters, blocklist y cache del
 # dashboard, sin importar qué Redis haya alcanzable.
@@ -33,17 +37,21 @@ os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "")
 # aparecen 8 fallos que no tienen nada que ver con el código.
 os.environ["REDIS_URL"] = ""
 
+from pathlib import Path
+
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi import Request
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base, get_db
-from app.core.post_commit import ejecutar_post_commit
 from app.core.ratelimit import IPRateLimiter, LoginRateLimiter
 from app.core.security import hash_password
 from app.core.token_blocklist import token_blocklist
+from app.core.unit_of_work import registrar_sesion
 from app.main import app
 from app.models.brand import Brand
 from app.models.category import Category
@@ -64,16 +72,36 @@ if not TEST_DATABASE_URL:
 engine = create_engine(TEST_DATABASE_URL)
 
 
+def alembic_config() -> Config:
+    """Config de Alembic apuntada a la base de tests.
+
+    Se arma sin pasarle `alembic.ini` a propósito: con el archivo, `env.py`
+    corre `logging.config.fileConfig`, que deshabilita todos los loggers ya
+    creados y rompería a los tests que miran los logs de la app.
+    """
+    cfg = Config()
+    cfg.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    return cfg
+
+
 # ---------------------------------------------------------------------------
-# Session-scoped: create tables once
+# Session-scoped: el esquema sale de las migraciones, como en producción
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="session", autouse=True)
 def _create_tables():
-    # Se borra primero por si una corrida anterior se cortó sin teardown.
+    # Restos de una corrida anterior que se cortó sin llegar al teardown.
     Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+
+    # `upgrade head` y no `create_all()`: la suite entera corre sobre el
+    # esquema que arman las migraciones, y `test_esquema.py` verifica que ese
+    # esquema coincida con los modelos.
+    command.upgrade(alembic_config(), "head")
     yield
-    Base.metadata.drop_all(bind=engine)
+    # El downgrade también se ejerce en cada corrida: una migración que no se
+    # puede revertir se nota acá y no el día que hace falta revertirla.
+    command.downgrade(alembic_config(), "base")
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +111,10 @@ def _create_tables():
 def db():
     connection = engine.connect()
     transaction = connection.begin()
-    session = Session(bind=connection)
+    # `create_savepoint`: el commit del middleware Unit of Work tiene que
+    # comportarse como un commit desde adentro de la request, pero sin escapar
+    # de esta transacción, que es lo que aísla un test del siguiente.
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
 
     yield session
 
@@ -101,14 +132,19 @@ def db():
 @pytest.fixture()
 def client(db: Session, monkeypatch):
     def _override(request: Request):
+        # El override reemplaza a `get_db`, así que tiene que cumplir su otra
+        # mitad del contrato: dejar la sesión donde el middleware Unit of Work
+        # la busca para commitearla y disparar los efectos post-commit. Sin
+        # esto, los correos y los eventos de la campana no saldrían en los
+        # tests. Como la sesión vive dentro de la transacción del test, ese
+        # commit libera un SAVEPOINT y el aislamiento entre tests no cambia.
+        #
+        # El commit de acá cierra lo que dejaron los fixtures en su propio
+        # savepoint: si no, el rollback del middleware ante una respuesta 4xx
+        # se llevaría puestos los datos que el test armó antes de la request.
+        db.commit()
+        registrar_sesion(request, db)
         yield db
-        # El override reemplaza a `get_db`, así que también tiene que cumplir
-        # su otro contrato: vaciar la cola post-commit (core/post_commit.py).
-        # Acá no hay commit -- la sesión vive dentro de una transacción que se
-        # revierte al final del test para aislarlo -- pero el punto del que
-        # cuelgan los efectos es el mismo, y sin esta línea los correos y los
-        # eventos de la campana nunca saldrían durante los tests.
-        ejecutar_post_commit(request)
 
     app.dependency_overrides[get_db] = _override
     # `audit.record_standalone` abre su propia sesión y commitea: es el camino

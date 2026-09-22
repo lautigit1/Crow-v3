@@ -22,6 +22,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core import database
 from app.core.database import get_db
 from app.core.post_commit import DespuesDelCommit, cola_post_commit
+from app.core.unit_of_work import confirmar, descartar
 from app.models.brand import Brand
 from tests.conftest import TEST_DATABASE_URL
 
@@ -72,7 +73,9 @@ class TestOrden:
             lambda: visto.append(_marcas_visibles_desde_afuera(base_en_disco))
         )
 
-        # Cierra la dependencia como lo hace FastAPI al terminar la request.
+        # Cierra la unidad de trabajo como lo hace el middleware cuando el
+        # endpoint terminó bien, y después la dependencia, como hace FastAPI.
+        confirmar(request)
         with pytest.raises(StopIteration):
             next(gen)
 
@@ -89,6 +92,9 @@ class TestOrden:
         db.flush()
         cola_post_commit(request).add_task(lambda: corrio.append(True))
 
+        # El endpoint explota: el middleware revierte y no confirma nada, y la
+        # excepción sigue subiendo por la dependencia.
+        descartar(request)
         with pytest.raises(RuntimeError):
             gen.throw(RuntimeError("la ruta explotó"))
 
@@ -100,6 +106,7 @@ class TestOrden:
         request = _RequestFalsa()
         gen = get_db(request)
         next(gen)
+        confirmar(request)
         with pytest.raises(StopIteration):
             next(gen)
 
@@ -184,3 +191,63 @@ class TestIntegracion:
         me = client.get("/api/auth/me")
         assert me.status_code == 200
         assert me.json()["email"] == "orden@test.com"
+
+
+class TestMomentoDelCommit:
+    """Cuándo commitea la request, que es de dónde salió el bug de lectura vieja.
+
+    El commit vivía en el teardown de `get_db()`. Desde FastAPI 0.141 ese
+    teardown corre DESPUÉS de que la respuesta salió, así que la API contestaba
+    200 con datos que todavía no estaban en la base: medido contra el stack
+    real, 20 de 20 lecturas inmediatas después de un PATCH devolvían el valor
+    anterior.
+
+    Este test fija el orden en un app mínimo -- endpoint, commit, recién
+    después el teardown de la dependencia -- para que un cambio futuro de
+    FastAPI o del orden de los middlewares no lo vuelva a dar vuelta en
+    silencio.
+    """
+
+    def _app_minima(self, orden: list[str], falla: bool = False):
+        from fastapi import Depends, FastAPI, HTTPException, Request
+        from fastapi.testclient import TestClient
+
+        from app.core.unit_of_work import UnitOfWorkMiddleware, registrar_sesion
+
+        class _SesionFalsa:
+            def commit(self) -> None:
+                orden.append("commit")
+
+            def rollback(self) -> None:
+                orden.append("rollback")
+
+        def dependencia(request: Request):
+            registrar_sesion(request, _SesionFalsa())
+            yield
+            orden.append("teardown de la dependencia")
+
+        app = FastAPI()
+        app.add_middleware(UnitOfWorkMiddleware)
+
+        @app.get("/x")
+        def x(_=Depends(dependencia)):
+            orden.append("endpoint")
+            if falla:
+                raise HTTPException(status_code=400, detail="no")
+            return {"ok": True}
+
+        return TestClient(app)
+
+    def test_commitea_despues_del_endpoint_y_antes_de_cerrar_la_dependencia(self):
+        orden: list[str] = []
+        assert self._app_minima(orden).get("/x").status_code == 200
+        assert orden == ["endpoint", "commit", "teardown de la dependencia"]
+
+    def test_una_respuesta_de_error_revierte(self):
+        """Sin "teardown": la excepción se le tira a la dependencia en el
+        `yield`, así que su código de cierre no llega a correr -- y para
+        entonces la sesión ya está cerrada, con lo que este rollback es la red
+        de la respuesta de error, no el único rollback."""
+        orden: list[str] = []
+        assert self._app_minima(orden, falla=True).get("/x").status_code == 400
+        assert orden == ["endpoint", "rollback"]

@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from sqlalchemy import (
-    DDL,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -11,7 +10,6 @@ from sqlalchemy import (
     String,
     Text,
     and_,
-    event,
     func,
     text,
 )
@@ -118,13 +116,3 @@ def producto_publico():
     y no solo lo publicado.
     """
     return and_(Product.is_deleted.is_(False), Product.is_active.is_(True))
-
-
-# Los índices trigram necesitan la extensión instalada antes de crear la tabla.
-# La migración base la crea explícitamente; esto cubre a `create_all()`, que
-# siguen usando algunos tests que arman una base propia.
-event.listen(
-    Product.__table__,
-    "before_create",
-    DDL("CREATE EXTENSION IF NOT EXISTS pg_trgm").execute_if(dialect="postgresql"),
-)

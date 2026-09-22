@@ -282,43 +282,16 @@ class TestAdminOrderList:
 
 
 # ---------------------------------------------------------------------------
-# Estado de cobro (migración 019)
+# Estado de cobro
 #
 # El cobro se coordina por WhatsApp, fuera del sistema, así que es un eje
 # independiente de la entrega. Lo que se prueba acá es justamente esa
-# independencia: que moverse en un eje no arrastre el otro.
+# independencia: que moverse en un eje no arrastre el otro. Que las etiquetas
+# del enum en la base coincidan con las del ORM lo verifica, para todos los
+# enums, `test_esquema.py`.
 # ---------------------------------------------------------------------------
 
 class TestPaymentStatus:
-    def test_las_etiquetas_de_la_migracion_son_las_que_manda_sqlalchemy(self):
-        """El tipo de Postgres tiene que hablar el mismo idioma que el ORM.
-
-        SQLAlchemy persiste el NOMBRE del miembro del enum ("SIN_COBRAR"), no
-        su valor legible ("Sin cobrar"). Si la migración crea el tipo con los
-        valores, todo anda hasta el primer INSERT real, que revienta con
-        "invalid input value for enum paymentstatus".
-
-        El resto de la suite no puede detectarlo: corre sobre SQLite, donde un
-        Enum es un VARCHAR sin restricción de etiquetas. Este test compara las
-        dos listas directamente, sin necesidad de una base Postgres.
-        """
-        import importlib.util
-        import pathlib
-
-        from sqlalchemy import Enum as SAEnum
-
-        from app.models.order import PaymentStatus
-
-        ruta = (
-            pathlib.Path(__file__).resolve().parents[1]
-            / "alembic" / "versions" / "019_order_payment_status.py"
-        )
-        spec = importlib.util.spec_from_file_location("migracion_019", ruta)
-        migracion = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(migracion)
-
-        assert list(migracion.payment_status.enums) == list(SAEnum(PaymentStatus).enums)
-
     def test_un_pedido_nuevo_arranca_sin_cobrar(self, user_client, product):
         assert _create_order(user_client, product).json()["payment_status"] == "Sin cobrar"
 

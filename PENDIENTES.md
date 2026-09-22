@@ -269,9 +269,13 @@ verificable, para que la consulta con un profesional sea corta.
         es `build:` sin volumen montado, así que editar un archivo y reiniciar
         deja corriendo el código viejo, sin ningún aviso. Hace falta
         `up -d --build`. Vale para cualquier prueba futura contra el backend.
-- [ ] **La migración 020 contra una copia de producción.** Hoy no hay
-      producción, así que el riesgo es bajo: una base vacía se arma con
-      `create_all()` y se marca en head. Aplica recién cuando haya datos reales.
+- [x] **Las migraciones contra una base real.** Ya no aplica como estaba
+      escrito: la cadena 001-021 se consolidó en una migración base (021) que
+      arma el esquema entero, verificada byte a byte (`pg_dump`) contra la base
+      de desarrollo. Toda base, vacía o no, pasa ahora por `alembic upgrade
+      head`, y la suite de tests la aplica y la revierte en cada corrida.
+      **Pendiente para cuando haya producción:** probar cada migración nueva
+      contra una copia de la base real antes de deployarla.
 
 ---
 

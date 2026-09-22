@@ -25,7 +25,7 @@ cd backend
 docker compose up --build
 ```
 
-Esto levanta Postgres + la API, crea las tablas y corre el seed.
+Esto levanta Postgres + la API, aplica las migraciones y corre el seed.
 
 - API: http://localhost:8000
 - Documentación interactiva (Swagger): http://localhost:8000/docs
@@ -48,7 +48,8 @@ cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 cp .env.example .env          # ajustá DATABASE_URL a tu Postgres local
-python -m app.seed            # crea tablas + datos demo
+alembic upgrade head          # crea el esquema
+python -m app.seed            # datos demo
 uvicorn app.main:app --reload
 ```
 
@@ -59,12 +60,31 @@ La suite corre contra **Postgres**, el mismo motor que producción, y necesita
 a la de desarrollo.
 
 ```bash
-docker run -d --name crow-test-pg -p 5433:5432 \n  -e POSTGRES_USER=crow -e POSTGRES_PASSWORD=crow -e POSTGRES_DB=crow_test \n  postgres:16-alpine
+docker run -d --name crow-test-pg -p 5433:5432 \
+  -e POSTGRES_USER=crow -e POSTGRES_PASSWORD=crow -e POSTGRES_DB=crow_test \
+  postgres:16-alpine
 
 export TEST_DATABASE_URL=postgresql+psycopg2://crow:crow@localhost:5433/crow_test
 ruff check .        # lint -- bloqueante en CI
 pytest              # bloqueante en CI
 ```
+
+La suite arma el esquema con `alembic upgrade head` y lo revierte al terminar,
+así que las migraciones se ejercen en cada corrida. `tests/test_esquema.py`
+falla si los modelos y las migraciones no coinciden.
+
+## Migraciones
+
+Alembic es la única fuente del esquema, en todos los entornos: el contenedor
+corre `alembic upgrade head` al arrancar, también sobre una base vacía, y la app
+nunca crea tablas por su cuenta. Después de cambiar un modelo:
+
+```bash
+alembic revision --autogenerate -m "descripción del cambio"
+```
+
+Revisá lo generado antes de commitear: autogenerate no detecta cambios en los
+valores de un enum ni sabe de extensiones de Postgres.
 
 ## Estructura
 
@@ -80,7 +100,7 @@ app/
   templates/emails/    Plantillas Jinja2 para notificaciones por email
   seed.py              Datos iniciales (idempotente)
 alembic/               Migraciones de base de datos
-scripts/                Scripts operativos (ej. verify_db_integrity.py)
+scripts/               Scripts operativos (ej. reset_admin.py)
 tests/                 pytest, contra Postgres
 ```
 

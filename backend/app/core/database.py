@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
-from app.core.post_commit import ejecutar_post_commit
+from app.core.unit_of_work import registrar_sesion
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -31,26 +31,25 @@ def get_db(request: Request) -> Generator[Session, None, None]:
     ``flush``. This boundary commits once if the request succeeds, or rolls the
     whole thing back if anything raises, guaranteeing atomicity per request.
 
-    Y es también el único lugar que sabe cuándo la transacción confirmó, así que
-    es el que dispara los efectos que dependen de eso -- correos y eventos de la
-    campana, ver ``core/post_commit.py``. Antes eso lo hacía ``BackgroundTasks``,
-    que corría después del commit hasta FastAPI 0.115 y pasó a correr antes en
-    0.141; atarlo acá lo vuelve independiente de esa versión.
+    El commit NO se hace acá: lo hace ``UnitOfWorkRoute`` apenas el endpoint
+    devuelve, que es antes de que la respuesta salga. El teardown de una
+    dependencia corre después de responder (FastAPI 0.141+), así que commitear
+    acá dejaba una ventana en la que la API ya había contestado "listo" con
+    datos que todavía no estaban en la base. Ver ``core/unit_of_work.py``.
+
+    Lo que sí queda acá es el otro lado del contrato: revertir si algo explotó
+    -- la excepción sube antes de que la ruta llegue a commitear -- y cerrar
+    siempre la sesión.
     """
     db = SessionLocal()
+    registrar_sesion(request, db)
     try:
         yield db
-        db.commit()
     except Exception:
         db.rollback()
         raise
     finally:
         db.close()
-
-    # Solo se llega a esta línea si el commit salió bien: si algo falló, la
-    # excepción salió por el ``raise`` de arriba (el ``finally`` no la traga) y
-    # las tareas encoladas se descartan junto con la request.
-    ejecutar_post_commit(request)
 
 
 def check_db_connection() -> bool:
