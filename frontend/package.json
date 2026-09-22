@@ -23,7 +23,7 @@
     "@fontsource/dm-sans": "^5.0.0",
     "@fontsource/fira-mono": "^5.0.0",
     "@fontsource/unbounded": "^5.0.0",
-    "@sentry/react": "^10.65.0",
+    "@sentry/react": "^10.69.0",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
