@@ -37,7 +37,7 @@ bcrypt==4.2.1
 # librería que procesa CADA archivo que se sube al panel, así que es de las
 # que menos conviene tener vieja.
 python-multipart==0.0.32
-email-validator==2.2.0
+email-validator==2.3.0
 # Lectura de las facturas en Excel que mandan los proveedores (fase 4 de
 # openspec/changes/supplier-catalog-and-invoice-import). Solo lectura: no se
 # generan .xlsx desde el backend.
