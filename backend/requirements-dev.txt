@@ -3,7 +3,7 @@ pytest-asyncio>=0.23
 # Cliente de `starlette.testclient`. Starlette 1.x pasó a `httpx2` y avisa
 # que el `httpx` clásico está deprecado.
 httpx2>=2.13,<3
-ruff>=0.8,<1.0
+ruff>=0.16.8,<1.0
 # Solo para los tests: genera PDF con tablas reales para probar la extracción
 # de facturas. No se usa en runtime -- el backend no genera PDF, solo los lee.
 # Un PDF de fixture commiteado sería más liviano, pero un binario opaco en el
