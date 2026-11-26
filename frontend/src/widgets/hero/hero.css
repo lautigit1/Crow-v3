@@ -1,33 +1,51 @@
 /*
- * Hero: franjas de livery.
+ * Hero: la franja de Crow.
  *
- * El único recurso gráfico son tres bandas en curva, como la decoración
- * lateral de un auto de competición, en los colores de marca. Se "pintan"
- * una sola vez al cargar (stroke-dashoffset sobre pathLength=1), de arriba
- * hacia la derecha, y después quedan quietas. El texto entra con una máscara
- * en el mismo momento. Nada se repite ni se mueve solo después.
+ * Entra una sola vez al cargar: la banda se traza desde la punta de abajo
+ * hacia arriba; casi completa, se traza el filete blanco y aparece el
+ * nombre. Después queda quieta; nada se repite.
  */
 
 .livery {
   --lv-ease: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Franjas ------------------------------------------------------------------ */
+/* Franja ------------------------------------------------------------------- */
 
-.lv-stripe {
+.bs-mask,
+.bs-filet {
   fill: none;
   stroke-linecap: butt;
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: lv-paint var(--dur, 1100ms) var(--lv-ease) var(--d, 0ms) both;
 }
 
-.lv-lettering {
+.bs-mask {
+  animation: bs-draw 1000ms var(--lv-ease) var(--d, 0ms) backwards;
+}
+
+.bs-filet {
+  animation: bs-draw 700ms var(--lv-ease) var(--d, 0ms) backwards;
+}
+
+/* Las marcas aparecen apenas arranca la banda, de adelante hacia atrás. */
+.bs-mark {
+  animation: bs-fade 400ms ease var(--d, 0ms) backwards;
+}
+
+/* La firma aparece cuando la banda ya está trazada, sin moverse. */
+.bs-signature {
+  display: none;
   fill: #fff;
   font-family: "Unbounded", sans-serif;
   font-weight: 500;
-  letter-spacing: 0.32em;
-  animation: lv-fade 500ms ease var(--d, 0ms) both;
+  letter-spacing: 0.3em;
+  animation: bs-fade 600ms ease var(--d, 0ms) backwards;
+}
+
+@media (min-width: 1280px) {
+  .bs-signature {
+    display: inline;
+  }
 }
 
 /* Texto -------------------------------------------------------------------- */
@@ -53,7 +71,8 @@
 }
 
 /* El subrayado del enlace secundario se dibuja de izquierda a derecha. */
-.lv-link {
+.lv-link > span {
+  padding-bottom: 3px;
   background-image: linear-gradient(currentColor, currentColor);
   background-position: 0 100%;
   background-repeat: no-repeat;
@@ -62,27 +81,27 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .lv-link {
+  .lv-link > span {
     background-size: 0% 1px;
   }
-  .lv-link:hover {
+  .lv-link:hover > span {
     background-size: 100% 1px;
   }
 }
 
-.lv-link:focus-visible {
-  background-size: 100% 1px;
+.lv-link:focus-visible > span {
+  background-size: 100% 2px;
 }
 
 /* Keyframes ---------------------------------------------------------------- */
 
-@keyframes lv-paint {
-  to {
-    stroke-dashoffset: 0;
+@keyframes bs-draw {
+  from {
+    stroke-dashoffset: 1;
   }
 }
 
-@keyframes lv-fade {
+@keyframes bs-fade {
   from {
     opacity: 0;
   }
@@ -111,23 +130,15 @@
  * acorta las duraciones pero no los delays).
  */
 @media (prefers-reduced-motion: reduce) {
-  .livery .lv-stripe,
-  .livery .lv-lettering,
+  .livery .bs-mask,
+  .livery .bs-filet,
+  .livery .bs-mark,
+  .livery .bs-signature,
   .livery .lv-reveal,
   .livery .lv-rise {
     animation: none !important;
-    stroke-dashoffset: 0;
   }
   .livery .lv-cta:active {
     transform: none;
   }
-}
-
-/*
- * En celular y tablet las franjas nacen debajo del texto: el tramo de arriba
- * se desvanece en vez de cortarse en seco contra el borde del SVG.
- */
-.lv-compact {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 45%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 45%);
 }
