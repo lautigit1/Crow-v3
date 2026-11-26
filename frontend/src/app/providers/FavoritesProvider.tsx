@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { favoriteApi } from "@/entities/favorite";
 import { useAuth } from "@/entities/session";
+import { FavoritesContext } from "@/shared/lib/useFavorites";
 
 /**
  * Favoritos respaldados por la API cuando hay sesión iniciada.
@@ -15,16 +16,6 @@ import { useAuth } from "@/entities/session";
  * Context compartido (mismo patrón que CartProvider): un solo estado,
  * todos los componentes lo ven al toque.
  */
-
-type FavoritesContextValue = {
-  ids: number[];
-  toggle: (id: number) => Promise<void>;
-  isFavorite: (id: number) => boolean;
-  loading: boolean;
-  refresh: () => Promise<void>;
-};
-
-const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -90,10 +81,4 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       {children}
     </FavoritesContext.Provider>
   );
-}
-
-export function useFavorites() {
-  const ctx = useContext(FavoritesContext);
-  if (!ctx) throw new Error("useFavorites debe usarse dentro de <FavoritesProvider>");
-  return ctx;
 }
