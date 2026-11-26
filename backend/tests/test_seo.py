@@ -24,6 +24,18 @@ class TestSitemap:
         for path in ("<loc>", "/catalogo", "/marcas", "/contacto", "/faq"):
             assert path in body
 
+    def test_sitemap_includes_legal_documents(self, client):
+        body = client.get(BASE_SITEMAP).text
+        for path in (
+            "/legal/terminos",
+            "/legal/privacidad",
+            "/legal/cookies",
+            "/legal/aviso-legal",
+            "/legal/propiedad-intelectual",
+            "/legal/desarrollo-y-mantenimiento",
+        ):
+            assert path in body
+
     def test_sitemap_includes_active_category(self, client, category):
         r = client.get(BASE_SITEMAP)
         encoded = quote(category.name, safe="")

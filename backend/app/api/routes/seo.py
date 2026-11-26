@@ -45,6 +45,15 @@ _STATIC_ROUTES: list[tuple[str, str, str]] = [
     ("/marcas",       str(date.today()), "weekly"),
     ("/contacto",     str(date.today()), "monthly"),
     ("/faq",          str(date.today()), "monthly"),
+    # Documentos legales (mismo listado que frontend/src/shared/config/legalDocs.ts).
+    ("/legal/terminos",                   str(date.today()), "yearly"),
+    ("/legal/privacidad",                 str(date.today()), "yearly"),
+    ("/legal/cookies",                    str(date.today()), "yearly"),
+    ("/legal/aviso-legal",                str(date.today()), "yearly"),
+    ("/legal/propiedad-intelectual",      str(date.today()), "yearly"),
+    ("/legal/desarrollo-y-mantenimiento", str(date.today()), "yearly"),
+    ("/legal/licencias",                  str(date.today()), "yearly"),
+    ("/legal/accesibilidad",              str(date.today()), "yearly"),
 ]
 
 
@@ -87,7 +96,7 @@ def _generar_sitemap(db: DbSession) -> str:
 
     # Static routes
     for path, lastmod, changefreq in _STATIC_ROUTES:
-        priority = "1.0" if path == "/" else "0.8"
+        priority = "1.0" if path == "/" else "0.3" if path.startswith("/legal/") else "0.8"
         entries.append(_url_entry(f"{base}{path}", lastmod, changefreq, priority))
 
     # Dynamic category filter pages — /catalogo?cat=<name>
