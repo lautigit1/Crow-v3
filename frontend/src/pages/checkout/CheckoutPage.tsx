@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { useCart } from "@/app/providers/CartProvider";
-import { useIsOpenNow } from "@/shared/lib/useIsOpenNow";
 import { formatPrice } from "@/shared/lib/format";
 import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings";
 import { apiError } from "@/shared/api";
@@ -22,7 +21,6 @@ import { Container, Button, Textarea, Icon, ProductImage, type IconName } from "
  * completo carrito → checkout se sienta consistente.
  */
 
-const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
  * Encabezado de sección con numeral y regla al ras.
@@ -37,11 +35,11 @@ const pad = (n: number) => String(n).padStart(2, "0");
 function StepHeading({ step, children }: { step: number; children: string }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <span className="font-mono text-[11px] font-bold tabular-nums text-primary">{pad(step)}</span>
-      <span className="font-display text-[13px] font-extrabold uppercase tracking-[.1em] text-ink900">
+      <span className="font-body text-[14px] font-medium tabular-nums text-primary">{step}.</span>
+      <span className="font-display text-title font-medium text-ink900">
         {children}
       </span>
-      <span className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+      <span className="h-px flex-1 bg-border" />
     </div>
   );
 }
@@ -65,7 +63,7 @@ const PAYMENT_ICON: Record<PaymentMethod, IconName> = {
 function PaymentMethodPicker({ value, onChange }: { value: PaymentMethod | null; onChange: (v: PaymentMethod) => void }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {PAYMENT_METHODS.map((method, i) => {
+      {PAYMENT_METHODS.map((method) => {
         const selected = value === method;
         return (
           <motion.button
@@ -81,26 +79,19 @@ function PaymentMethodPicker({ value, onChange }: { value: PaymentMethod | null;
             // pierde de un vistazo -- justo en la decisión que más importa
             // acertar de toda la página.
             className={clsx(
-              "group relative flex items-start gap-4 overflow-hidden rounded-2xl p-5 pr-11 text-left outline-none transition-[box-shadow,background-color] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+              "group relative flex items-start gap-4 overflow-hidden rounded-lg p-5 pr-11 text-left outline-none transition-[box-shadow,background-color] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
               selected
-                ? "bg-white shadow-[0_0_0_2px_#0057D9,0_12px_28px_-8px_rgba(0,87,217,.35)]"
-                : "bg-white shadow-[0_0_0_1px_#E2E8F0,0_1px_2px_rgba(13,23,40,.04)] hover:shadow-[0_0_0_1px_#CBD5E1,0_10px_24px_-12px_rgba(13,23,40,.18)]"
+                ? "bg-primarySoft shadow-[0_0_0_2px_#0057D9]"
+                : "bg-white shadow-[0_0_0_1px_#E2E8F0] hover:shadow-[0_0_0_1px_#CBD5E1]"
             )}
           >
-            {/* Lavado de color que entra desde el ángulo del ícono. Sin esto la
-                tarjeta elegida queda blanca sobre blanco y solo la delata el
-                anillo. */}
+            {/* La opción elegida se distingue por el anillo azul y el fondo
+                primarySoft liso (antes, un degradé radial desde la esquina). */}
             <span
               className={clsx(
-                "pointer-events-none absolute inset-0 bg-[radial-gradient(320px_180px_at_0%_0%,rgba(0,87,217,.09),transparent_70%)] transition-opacity duration-300",
-                selected ? "opacity-100" : "opacity-0"
-              )}
-            />
-            <span
-              className={clsx(
-                "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
+                "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-md transition-colors duration-200",
                 selected
-                  ? "bg-primary text-white shadow-[0_6px_16px_-4px_rgba(0,87,217,.5)]"
+                  ? "bg-primary text-white"
                   : "bg-surface text-textFaint group-hover:bg-primarySoft group-hover:text-primary"
               )}
             >
@@ -108,12 +99,11 @@ function PaymentMethodPicker({ value, onChange }: { value: PaymentMethod | null;
             </span>
             <span className="relative min-w-0 flex-1">
               <span className="flex items-baseline gap-2">
-                <span className="font-mono text-[10.5px] font-bold tabular-nums text-ink900/20">{pad(i + 1)}</span>
-                <span className="block font-display text-[15.5px] font-extrabold tracking-[-.01em] text-ink900">
+                <span className="block font-body text-body font-medium text-ink900">
                   {method}
                 </span>
               </span>
-              <span className="mt-1 block font-body text-[13px] leading-[1.45] text-textMuted">
+              <span className="mt-1 block font-body text-[14px] leading-[1.45] text-textMuted">
                 {PAYMENT_METHOD_HINT[method]}
               </span>
             </span>
@@ -135,20 +125,17 @@ function PaymentMethodPicker({ value, onChange }: { value: PaymentMethod | null;
 }
 
 // ── Fila de revisión (solo lectura) ──────────────────────────────────────────
-function ReviewRow({ item, index }: { item: { productId: number; name: string; sku: string; imageUrl: string | null; price: number | null; quantity: number }; index: number }) {
+function ReviewRow({ item }: { item: { productId: number; name: string; sku: string; imageUrl: string | null; price: number | null; quantity: number } }) {
   return (
     <div className="flex items-center gap-5 border-b border-border/70 py-5 last:border-b-0">
-      <span className="hidden w-5 shrink-0 font-mono text-[11px] font-bold tabular-nums text-ink900/20 sm:block">
-        {pad(index + 1)}
-      </span>
       {/* La miniatura pasa de 64 a 72 y suma un halo interior: apoyada sobre el
           fondo `surface` en vez de blanco, la foto deja de flotar y el borde
           claro le da un canto definido sin encerrarla en una caja dura. */}
-      <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl bg-surface shadow-[inset_0_0_0_1px_rgba(13,23,40,.07)]">
+      <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-md border border-border bg-surface">
         <ProductImage name={item.name} sku={item.sku} imageUrl={item.imageUrl} ratio={1} radius={0} compact />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate font-display text-[15.5px] font-extrabold tracking-[-.01em] text-ink900">
+        <div className="truncate font-body text-body font-medium text-ink900">
           {item.name}
         </div>
         <div className="mt-1.5 flex items-center gap-2">
@@ -159,7 +146,7 @@ function ReviewRow({ item, index }: { item: { productId: number; name: string; s
         </div>
       </div>
       <div className="shrink-0 text-right">
-        <div className="font-display text-[17px] font-extrabold tabular-nums tracking-[-.01em] text-ink900">
+        <div className="font-display text-[16px] font-medium tabular-nums tracking-[-.02em] text-ink900">
           {formatPrice((item.price ?? 0) * item.quantity)}
         </div>
         {/* El precio unitario solo aparece cuando hay más de una unidad, que es
@@ -180,7 +167,6 @@ function SummaryPanel({
 }: {
   subtotal: number; count: number; disabled: boolean; submitting: boolean; onConfirm: () => void;
 }) {
-  const open = useIsOpenNow();
   const contact = useSiteSettings();
   return (
     /**
@@ -196,10 +182,10 @@ function SummaryPanel({
      * En claro el contraste deja de ser un problema y la jerarquía se puede
      * armar con tamaño y peso en vez de con opacidades.
      */
-    <div className="overflow-hidden rounded-[20px] bg-white shadow-[0_0_0_1px_#E2E8F0,0_18px_50px_-24px_rgba(13,23,40,.28)] lg:sticky lg:top-24">
+    <div className="overflow-hidden rounded-lg border border-border bg-white lg:sticky lg:top-24">
       <div className="p-7">
         <div className="flex items-baseline justify-between">
-          <span className="font-display text-[13px] font-extrabold uppercase tracking-[.1em] text-ink900">
+          <span className="font-display text-title font-medium text-ink900">
             Resumen
           </span>
           <span className="font-body text-[13px] text-textMuted">
@@ -210,7 +196,7 @@ function SummaryPanel({
         <div className="mt-6 space-y-3 border-t border-border pt-6">
           <div className="flex items-baseline justify-between gap-4">
             <span className="font-body text-[14.5px] text-textMuted">Subtotal</span>
-            <span className="font-display text-[16px] font-bold tabular-nums text-ink900">
+            <span className="font-display text-[16px] font-medium tabular-nums text-ink900">
               {formatPrice(subtotal)}
             </span>
           </div>
@@ -222,11 +208,11 @@ function SummaryPanel({
 
         {/* El total en su propia franja tintada: es el número que la persona
             vino a leer y no tiene por qué competir con las filas de arriba. */}
-        <div className="-mx-2 mt-6 flex items-end justify-between gap-4 rounded-2xl bg-primarySoft px-4 py-4">
-          <span className="font-display text-[13px] font-extrabold uppercase tracking-[.08em] text-primary">
+        <div className="mt-6 flex items-end justify-between gap-4 border-t border-ink900 pt-5">
+          <span className="font-body text-body font-medium text-ink900">
             Total
           </span>
-          <span className="font-display text-[34px] font-black leading-none tracking-[-.03em] tabular-nums text-ink900">
+          <span className="font-display text-[32px] font-medium leading-none tracking-[-.035em] tabular-nums text-ink900">
             {formatPrice(subtotal)}
           </span>
         </div>
@@ -235,25 +221,17 @@ function SummaryPanel({
           type="button"
           onClick={onConfirm}
           disabled={disabled || submitting}
-          whileHover={disabled || submitting ? undefined : { y: -2 }}
-          whileTap={disabled || submitting ? undefined : { scale: 0.975 }}
-          transition={{ type: "spring", stiffness: 420, damping: 26 }}
+          whileTap={disabled || submitting ? undefined : { scale: 0.985 }}
           className={clsx(
-            "group relative mt-6 flex h-[58px] w-full items-center justify-center gap-2 overflow-hidden rounded-2xl font-display text-[16.5px] font-extrabold tracking-[-.01em] outline-none transition-[background-color,box-shadow,color] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+            "group relative mt-6 flex h-[54px] w-full items-center justify-center gap-2 overflow-hidden rounded-sm font-body text-[16px] font-medium outline-none transition-[background-color,box-shadow,color] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
             disabled || submitting
               // Gris legible con borde, no un fantasma: se entiende que es un
               // botón que todavía no se puede usar, no un error de pintado.
               ? "cursor-not-allowed bg-surface text-textFaint shadow-[inset_0_0_0_1px_#E2E8F0]"
-              : "cursor-pointer bg-[linear-gradient(180deg,#1F6EE8,#0057D9)] text-white shadow-[0_10px_28px_-10px_rgba(0,87,217,.75),inset_0_1px_0_rgba(255,255,255,.22)]"
+              : "cursor-pointer bg-primary text-white hover:bg-primaryDark"
           )}
         >
-          {!disabled && !submitting && (
-            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-[linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent)] transition-transform duration-700 ease-out group-hover:translate-x-full" />
-          )}
           <span className="relative">{submitting ? "Confirmando…" : "Confirmar pedido"}</span>
-          {!submitting && !disabled && (
-            <Icon name="chevronRight" size={18} strokeWidth={2.4} className="relative -mr-1" />
-          )}
         </motion.button>
 
         {/* Decir POR QUÉ no se puede confirmar. Antes el botón simplemente se
@@ -278,7 +256,7 @@ function SummaryPanel({
           Garantía de fábrica
         </span>
         <span className="flex items-center gap-2 font-body text-[12.5px] font-semibold text-textMuted">
-          <span className={clsx("h-[7px] w-[7px] rounded-full", open ? "bg-success" : "bg-borderStrong")} />
+          <Icon name="mapPin" size={15} className="text-textFaint" />
           {contact.address.split(",")[0]}
         </span>
       </div>
@@ -289,12 +267,12 @@ function SummaryPanel({
 // ── Empty state a medida (acceso directo a /checkout sin carrito) ───────────
 function EmptyCheckout() {
   return (
-    <div className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-borderStrong bg-white px-6 py-24 text-center">
+    <div className="flex flex-col items-center gap-6 rounded-lg border border-dashed border-borderStrong bg-white px-6 py-24 text-center">
       <span className="flex h-20 w-20 items-center justify-center rounded-full bg-surface text-textFaint">
         <Icon name="cart" size={32} />
       </span>
       <div>
-        <h2 className="mb-2 font-display text-[24px] font-black text-ink900">Tu carrito está vacío</h2>
+        <h2 className="mb-2 font-display text-display-sm font-medium text-ink900">Tu carrito está vacío</h2>
         <p className="mx-auto max-w-[360px] font-body text-[15px] leading-relaxed text-textMuted">
           Agregá productos desde el catálogo antes de confirmar un pedido.
         </p>
@@ -317,7 +295,7 @@ function OrderSuccess({ order }: { order: Order }) {
   return (
     <section className="flex min-h-[70vh] items-center bg-surface">
       <Container maxWidth={620}>
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-8 text-center shadow-[0_1px_3px_rgba(13,23,40,.05)] md:p-12">
+        <div className="relative overflow-hidden rounded-lg border border-border bg-white p-8 text-center md:p-12">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-successSoft text-success">
             <Icon name="check" size={28} strokeWidth={2.6} />
           </div>
@@ -327,17 +305,17 @@ function OrderSuccess({ order }: { order: Order }) {
               que el admin pone cuando verificó stock -- si la pantalla usa esa
               palabra acá, el cliente y el panel le dan dos significados
               distintos al mismo término, y el del cliente es el optimista. */}
-          <div className="mb-2 font-mono text-[12px] font-bold uppercase tracking-[.14em] text-textFaint">
+          <div className="mb-2 font-body text-body-sm text-textMuted">
             Pedido recibido
           </div>
-          <h1 className="mb-7 font-display text-[46px] font-black leading-none tracking-[-.02em] text-ink900">
+          <h1 className="mb-7 font-display text-display-lg font-medium text-ink900">
             N.º {String(order.id).padStart(5, "0")}
           </h1>
 
           <div className="mb-8 flex flex-col gap-4 border-y border-border py-6 text-left">
             {steps.map((step, i) => (
               <div key={i} className="flex items-start gap-3.5">
-                <span className="mt-0.5 font-mono text-[11.5px] font-bold text-primary">{pad(i + 1)}</span>
+                <span className="mt-0.5 font-body text-[14px] font-medium tabular-nums text-primary">{i + 1}.</span>
                 <p className="m-0 font-body text-[15px] leading-snug text-textMuted">{step}</p>
               </div>
             ))}
@@ -405,19 +383,11 @@ export function CheckoutPage() {
     <section className="min-h-[70vh] bg-surface">
       <Container maxWidth={1080} className="pb-[70px] pt-8 md:pb-28 md:pt-12">
         <div className="mb-10">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primarySoft px-3 py-1.5">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-            </span>
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[.14em] text-primary">
-              Último paso
-            </span>
-          </div>
-          <h1 className="font-display text-[38px] font-black leading-[1.02] tracking-[-.03em] text-ink900 md:text-[48px]">
+          <p className="m-0 mb-3 font-body text-body-sm text-textMuted">Último paso</p>
+          <h1 className="m-0 font-display text-display-md font-medium text-ink900 md:text-display-lg">
             Confirmar pedido
           </h1>
-          <p className="mt-3 max-w-[440px] font-body text-[15px] leading-relaxed text-textMuted">
+          <p className="mt-4 max-w-[440px] font-body text-body text-textMuted">
             Revisá los ítems y elegí cómo querés pagar. Nada se cobra en este paso.
           </p>
         </div>
@@ -427,9 +397,9 @@ export function CheckoutPage() {
           <div className="flex flex-col gap-8">
             <div>
               <StepHeading step={1}>Tu pedido</StepHeading>
-              <div className="rounded-2xl bg-white px-5 shadow-[0_0_0_1px_#E2E8F0,0_2px_8px_-2px_rgba(13,23,40,.06)] sm:px-7">
-                {items.map((item, i) => (
-                  <ReviewRow key={item.productId} item={item} index={i} />
+              <div className="rounded-lg border border-border bg-white px-5 sm:px-7">
+                {items.map((item) => (
+                  <ReviewRow key={item.productId} item={item} />
                 ))}
               </div>
             </div>
@@ -446,7 +416,7 @@ export function CheckoutPage() {
                 value={notes}
                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
                 placeholder="Ej: preferencia de horario de entrega, aclaraciones del vehículo, etc."
-                className="box-border w-full rounded-2xl bg-white text-[14.5px] shadow-[0_0_0_1px_#E2E8F0]"
+                className="box-border w-full rounded-lg bg-white text-[15px]"
               />
               <p className="mt-2 font-body text-[12.5px] text-textFaint">
                 Opcional. Lo lee la persona que prepara tu pedido.

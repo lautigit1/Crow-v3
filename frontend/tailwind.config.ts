@@ -63,6 +63,24 @@ export default {
         dangerSoft: color.dangerSoft,
         whatsapp: color.whatsapp,
       },
+      // Escala tipográfica del sitio público. Pocos pasos y cada uno con su
+      // interlineado y su tracking: cuanto más grande el tamaño, más cerrado
+      // el espaciado entre letras (Unbounded es muy ancha y a 40px+ se
+      // desarma si no se compensa). Los `display-*` van con `font-display`
+      // y peso 500; los demás con `font-body`. Dentro de tarjetas se baja un
+      // escalón (body -> body-sm), y los botones van 1px por debajo del texto
+      // que los rodea.
+      fontSize: {
+        "display-xl": ["52px", { lineHeight: "1.04", letterSpacing: "-0.035em" }],
+        "display-lg": ["34px", { lineHeight: "1.1", letterSpacing: "-0.03em" }],
+        "display-md": ["28px", { lineHeight: "1.14", letterSpacing: "-0.025em" }],
+        "display-sm": ["20px", { lineHeight: "1.25", letterSpacing: "-0.018em" }],
+        title: ["17px", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        lead: ["18px", { lineHeight: "1.6", letterSpacing: "-0.005em" }],
+        body: ["16px", { lineHeight: "1.65" }],
+        "body-sm": ["15px", { lineHeight: "1.6" }],
+        caption: ["13px", { lineHeight: "1.5" }],
+      },
       fontFamily: {
         display: ["Unbounded", "sans-serif"],
         body: ["DM Sans", "system-ui", "sans-serif"],

@@ -37,3 +37,20 @@ export function scrollAlInicio() {
   }
   window.scrollTo({ top: 0, behavior: "instant" });
 }
+
+/**
+ * Lleva el elemento con ese `id` al borde superior. Mismo motivo que arriba
+ * para pasar por Lenis. El espacio para la barra fija lo pone el propio
+ * elemento con `scroll-margin-top`, que respetan tanto Lenis como
+ * `scrollIntoView`; sumar un offset acá lo duplicaría.
+ */
+export function scrollAId(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (instancia) {
+    instancia.scrollTo(el);
+    return;
+  }
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+}

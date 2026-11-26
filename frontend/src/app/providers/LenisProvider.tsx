@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import Lenis from "lenis";
-import { registrarLenis } from "./lenisScroll";
+import { registrarLenis } from "@/shared/lib/lenisScroll";
 
 /**
  * Scroll suave con inercia para el sitio público (landing, catálogo, etc.).

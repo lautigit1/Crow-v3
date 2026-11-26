@@ -1,91 +1,70 @@
-import { LegalLayout, H2, P, UL, InfoBox, Divider } from "./LegalLayout";
 import { useSiteSettings } from "@/entities/settings/useSiteSettings";
+import { LegalDocument, P, UL, A, type LegalSection } from "./LegalLayout";
 
-const CHECKS = [
-  { ok: true, label: "Contraste de color", desc: "Todos los textos cumplen ratio mínimo WCAG AA (4.5:1 en texto normal, 3:1 en texto grande)." },
-  { ok: true, label: "Texto alternativo", desc: "Las imágenes funcionales incluyen atributo alt descriptivo." },
-  { ok: true, label: "Navegación por teclado", desc: "Todos los controles interactivos son accesibles con Tab y Enter." },
-  { ok: true, label: "Etiquetas semánticas", desc: "Se usan elementos HTML semánticos: header, nav, main, footer, article." },
-  { ok: true, label: "Formularios etiquetados", desc: "Cada campo de formulario tiene su label asociado correctamente." },
-  { ok: false, label: "Lector de pantalla (ARIA)", desc: "En proceso de mejora. Algunos componentes dinámicos aún carecen de roles ARIA completos." },
-  { ok: false, label: "Skip links", desc: "Próximamente. Se agregarán enlaces para saltar al contenido principal." },
-];
-
+// La versión anterior afirmaba que "todos los textos cumplen WCAG AA" y
+// prometía responder en 5 días hábiles. Ninguna de las dos cosas estaba
+// medida ni acordada. Queda lo que se puede sostener.
 export function AccesibilidadPage() {
   const contact = useSiteSettings();
+
+  const sections: LegalSection[] = [
+    {
+      id: "objetivo",
+      title: "Objetivo",
+      content: (
+        <P>
+          Crow Repuestos busca que su sitio pueda usarse con cualquier capacidad y desde cualquier
+          dispositivo, tomando como referencia las pautas WCAG 2.1 nivel AA del W3C. Este documento
+          informa el estado actual, no una certificación.
+        </P>
+      ),
+    },
+    {
+      id: "estado",
+      title: "Qué se tuvo en cuenta",
+      content: (
+        <UL>
+          <li>Contraste de los textos revisado contra los mínimos de WCAG AA en las páginas públicas.</li>
+          <li>Controles operables con teclado y con indicador de foco visible.</li>
+          <li>Estructura con encabezados, regiones (cabecera, navegación, contenido, pie) y listas.</li>
+          <li>Campos de formulario con etiqueta asociada.</li>
+          <li>Diálogos que se cierran con la tecla Escape.</li>
+          <li>Sin animaciones de entrada para quien activó «reducir movimiento» en su sistema.</li>
+          <li>Diseño que se adapta a pantallas chicas y al zoom del navegador.</li>
+        </UL>
+      ),
+    },
+    {
+      id: "limitaciones",
+      title: "Limitaciones conocidas",
+      content: (
+        <UL>
+          <li>No hay un enlace para saltar directo al contenido principal.</li>
+          <li>Algunos mensajes de error de formularios no se anuncian automáticamente a los lectores de pantalla.</li>
+          <li>El panel de administración no tuvo todavía una revisión de accesibilidad completa.</li>
+          <li>No se hicieron pruebas sistemáticas con lectores de pantalla.</li>
+        </UL>
+      ),
+    },
+    {
+      id: "reportar",
+      title: "Cómo reportar una barrera",
+      content: (
+        <P>
+          Si algo del sitio no te resulta accesible, escribinos a{" "}
+          <A href={`mailto:${contact.email}`}>{contact.email}</A> o por WhatsApp al{" "}
+          {contact.phone_display}, contando en qué página y con qué dispositivo o tecnología de apoyo.
+          Mientras lo resolvemos, podemos atender tu consulta o tu pedido por esos mismos medios.
+        </P>
+      ),
+    },
+  ];
+
   return (
-    <LegalLayout title="Accesibilidad" updated="1 de junio de 2026">
-      <InfoBox>
-        Crow Repuestos se compromete a hacer su sitio web accesible para todas las personas, independientemente de sus capacidades o del dispositivo que utilicen.
-      </InfoBox>
-
-      <H2>Nuestro compromiso</H2>
-      <P>
-        Trabajamos para que el sitio web cumpla con las pautas de accesibilidad <strong>WCAG 2.1 nivel AA</strong> del W3C. Esto incluye usuarios con discapacidades visuales, auditivas, motoras o cognitivas.
-      </P>
-
-      <H2>Estado de accesibilidad</H2>
-      <P>A continuación el estado actual de los aspectos más importantes:</P>
-
-      <div className="flex flex-col gap-2.5 mb-7">
-        {CHECKS.map((c) => (
-          <div
-            key={c.label}
-            className={`flex items-start gap-3.5 py-3.5 px-4 rounded-md border ${c.ok ? "bg-[#F0FDF4] border-[#BBF7D0]" : "bg-[#FFFBEB] border-[#FDE68A]"}`}
-          >
-            <div className={`w-[22px] h-[22px] rounded-full shrink-0 mt-px flex items-center justify-center text-white text-xs font-bold ${c.ok ? "bg-success" : "bg-[#D97706]"}`}>
-              {c.ok ? "✓" : "~"}
-            </div>
-            <div>
-              <div className="font-body text-sm font-semibold text-ink800 mb-[3px]">{c.label}</div>
-              <div className="font-body text-[13px] text-textMuted">{c.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Divider />
-
-      <H2>Tecnologías de asistencia compatibles</H2>
-      <UL>
-        <li>Navegadores modernos: Chrome 120+, Firefox 120+, Safari 17+, Edge 120+.</li>
-        <li>Lectores de pantalla: NVDA (Windows), VoiceOver (macOS/iOS), TalkBack (Android) — compatibilidad parcial.</li>
-        <li>Navegación por teclado: completamente funcional en los flujos principales.</li>
-        <li>Zoom del navegador: el diseño responde correctamente hasta 200% de zoom.</li>
-      </UL>
-
-      <H2>Limitaciones conocidas</H2>
-      <P>
-        Somos conscientes de las siguientes áreas de mejora activas:
-      </P>
-      <UL>
-        <li>Algunos modales y drawers aún no gestionan el foco de forma óptima al abrirse y cerrarse.</li>
-        <li>Los mensajes de error en formularios no siempre se anuncian automáticamente a lectores de pantalla.</li>
-        <li>Las tablas de datos en el catálogo carecen de resúmenes descriptivos.</li>
-      </UL>
-
-      <H2>Cómo reportar un problema</H2>
-      <P>
-        Si encontrás una barrera de accesibilidad en nuestro sitio, te pedimos que nos lo hagas saber. Tu feedback nos ayuda a mejorar:
-      </P>
-      <UL>
-        <li>Email: <a href={`mailto:${contact.email}`} className="text-primary">{contact.email}</a></li>
-        <li>WhatsApp: <a href={`https://wa.me/${contact.whatsapp_number}`} target="_blank" rel="noreferrer" className="text-primary">{contact.phone_display}</a></li>
-      </UL>
-      <P>
-        Intentamos responder en un plazo de 5 días hábiles y trabajar en una solución dentro de los 30 días siguientes.
-      </P>
-
-      <H2>Próximas mejoras</H2>
-      <P>
-        Tenemos planificadas las siguientes mejoras de accesibilidad para los próximos meses:
-      </P>
-      <UL>
-        <li>Agregar skip links al inicio del documento.</li>
-        <li>Completar los roles ARIA en componentes dinámicos (modales, drawers, tooltips).</li>
-        <li>Auditoría completa con herramientas automáticas (axe-core) integrada al proceso de desarrollo.</li>
-        <li>Test manual con lectores de pantalla NVDA y VoiceOver.</li>
-      </UL>
-    </LegalLayout>
+    <LegalDocument
+      doc="accesibilidad"
+      intro={<p>Qué hace el sitio para ser accesible, qué falta todavía y cómo avisarnos si encontrás una barrera.</p>}
+      sections={sections}
+    />
   );
 }

@@ -19,7 +19,6 @@ import { Icon, type IconName } from "@/shared/ui";
 
 export type FieldDef = {
   key: string;
-  index: string;
   label: string;
   type: string;
   icon: IconName;
@@ -60,7 +59,6 @@ export function FieldRow({
   return (
     <div className="border-b-[1.5px] border-[rgba(13,23,40,.14)] py-4 transition-colors duration-150 focus-within:border-ink900">
       <div className="flex items-center gap-3.5">
-        <span className="w-4 shrink-0 font-mono text-[10.5px] font-bold text-ink900/25">{def.index}</span>
 
         <div className="relative flex-1 pt-[14px]">
           <input
@@ -80,13 +78,13 @@ export function FieldRow({
           <label
             htmlFor={id}
             className={clsx(
-              "pointer-events-none absolute left-0 top-[14px] font-body text-[16px] text-ink900/40 transition-all duration-150",
-              "peer-focus:top-0 peer-focus:font-mono peer-focus:text-[10px] peer-focus:font-bold peer-focus:uppercase peer-focus:tracking-[.1em] peer-focus:text-primary",
-              "peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:font-mono peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:font-bold peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-[.1em] peer-[:not(:placeholder-shown)]:text-ink900/45"
+              "pointer-events-none absolute left-0 top-[14px] font-body text-[16px] text-textFaint transition-all duration-150",
+              "peer-focus:top-0 peer-focus:text-[12px] peer-focus:font-medium peer-focus:text-primary",
+              "peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:font-medium peer-[:not(:placeholder-shown)]:text-textFaint"
             )}
           >
             {def.label}
-            {def.optional && <span className="font-body text-[11px] font-normal normal-case text-ink900/35"> · opcional</span>}
+            {def.optional && <span className="font-body font-normal text-textFaint"> · opcional</span>}
           </label>
         </div>
 
@@ -140,7 +138,7 @@ export function PasswordStrengthMeter({ value }: { value: string }) {
           <span key={i} className={clsx("h-[3px] flex-1 rounded-full", i <= s ? STRENGTH_COLOR[s] : "bg-ink900/10")} />
         ))}
       </div>
-      <span className="font-mono text-[10px] text-ink900/40">{STRENGTH_LABEL[s]}</span>
+      <span className="font-body text-[12px] text-textFaint">{STRENGTH_LABEL[s]}</span>
     </div>
   );
 }
@@ -152,11 +150,9 @@ export function StampButton({ loading, label, loadingLabel }: { loading: boolean
     <motion.button
       type="submit"
       disabled={loading}
-      whileHover={loading ? undefined : { y: -2, boxShadow: "0 14px 32px rgba(7,17,31,.3)" }}
-      whileTap={loading ? undefined : { scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 420, damping: 26 }}
+      whileTap={loading ? undefined : { scale: 0.98 }}
       className={clsx(
-        "mt-8 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full font-display text-[15px] font-bold tracking-[-.01em] outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        "mt-8 flex h-[52px] w-full items-center justify-center gap-2.5 rounded-sm font-body text-[15px] font-medium outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         loading ? "cursor-not-allowed bg-ink900/50 text-white/70" : "cursor-pointer bg-ink900 text-white"
       )}
     >
@@ -167,7 +163,7 @@ export function StampButton({ loading, label, loadingLabel }: { loading: boolean
               <span key={i} className="h-[5px] w-[5px] rounded-full bg-white/70" style={{ animation: `pulse-glow 1.1s ${i * 0.15}s ease-in-out infinite` }} />
             ))}
           </span>
-          <span className="font-mono text-[11px] uppercase tracking-[.14em]">{loadingLabel}…</span>
+          <span>{loadingLabel}…</span>
         </>
       ) : (
         <>
@@ -187,7 +183,7 @@ export function AuthError({ message }: { message: string }) {
   return (
     <div className="mt-5 flex items-start gap-2.5 border-l-[3px] border-danger py-1 pl-3">
       <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-danger" />
-      <p className="m-0 font-body text-[13px] leading-snug text-ink900">{message}</p>
+      <p className="m-0 font-body text-[14px] leading-snug text-ink900">{message}</p>
     </div>
   );
 }

@@ -68,6 +68,36 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/*
+ * Títulos repartidos en líneas parejas en vez de dejar una palabra sola en la
+ * última; los párrafos, sin viudas. Reemplaza a los `<br />` puestos a mano,
+ * que solo cortaban bien en un ancho de pantalla.
+ */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/*
+ * Quien pidió menos movimiento al sistema operativo no ve entradas animadas
+ * ni loops. Las transiciones de color de hover quedan (duran milisegundos y
+ * no desplazan nada).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 ::selection {
   background: #0057d9;
   color: #fff;
@@ -120,37 +150,6 @@ select {
   }
 }
 
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes reveal {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes revealScale {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
@@ -169,17 +168,6 @@ select {
 @keyframes routeFadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes stockPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
-  50%       { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
-}
-
-/* Moved from a JS-injected <style> tag in widgets/navbar/Navbar.tsx (MobileMenu) */
-@keyframes slideDown {
-  from { transform: translateY(-12px); opacity: 0; }
-  to   { transform: none; opacity: 1; }
 }
 
 /* Moved from a JS-injected <style> tag in pages/catalog/CatalogPage.tsx (mobile filter drawer) */

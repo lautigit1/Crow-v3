@@ -1,93 +1,80 @@
 import { Container } from "@/shared/ui";
-import { useInView } from "@/shared/lib/useInView";
 
-// Horario / Entrega / Garantía se sacaron a propósito — ya aparecen en
-// StatsSection, HowItWorks y CtaFinal. Esta ficha se queda solo con los
-// datos que no están en ningún otro lado de la home.
-const SPECS = [
-  { label: "Rubro",     value: "Repuestos · Lubricantes · Detailing" },
-  { label: "Ciudad",    value: "Mendoza capital, Argentina" },
-  { label: "Vehículos", value: "Autos · Motos · Camiones" },
+// Diferenciales que el sitio ya respalda en otras páginas (preguntas
+// frecuentes, términos): no se agregó ninguno nuevo. Los plazos de respuesta y
+// de entrega se sacaron: el comercio hoy atiende consultas y no los garantiza.
+const DIFERENCIALES = [
+  {
+    titulo: "Te atiende una persona",
+    detalle: "Cada consulta la responde alguien que sabe de repuestos, no un sistema automático.",
+  },
+  {
+    titulo: "Te ayudamos a encontrar la pieza",
+    detalle: "Con marca, modelo y año alcanza. Si hay una alternativa más económica, te la ofrecemos.",
+  },
+  {
+    titulo: "Particulares, talleres y flotas",
+    detalle: "Condiciones especiales para talleres con compras frecuentes y precios por volumen para flotas.",
+  },
+  {
+    titulo: "Garantía",
+    detalle: "La garantía legal de cada producto y, cuando corresponde, la del fabricante.",
+  },
 ];
 
+/**
+ * Quiénes somos.
+ *
+ * La foto (una pared de piezas de escape y catalizadores) es la única imagen
+ * institucional de la página después del hero, y está acá porque cuenta lo
+ * que el texto no puede: volumen y variedad de stock. Va en vertical, al
+ * costado, para que la sección no repita la composición horizontal del hero.
+ *
+ * Foto: engin akyurt, Unsplash (licencia Unsplash). Ver /legal/licencias.
+ */
 export function AboutSection() {
-  const [ref, inView] = useInView();
-
   return (
-    <section ref={ref as React.RefObject<HTMLElement>} className="bg-white border-t border-border py-16 md:py-[104px]">
+    <section className="bg-white py-16 md:py-24">
       <Container>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-start">
+        <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14 lg:gap-24">
+          <picture className="block">
+            <source media="(min-width: 768px)" srcSet="/img/piezas-escape-1200.webp" />
+            <img
+              src="/img/piezas-escape-700.webp"
+              alt="Pared de un depósito con caños de escape y catalizadores colgados, ordenados por modelo"
+              width={1200}
+              height={1600}
+              loading="lazy"
+              decoding="async"
+              className="block aspect-[4/3] h-auto w-full rounded-lg object-cover md:aspect-[4/5]"
+            />
+          </picture>
 
-          {/* Left — ficha técnica */}
-          <div style={{ opacity: inView ? 1 : 0, animation: inView ? "reveal .6s ease both" : "none" }}>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-1 pb-4 border-b-2 border-ink900">
-              <span className="font-display text-[11px] font-extrabold tracking-[0.18em] text-ink900 uppercase">
-                Ficha técnica
-              </span>
-              <span className="font-mono text-[10px] text-textFaint tracking-[0.08em]">CRW-001</span>
-            </div>
-
-            {/* Rows */}
-            {SPECS.map((s, i) => (
-              <div
-                key={s.label}
-                className="grid grid-cols-[100px_1fr] gap-4 py-3.5 border-b border-border"
-                style={{ opacity: inView ? 1 : 0, animation: inView ? `reveal .4s ${0.05 + i * 0.07}s ease both` : "none" }}
-              >
-                <span className="font-mono text-[10px] font-medium tracking-[0.1em] text-textFaint uppercase pt-0.5">
-                  {s.label}
-                </span>
-                <span className="font-body text-[14px] font-semibold text-ink900 leading-[1.45]">{s.value}</span>
-              </div>
-            ))}
-
-            {/* Footer */}
-            <div className="flex items-center gap-2 mt-5">
-              <span className="w-[7px] h-[7px] rounded-full bg-[#22C55E] shrink-0 shadow-[0_0_0_3px_rgba(34,197,94,.18)]" />
-              <span className="font-mono text-[10.5px] tracking-[0.06em] text-textFaint">
-                EN LÍNEA · RESPONDE EN MINUTOS
-              </span>
-            </div>
-          </div>
-
-          {/* Right — copy */}
-          <div style={{ opacity: inView ? 1 : 0, animation: inView ? "reveal .6s .12s ease both" : "none" }}>
-            <div className="font-mono text-[10.5px] font-medium tracking-[0.16em] text-primary uppercase mb-6">
-              — Quiénes somos
-            </div>
-
-            <h2 className="font-display text-[28px] md:text-[32px] font-extrabold leading-[1.1] tracking-[-0.03em] text-ink900 mb-7">
-              Un negocio mendocino
-              <br />
-              que entiende a los
-              <br />
-              <span className="text-primary">que manejan.</span>
+          <div className="md:pt-4">
+            <h2 className="m-0 font-display text-display-md font-medium text-ink900 md:text-display-lg">
+              Un comercio de repuestos de Mendoza
             </h2>
-
-            <div className="flex flex-col gap-4 mb-10">
-              <p className="font-body text-[15.5px] leading-[1.75] text-textMuted m-0">
-                Crow Repuestos nació en Mendoza para cubrir una necesidad real:
-                conseguir repuestos de calidad sin perder el día entero. Somos
-                un emprendimiento local con atención directa y comprometida.
+            <div className="mt-6 flex max-w-[540px] flex-col gap-4">
+              <p className="m-0 font-body text-body text-textMuted">
+                Crow Repuestos nació en Mendoza para cubrir una necesidad concreta: conseguir
+                repuestos de calidad sin perder el día entero. Atendemos tanto a quien arregla su
+                propio auto como a talleres y empresas con flota.
               </p>
-              <p className="font-body text-[15.5px] leading-[1.75] text-textMuted m-0">
-                No somos una cadena ni un sitio automatizado. Cuando nos escribís,
-                te responde una persona que sabe de repuestos y que va a darte
-                la mejor opción para tu vehículo específico.
+              <p className="m-0 font-body text-body text-textMuted">
+                No somos una cadena ni un sitio automatizado. Cuando nos escribís, te responde
+                alguien que va a buscar la opción correcta para tu vehículo.
               </p>
             </div>
 
-            {/* Quote */}
-            <div className="border-l-[3px] border-primary pl-5">
-              <p className="font-display text-[15px] font-bold tracking-[-0.01em] text-ink900 leading-[1.5] m-0">
-                "Conseguís el repuesto hoy,{" "}
-                <br />
-                no la semana que viene."
-              </p>
-            </div>
+            <dl className="m-0 mt-10 grid max-w-[620px] grid-cols-1 gap-x-10 gap-y-7 sm:grid-cols-2">
+              {DIFERENCIALES.map((d) => (
+                <div key={d.titulo} className="border-t border-ink900 pt-4">
+                  <dt className="font-body text-body font-medium text-ink900">{d.titulo}</dt>
+                  <dd className="m-0 mt-2 font-body text-body-sm text-textMuted">{d.detalle}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-
         </div>
       </Container>
     </section>

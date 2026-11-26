@@ -2,6 +2,7 @@ import type * as React from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { Container, Logo } from "@/shared/ui";
+import { LEGAL_DOCS } from "@/shared/config";
 import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings";
 
 // FLink / InfoRow links used a `Hoverable` (JS onMouseEnter/Leave) wrapper
@@ -9,7 +10,11 @@ import { useSiteSettings, useWaLink } from "@/entities/settings/useSiteSettings"
 // `hover:` does natively, so it's dropped here. `Hoverable` was also the
 // last thing using `pages/brands/BrandsPage.tsx`'s old inline styles; now
 // that both are migrated, `shared/lib/Hoverable.tsx` is unused and removed.
-const linkClass = "font-body text-[13.5px] text-[#7A95AA] no-underline hover:text-white";
+// Contraste: los grises viejos del footer (#4E6175, #283D52, #1E3148) daban
+// entre 1,4:1 y 3,2:1 sobre ink900, debajo del mínimo AA. Todo el texto
+// secundario pasa a textOnDarkFaint (#94A3B8, ~7:1) y los títulos a blanco.
+const linkClass =
+  "font-body text-[14px] text-textOnDarkFaint no-underline hover:text-white focus-visible:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7FB0FF] rounded-sm";
 
 function FLink({ children, to, href }: { children: React.ReactNode; to?: string; href?: string }) {
   if (to) return <Link to={to} className={linkClass}>{children}</Link>;
@@ -51,7 +56,7 @@ function SocialBtn({ href, label, children }: { href: string; label: string; chi
       aria-label={label}
       className={clsx(
         "w-9 h-9 rounded-full border border-[rgba(255,255,255,.1)] bg-[rgba(255,255,255,.04)]",
-        "flex items-center justify-center text-[#4E6175] no-underline",
+        "flex items-center justify-center text-textOnDarkFaint no-underline",
         "[transition:background-color_.15s,color_.15s,border-color_.15s]",
         "hover:bg-[rgba(255,255,255,.12)] hover:text-white hover:border-[rgba(255,255,255,.22)]"
       )}
@@ -65,17 +70,12 @@ export function Footer() {
   const contact = useSiteSettings();
   const waLink = useWaLink();
   return (
-    <footer className="bg-ink900 relative overflow-hidden">
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-[linear-gradient(90deg,transparent,rgba(0,87,217,.5)_40%,rgba(0,87,217,.5)_60%,transparent)] pointer-events-none" />
-
-      {/* Glow */}
-      <div className="absolute -top-40 -left-[60px] w-[560px] h-[560px] bg-[radial-gradient(circle,rgba(0,87,217,.06)_0%,transparent_70%)] pointer-events-none" />
+    <footer className="bg-ink900 border-t border-[rgba(255,255,255,.08)]">
 
       <Container>
 
         {/* ── Main body ── */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 md:gap-20 items-start pt-12 pb-9 md:pt-16 md:pb-[52px] border-b border-[rgba(255,255,255,.07)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] gap-10 lg:gap-16 items-start pt-12 pb-9 md:pt-16 md:pb-[52px] border-b border-[rgba(255,255,255,.07)]">
 
           {/* Left — brand */}
           <div className="max-w-[400px]">
@@ -84,17 +84,10 @@ export function Footer() {
             </div>
 
             {/* Tagline */}
-            <p className="font-body text-sm leading-[1.75] text-[#4E6175] mt-0 mx-0 mb-2.5">
-              Repuestos y lubricantes para tu vehículo. Atención directa desde Mendoza, sin bots ni intermediarios.
+            <p className="font-body text-[14px] leading-[1.65] text-textOnDarkFaint mt-0 mx-0 mb-6">
+              Repuestos, lubricantes, baterías, filtros y detailing para autos, motos y camiones. Atención directa desde Mendoza.
             </p>
 
-            {/* Location pill */}
-            <div className="inline-flex items-center gap-[7px] bg-[rgba(0,87,217,.1)] border border-[rgba(0,87,217,.2)] rounded-full py-[5px] px-3.5 font-mono text-[11px] text-[#5B8BDF] tracking-[.08em] mb-7">
-              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-              </svg>
-              MENDOZA, ARGENTINA
-            </div>
 
             {/* Socials */}
             <div className="flex gap-2">
@@ -104,28 +97,52 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Right — nav + contact + legal */}
-          <div className="flex gap-8 md:gap-[60px] pt-1 flex-wrap md:flex-nowrap">
+          {/* Right — catálogo, sitio, legales y contacto. Dos columnas en
+              mobile (Contacto ocupa el ancho completo), cuatro desde lg. */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 pt-1 md:grid-cols-[1fr_1fr_1.2fr_1.3fr] lg:gap-x-10">
 
-            {/* Nav */}
-            <div>
-              <ColTitle>Menú</ColTitle>
-              <div className="flex flex-col gap-[13px]">
-                <FLink to="/">Inicio</FLink>
-                <FLink to="/catalogo">Catálogo</FLink>
+            {/* Catálogo: los mismos accesos por tipo de vehículo que la home. */}
+            <nav aria-label="Catálogo">
+              <ColTitle>Catálogo</ColTitle>
+              <div className="flex flex-col gap-3">
+                <FLink to="/catalogo">Todo el catálogo</FLink>
+                <FLink to="/catalogo?tipo=Autos">Autos</FLink>
+                <FLink to="/catalogo?tipo=Camiones">Camiones</FLink>
+                <FLink to="/catalogo?tipo=Motos">Motos</FLink>
                 <FLink to="/marcas">Marcas</FLink>
+              </div>
+            </nav>
+
+            <nav aria-label="Sitio">
+              <ColTitle>Sitio</ColTitle>
+              <div className="flex flex-col gap-3">
+                <FLink to="/">Inicio</FLink>
                 <FLink to="/contacto">Contacto</FLink>
                 <FLink to="/faq">Preguntas frecuentes</FLink>
+                <FLink to="/cuenta">Mi cuenta</FLink>
               </div>
-            </div>
+            </nav>
+
+            {/* Legales: todos los documentos del registro marcados para el
+                footer, así una página nueva aparece acá sin tocar este archivo. */}
+            <nav aria-label="Información legal">
+              <ColTitle>Legales</ColTitle>
+              <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {LEGAL_DOCS.filter((d) => d.inFooter).map((d) => (
+                  <li key={d.key}>
+                    <FLink to={d.path}>{d.short}</FLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
 
             {/* Contact — always rightmost */}
-            <div className="border-l-0 md:border-l md:border-[rgba(255,255,255,.07)] pl-0 md:pl-12">
+            <div className="col-span-2 md:col-span-1 lg:border-l lg:border-[rgba(255,255,255,.07)] lg:pl-12">
               <ColTitle>Contacto</ColTitle>
               <div className="flex flex-col gap-[18px]">
                 <InfoRow label="WhatsApp" value={contact.phone_display} href={waLink()} />
                 <InfoRow label="Email" value={contact.email} href={`mailto:${contact.email}`} />
-                <InfoRow label="Horario" value={contact.hours} />
+                <InfoRow label="Atención" value={contact.hours} />
                 <InfoRow label="Ubicación" value={contact.address} />
               </div>
             </div>
@@ -134,11 +151,11 @@ export function Footer() {
 
         {/* ── Bottom bar ── */}
         <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-2 md:gap-4 py-5 flex-wrap text-center md:text-left">
-          <span className="font-mono text-[11px] text-[#1E3148] tracking-[.06em]">
-            © {new Date().getFullYear()} CROW REPUESTOS · TODOS LOS DERECHOS RESERVADOS
+          <span className="font-body text-[12px] text-textOnDarkFaint">
+            © {new Date().getFullYear()} Crow Repuestos. Todos los derechos reservados.
           </span>
-          <span className="font-mono text-[11px] text-[#1E3148]">
-            Hecho en Mendoza 🇦🇷
+          <span className="font-body text-[12px] text-textOnDarkFaint">
+            Hecho en Mendoza
           </span>
         </div>
       </Container>
@@ -148,7 +165,7 @@ export function Footer() {
 
 function ColTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-mono text-[10px] font-bold tracking-[.18em] text-[#283D52] uppercase mb-[22px]">
+    <div className="font-body text-[14px] font-medium text-white mb-4">
       {children}
     </div>
   );
@@ -157,7 +174,7 @@ function ColTitle({ children }: { children: React.ReactNode }) {
 function InfoRow({ label, value, href }: { label: string; value: string; href?: string }) {
   return (
     <div>
-      <div className="font-mono text-[10px] text-[#283D52] tracking-[.1em] uppercase mb-[3px]">
+      <div className="font-body text-[12px] text-textOnDarkFaint mb-0.5">
         {label}
       </div>
       {href ? (
@@ -165,12 +182,12 @@ function InfoRow({ label, value, href }: { label: string; value: string; href?: 
           href={href}
           target={href.startsWith("http") ? "_blank" : undefined}
           rel={href.startsWith("http") ? "noreferrer" : undefined}
-          className={linkClass}
+          className="font-body text-[14px] text-textOnDark no-underline hover:text-white"
         >
           {value}
         </a>
       ) : (
-        <span className="font-body text-[13.5px] text-[#4E6175]">{value}</span>
+        <span className="font-body text-[14px] text-textOnDark">{value}</span>
       )}
     </div>
   );

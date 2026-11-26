@@ -7,10 +7,10 @@ import { AuthShell, InfoBlock, MobileTopStrip } from "./AuthShell";
 import { AuthError, FieldRow, StampButton, type FieldDef } from "./AuthFormKit";
 
 const PASSWORD_FIELD: FieldDef = {
-  key: "password", index: "01", label: "Nueva contraseña", type: "password", icon: "lock", autoComplete: "new-password", minLength: 10,
+  key: "password", label: "Nueva contraseña", type: "password", icon: "lock", autoComplete: "new-password", minLength: 10,
 };
 const CONFIRM_FIELD: FieldDef = {
-  key: "confirm", index: "02", label: "Confirmar contraseña", type: "password", icon: "lock", autoComplete: "new-password",
+  key: "confirm", label: "Confirmar contraseña", type: "password", icon: "lock", autoComplete: "new-password",
 };
 
 export function ResetPasswordPage() {
@@ -38,7 +38,7 @@ export function ResetPasswordPage() {
         <MobileTopStrip />
         <div className="w-full max-w-[440px] lg:max-w-[420px]">
           <Icon name="alert" size={30} className="mb-4 block text-danger" />
-          <h1 className="mb-2.5 font-display text-[26px] font-black tracking-[-.02em] text-ink900">Enlace inválido</h1>
+          <h1 className="mb-2.5 font-display text-display-sm font-medium text-ink900">Enlace inválido</h1>
           <p className="mb-6 font-body text-[14px] leading-[1.65] text-ink900/55">
             Este enlace de recuperación no es válido o ya expiró. Los enlaces son de un solo uso y vencen a los 60 minutos.
           </p>
@@ -77,7 +77,7 @@ export function ResetPasswordPage() {
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF5]">
               <Icon name="check" size={22} className="text-success" />
             </div>
-            <h1 className="mb-2.5 font-display text-[26px] font-black tracking-[-.02em] text-ink900">Contraseña actualizada</h1>
+            <h1 className="mb-2.5 font-display text-display-sm font-medium text-ink900">Contraseña actualizada</h1>
             <p className="mb-6 font-body text-[14px] leading-[1.65] text-ink900/55">
               Tu contraseña fue cambiada con éxito. Ya podés iniciar sesión con tus nuevas credenciales.
             </p>
@@ -87,7 +87,7 @@ export function ResetPasswordPage() {
           </div>
         ) : (
           <>
-            <h1 className="mb-1.5 font-display text-[30px] font-black leading-tight tracking-[-.02em] text-ink900">
+            <h1 className="mb-1.5 font-display text-display-md font-medium text-ink900">
               Nueva contraseña
             </h1>
             <p className="mb-8 font-body text-[14px] leading-snug text-ink900/50">

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { scrollAlInicio } from "@/app/providers/lenisScroll";
+import { scrollAlInicio } from "@/shared/lib/lenisScroll";
 
 /**
  * Manda el scroll al inicio cada vez que cambia la ruta.

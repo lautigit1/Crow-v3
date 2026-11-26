@@ -1,7 +1,7 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
-import { Container } from "@/shared/ui";
+import { Button, Container, PageHeader } from "@/shared/ui";
 import { useWaLink } from "@/entities/settings/useSiteSettings";
 
 const FAQS = [
@@ -10,15 +10,15 @@ const FAQS = [
     items: [
       {
         q: "¿Cómo sé si tienen el repuesto que necesito?",
-        a: "Escribinos por WhatsApp con la marca, modelo y año de tu vehículo y el repuesto que buscás. Te confirmamos disponibilidad y precio en menos de una hora.",
+        a: "Escribinos por WhatsApp con la marca, modelo y año de tu vehículo y el repuesto que buscás. Te confirmamos disponibilidad y precio.",
       },
       {
         q: "¿Trabajan con número de parte?",
-        a: "Sí. Si tenés el número de parte del fabricante, mandáselo directamente — es la forma más rápida de confirmar compatibilidad.",
+        a: "Sí. Si tenés el número de parte del fabricante, mandáselo directamente: es la forma más rápida de confirmar compatibilidad.",
       },
       {
         q: "¿Qué pasa si no encuentro el repuesto en el catálogo?",
-        a: "El catálogo online no refleja el 100% del stock. Consultanos igual — tenemos acceso a referencias que no están publicadas.",
+        a: "El catálogo online no refleja el 100% del stock. Consultanos igual, tenemos acceso a referencias que no están publicadas.",
       },
     ],
   },
@@ -27,7 +27,7 @@ const FAQS = [
     items: [
       {
         q: "¿Hacen entregas a domicilio?",
-        a: "Sí. Entregamos en Mendoza ciudad el mismo día. Coordinamos horario por WhatsApp.",
+        a: "El envío o el retiro se coordinan en cada consulta, según tu ubicación. Escribinos por WhatsApp para acordarlo.",
       },
       {
         q: "¿Envían a otras provincias?",
@@ -44,11 +44,11 @@ const FAQS = [
     items: [
       {
         q: "¿Los repuestos tienen garantía?",
-        a: "Todos los productos tienen garantía de fábrica del fabricante. Sin letra chica.",
+        a: "Sí. Todos tienen la garantía legal y, cuando corresponde, la del fabricante. Las condiciones de cada producto se informan al confirmar la compra.",
       },
       {
         q: "¿Qué hago si el repuesto no es el correcto?",
-        a: "Contactanos dentro de las 48 horas. Si el error fue de nuestra parte, hacemos el cambio sin costo.",
+        a: "Contactanos con el número de pedido o de cotización. Si el error fue nuestro, hacemos el cambio sin costo. En las compras a distancia, además, tenés el derecho de revocación que explican los términos y condiciones.",
       },
     ],
   },
@@ -74,9 +74,10 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
     <div className="border-b border-border">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between gap-4 py-5 bg-transparent border-none cursor-pointer text-left"
       >
-        <span className="font-display text-[15px] font-bold tracking-[-.01em] text-ink900 leading-[1.4]">
+        <span className="font-body text-body font-medium text-ink900">
           {q}
         </span>
         <span
@@ -97,7 +98,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
       </button>
 
       {open && (
-        <p className="font-body text-[14.5px] leading-[1.7] text-textMuted mt-0 mb-5 mx-0 pr-10">
+        <p className="font-body text-body-sm text-textMuted mt-0 mb-5 mx-0 pr-10">
           {a}
         </p>
       )}
@@ -114,21 +115,7 @@ export function FaqPage() {
 
   return (
     <>
-      {/* Header */}
-      <section className="bg-ink900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(820px_320px_at_85%_-20%,rgba(0,87,217,.2),transparent_60%)]" />
-        <Container className="relative py-14 px-10">
-          <div className="font-mono text-[10.5px] font-medium tracking-[.16em] text-[rgba(127,176,255,.7)] uppercase mb-4">
-            — FAQ
-          </div>
-          <h1 className="font-display text-[38px] font-extrabold tracking-[-.025em] text-white mb-3">
-            Preguntas frecuentes
-          </h1>
-          <p className="font-body text-base leading-[1.6] text-[rgba(255,255,255,.45)] max-w-[480px] m-0">
-            Si no encontrás lo que buscás, escribinos por WhatsApp.
-          </p>
-        </Container>
-      </section>
+      <PageHeader title="Preguntas frecuentes" lead="Si no encontrás lo que buscás, escribinos por WhatsApp." />
 
       {/* Content */}
       <section className="bg-surface py-16 pb-24">
@@ -136,10 +123,10 @@ export function FaqPage() {
           <div className="grid grid-cols-1 max-w-[720px] mx-auto gap-12">
             {FAQS.map((group) => (
               <div key={group.category}>
-                <div className="font-mono text-[10.5px] font-bold tracking-[.14em] text-primary uppercase mb-1">
+                <h2 className="m-0 mb-4 font-display text-display-sm font-medium text-ink900">
                   {group.category}
-                </div>
-                <div className="border-t-2 border-ink900">
+                </h2>
+                <div className="border-t border-ink900">
                   {group.items.map((item) => (
                     <AccordionItem key={item.q} q={item.q} a={item.a} />
                   ))}
@@ -149,17 +136,12 @@ export function FaqPage() {
 
             {/* CTA */}
             <div className="border-t border-border pt-10 flex flex-col items-start gap-4">
-              <p className="font-body text-[15px] text-textMuted m-0 leading-[1.6]">
+              <p className="font-body text-body text-textMuted m-0">
                 ¿Tenés una duda que no está acá?
               </p>
-              <a
-                href={waLink("Hola Crow! Tengo una consulta.")}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 bg-primary text-white font-body text-sm font-semibold py-[11px] px-5 rounded-md no-underline"
-              >
+              <Button as="a" href={waLink("Hola Crow! Tengo una consulta.")} target="_blank" rel="noreferrer" variant="whatsapp">
                 Escribinos por WhatsApp
-              </a>
+              </Button>
             </div>
           </div>
         </Container>

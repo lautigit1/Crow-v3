@@ -20,7 +20,6 @@ import { Container, Button, Icon, ProductImage, ConfirmModal } from "@/shared/ui
  * pantalla).
  */
 
-const pad = (n: number) => String(n).padStart(2, "0");
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 // ── Stepper de cantidad ───────────────────────────────────────────────────────
@@ -51,7 +50,7 @@ function Stepper({ value, max, onChange }: { value: number; max: number; onChang
 }
 
 // ── Fila de producto ──────────────────────────────────────────────────────────
-function CartRow({ item, index }: { item: CartItem; index: number }) {
+function CartRow({ item }: { item: CartItem }) {
   const { setQuantity, removeItem } = useCart();
   const max = Math.max(item.stock, item.quantity);
   const lineTotal = (item.price ?? 0) * item.quantity;
@@ -66,11 +65,8 @@ function CartRow({ item, index }: { item: CartItem; index: number }) {
       className="overflow-hidden"
     >
       <div className="flex items-center gap-5 border-b border-border py-5 last:border-b-0">
-        <span className="hidden w-7 shrink-0 font-mono text-[12.5px] font-bold text-ink900/25 sm:block">
-          {pad(index + 1)}
-        </span>
 
-        <Link to={`/producto/${item.productId}`} className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border">
+        <Link to={`/producto/${item.productId}`} className="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-border">
           <ProductImage name={item.name} sku={item.sku} imageUrl={item.imageUrl} ratio={1} radius={0} compact />
         </Link>
 
@@ -84,7 +80,7 @@ function CartRow({ item, index }: { item: CartItem; index: number }) {
 
         <Stepper value={item.quantity} max={max} onChange={(v) => setQuantity(item.productId, v)} />
 
-        <div className="w-[112px] shrink-0 text-right font-display text-[18px] font-extrabold text-ink900">
+        <div className="w-[112px] shrink-0 text-right font-display text-[17px] font-medium text-ink900">
           {formatPrice(lineTotal)}
         </div>
 
@@ -104,13 +100,13 @@ function CartRow({ item, index }: { item: CartItem; index: number }) {
 // ── Empty state ────────────────────────────────────────────────────────────────
 function EmptyCart() {
   return (
-    <div className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-borderStrong bg-white px-6 py-24 text-center">
+    <div className="flex flex-col items-center gap-6 rounded-lg border border-dashed border-borderStrong bg-white px-6 py-24 text-center">
       <span className="flex h-20 w-20 items-center justify-center rounded-full bg-surface text-textFaint">
         <Icon name="cart" size={32} />
       </span>
       <div>
-        <h2 className="mb-2 font-display text-[24px] font-black text-ink900">Tu carrito está vacío</h2>
-        <p className="mx-auto max-w-[360px] font-body text-[15px] leading-relaxed text-textMuted">
+        <h2 className="mb-2 font-display text-display-sm font-medium text-ink900">Tu carrito está vacío</h2>
+        <p className="mx-auto max-w-[360px] font-body text-body text-textMuted">
           Agregá productos desde el catálogo para armar tu pedido.
         </p>
       </div>
@@ -124,34 +120,23 @@ function EmptyCart() {
 // ── Panel de resumen ─────────────────────────────────────────────────────────
 function SummaryPanel({ count, subtotal, onContinue }: { count: number; subtotal: number; onContinue: () => void }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-ink900 p-7 md:p-9">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(560px_340px_at_100%_0%,rgba(0,87,217,.24),transparent_65%)]" />
-      <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-lg bg-ink900 p-7 md:p-9">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-2 font-mono text-[11.5px] uppercase tracking-[.08em] text-textOnDarkFaint">
+          <div className="mb-2 font-body text-caption text-textOnDarkFaint">
             Subtotal · {count} {count === 1 ? "ítem" : "ítems"}
           </div>
-          <div className="font-display text-[36px] font-black leading-none text-white sm:text-[42px]">
+          <div className="font-display text-[34px] font-medium leading-none tracking-[-.035em] text-white sm:text-[38px]">
             {formatPrice(subtotal)}
           </div>
-          <div className="mt-2.5 font-body text-[13.5px] text-textOnDarkFaint">
+          <div className="mt-3 font-body text-caption text-textOnDarkFaint">
             El pago y la entrega se coordinan al confirmar el pedido.
           </div>
         </div>
 
-        <motion.button
-          type="button"
-          onClick={onContinue}
-          whileHover={{ y: -2, boxShadow: "0 16px 36px rgba(0,87,217,.4)" }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: "spring", stiffness: 420, damping: 26 }}
-          className="flex h-[58px] shrink-0 items-center justify-center gap-3 rounded-full bg-primary px-9 font-display text-[16px] font-bold text-white outline-none"
-        >
-          Continuar
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-          </svg>
-        </motion.button>
+        <Button onClick={onContinue} size="lg" className="shrink-0">
+          Continuar con el pedido
+        </Button>
       </div>
     </div>
   );
@@ -178,16 +163,13 @@ export function CartPage() {
       <Container maxWidth={880} className="pb-[70px] pt-8 md:pb-28 md:pt-12">
         <div className="mb-9 flex items-end justify-between">
           <div>
-            <div className="mb-2 font-mono text-[12px] font-bold uppercase tracking-[.14em] text-primary">
-              Tu pedido
-            </div>
-            <h1 className="font-display text-[34px] font-black tracking-[-.02em] text-ink900 md:text-[42px]">
+            <h1 className="m-0 font-display text-display-md font-medium text-ink900 md:text-display-lg">
               Carrito
             </h1>
           </div>
           {count > 0 && (
-            <span className="font-mono text-[12px] font-bold uppercase tracking-[.06em] text-textFaint">
-              {pad(count)} {count === 1 ? "ítem" : "ítems"}
+            <span className="font-body text-body-sm text-textFaint">
+              {count} {count === 1 ? "ítem" : "ítems"}
             </span>
           )}
         </div>
@@ -196,10 +178,10 @@ export function CartPage() {
           <EmptyCart />
         ) : (
           <>
-            <div className="rounded-2xl border border-border bg-white px-6 shadow-[0_1px_3px_rgba(13,23,40,.05)] sm:px-8">
+            <div className="rounded-lg border border-border bg-white px-6 sm:px-8">
               <AnimatePresence initial={false}>
-                {items.map((item, i) => (
-                  <CartRow key={item.productId} item={item} index={i} />
+                {items.map((item) => (
+                  <CartRow key={item.productId} item={item} />
                 ))}
               </AnimatePresence>
             </div>
@@ -208,7 +190,7 @@ export function CartPage() {
               <button
                 type="button"
                 onClick={handleClear}
-                className="border-none bg-transparent p-0 font-body text-[13.5px] font-semibold text-textFaint outline-none transition-colors hover:text-danger"
+                className="border-none bg-transparent p-0 font-body text-[14px] font-medium text-textMuted transition-colors hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 Vaciar carrito
               </button>

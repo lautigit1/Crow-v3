@@ -23,7 +23,10 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-[6px] py-1 px-2.5 rounded-pill font-mono text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap",
+        // Estado real (pedido, cotización, stock): sí justifica la pastilla.
+        // Lo que no hacía falta era la monoespaciada con tracking: es un
+        // rótulo para leer, no un código.
+        "inline-flex items-center gap-[6px] py-1 px-2.5 rounded-pill font-body text-[12px] font-medium whitespace-nowrap",
         toneClasses[tone]
       )}
     >

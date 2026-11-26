@@ -54,14 +54,14 @@ export function EmptyState({
           {icon}
         </div>
       )}
-      <h2 className="m-0 font-display text-[20px] font-extrabold tracking-[-.02em] text-ink900">{title}</h2>
+      <h2 className="m-0 font-display text-display-sm font-medium text-ink900">{title}</h2>
       {message && (
         <p
           className={clsx(
             // `max-w` + `mx-auto`: una línea centrada que cruza toda la
             // tarjeta obliga al ojo a recorrer de punta a punta para volver
             // al principio. Acotarla a ~46 caracteres la vuelve legible.
-            "mx-auto mt-2.5 max-w-[420px] font-body text-[14.5px] leading-[1.65] text-textMuted",
+            "mx-auto mt-2.5 max-w-[420px] font-body text-body-sm text-textMuted",
             action ? "mb-6" : "mb-0"
           )}
         >

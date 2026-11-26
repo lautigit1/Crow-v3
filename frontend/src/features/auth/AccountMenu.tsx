@@ -189,7 +189,7 @@ export function AccountMenu() {
       <div className="flex items-center gap-1">
         <Link
           to="/login"
-          className="flex h-9 items-center rounded-full px-3 font-body text-[13px] font-semibold text-[rgba(255,255,255,.75)] no-underline transition-colors duration-150 hover:text-white"
+          className="flex h-9 items-center whitespace-nowrap rounded-full px-3 font-body text-[13px] font-medium text-[rgba(255,255,255,.75)] no-underline transition-colors duration-150 hover:text-white"
         >
           Iniciar sesión
         </Link>

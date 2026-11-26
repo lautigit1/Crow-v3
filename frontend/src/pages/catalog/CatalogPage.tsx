@@ -214,7 +214,12 @@ export function CatalogPage() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [brandId, setBrandId] = useState<number | "">("");
-  const [vehicleType, setVehicleType] = useState<string>("Todos");
+  // `?tipo=Autos|Camiones|Motos` llega desde la home: el tipo de vehículo es
+  // un filtro del catálogo, no una categoría, así que se lee del URL al montar.
+  const [vehicleType, setVehicleType] = useState<string>(() => {
+    const tipo = params.get("tipo");
+    return tipo && (VEHICLE_TYPES as readonly string[]).includes(tipo) ? tipo : "Todos";
+  });
   const [inStock, setInStock] = useState(false);
   const [page, setPage] = useState(0);
   const [modal, setModal] = useState<{ open: boolean; message: string; productId: number | null }>({ open: false, message: "", productId: null });
@@ -312,8 +317,7 @@ export function CatalogPage() {
   return (
     <>
       {/* ── Header ── */}
-      <section className="bg-ink900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(700px_300px_at_80%_0%,rgba(0,87,217,.22),transparent_60%)]" />
+      <section className="bg-ink900">
         {/* This header uses a fixed 40px side padding at every breakpoint
             (unlike Container's own responsive 16/40 default), so the
             horizontal padding is passed as `style` -- inline style always
@@ -332,9 +336,9 @@ export function CatalogPage() {
             <span className="text-white font-medium">Catálogo</span>
           </div>
 
-          <div className="flex items-end justify-between gap-10 pb-8">
+          <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-6 pb-10">
             <div>
-              <h1 className="font-display text-4xl font-black tracking-[-.025em] text-white mb-2">
+              <h1 className="font-display text-display-md font-medium text-white mb-3 md:text-display-lg">
                 Catálogo de repuestos
               </h1>
               <p className="font-body text-[15px] text-textOnDarkFaint m-0">
@@ -343,7 +347,7 @@ export function CatalogPage() {
             </div>
 
             {/* Search bar in header */}
-            <div className="relative w-80 shrink-0">
+            <div className="relative w-full sm:w-80 shrink-0">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64809E] pointer-events-none">
                 <Icon name="search" size={16} />
               </div>
@@ -405,7 +409,7 @@ export function CatalogPage() {
 
           {/* ── Sidebar (desktop only) ── */}
           {!isMobile && (
-            <aside className="sticky top-[90px] bg-white border border-[#E7EDF4] rounded-xl shadow-[0_1px_2px_rgba(13,23,40,.04)] overflow-hidden">
+            <aside className="sticky top-[90px] bg-white border border-border rounded-lg overflow-hidden">
               <FilterPanel
                 categories={categories} brands={brands}
                 categoryId={categoryId} setCategoryId={setCategoryIdPage0}

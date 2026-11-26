@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { usePageMeta } from "@/shared/lib/usePageMeta";
 import { Hero } from "@/widgets/hero/Hero";
-import { StatsSection } from "@/widgets/stats/StatsSection";
 import { HowItWorks } from "@/widgets/how-it-works/HowItWorks";
 import { CategoryGrid } from "@/widgets/category-grid/CategoryGrid";
+import { FeaturedProducts } from "@/widgets/featured-products/FeaturedProducts";
 import { AboutSection } from "@/widgets/about/AboutSection";
 import { CtaFinal } from "@/widgets/cta/CtaFinal";
 import { QuoteModal } from "@/features/quote/QuoteModal";
@@ -78,34 +78,30 @@ export function HomePage() {
     productId: null,
   });
 
-  const openBlank = () => setModal({ open: true, message: "", productId: null });
+  const openQuote = () => setModal({ open: true, message: "", productId: null });
 
   return (
     <>
-      {/* 1. Hero — propuesta de valor + CTA WhatsApp */}
-      <Hero onQuote={openBlank} />
+      {/* 1. Hero: qué vendemos, la foto de una pieza real y los canales */}
+      <Hero />
 
-      {/* 2. Categorías — subido arriba de todo a propósito: es la única
-          sección realmente navegable de la home, antes quedaba 4ta en el
-          scroll detrás de tres bloques de puro texto persuasivo. */}
+      {/* 2. Qué tenemos: el catálogo como índice (vehículo, después rubro).
+          Va primero porque es lo único navegable de la home. */}
       <CategoryGrid />
 
-      {/* 3. Stats — oscuro (ver StatsSection.tsx), quiebra el bloque claro
-          de Categorías en vez de sumarse a él. */}
-      <StatsSection />
+      {/* 3. Destacados: productos reales marcados como destacados en el panel.
+          Si no hay ninguno, la sección no aparece. */}
+      <FeaturedProducts />
 
-      {/* 4. Quiénes somos — clara a propósito: hace de respiro entre las
-          dos secciones oscuras (Stats y Cómo funciona) en vez de quedar
-          pegada a Categorías, que también es clara. */}
+      {/* 4. Quiénes somos: el comercio y sus diferenciales, con la foto de stock. */}
       <AboutSection />
 
-      {/* 5. Cómo funciona — 3 pasos simples. Queda justo antes del CTA:
-          "así de fácil es el proceso" enlaza mejor con "así que escribinos
-          ahora" que si quedara más arriba. */}
+      {/* 5. Cómo comprar: el recorrido con sus canales y formas de pago reales.
+          Queda pegado al cierre, que es el paso siguiente. */}
       <HowItWorks />
 
-      {/* 6. CTA final — WhatsApp + teléfono + horario */}
-      <CtaFinal onQuote={openBlank} />
+      {/* 6. Cierre: para quien prefiere hablar, con teléfono y horario. */}
+      <CtaFinal onQuote={() => openQuote()} />
 
       <QuoteModal
         open={modal.open}

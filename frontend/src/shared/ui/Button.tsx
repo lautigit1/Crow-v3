@@ -1,7 +1,7 @@
 import { createElement, type CSSProperties, type ElementType, type ReactNode } from "react";
 import clsx from "clsx";
 
-type Variant = "primary" | "outline" | "ghost" | "dark" | "whatsapp" | "danger";
+type Variant = "primary" | "outline" | "ghost" | "dark" | "onDark" | "whatsapp" | "danger";
 type Size = "sm" | "md" | "lg";
 
 // Tailwind classes below are a 1:1 translation of the previous CSSProperties
@@ -23,6 +23,10 @@ const variantClasses: Record<Variant, string> = {
     "bg-white text-ink800 border border-borderStrong hover:border-primary hover:text-primary",
   ghost: "bg-transparent text-ink800 border border-transparent hover:bg-surface",
   dark: "bg-ink800 text-white border border-ink800 hover:bg-ink900",
+  // Secundario sobre fondo oscuro (hero): mismo peso visual que outline,
+  // sin la superficie blanca que lo haría competir con el primario.
+  onDark:
+    "bg-transparent text-white border border-[rgba(255,255,255,.28)] hover:border-white hover:bg-[rgba(255,255,255,.06)]",
   whatsapp:
     "bg-whatsapp text-[#06371a] border border-whatsapp hover:bg-[#1fbb59] hover:border-[#1fbb59]",
   danger:
@@ -55,7 +59,10 @@ export function Button({
     {
       style,
       className: clsx(
-        "inline-flex items-center justify-center gap-[9px] rounded-sm font-body font-semibold tracking-[0.01em] cursor-pointer whitespace-nowrap",
+        // Peso 500 y sin tracking extra: el botón se distingue por su
+        // superficie, no por una letra más gruesa que el texto de al lado.
+        "inline-flex items-center justify-center gap-[9px] rounded-sm font-body font-medium cursor-pointer whitespace-nowrap",
+        "disabled:cursor-not-allowed disabled:opacity-60",
         // Same transition the old `.hoverable` class gave every button:
         // background/border/color over .16s ease (the exact curve, not
         // Tailwind's default easing, via an arbitrary property).

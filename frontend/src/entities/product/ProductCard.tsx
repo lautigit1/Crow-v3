@@ -41,8 +41,8 @@ const REVELADO =
   "group-focus-within:opacity-100";
 
 const PILDORA =
-  "inline-flex items-center gap-1.5 rounded-pill py-[5px] px-[11px] font-body text-[12px] font-semibold " +
-  "cursor-pointer border shadow-[0_2px_8px_rgba(7,17,31,.12)] " +
+  "inline-flex items-center gap-1.5 rounded-pill py-[5px] px-[11px] font-body text-[12px] font-medium " +
+  "cursor-pointer border " +
   "transition-[opacity,background-color,color,border-color] duration-150 " +
   REVELADO;
 
@@ -64,7 +64,7 @@ export const ProductCard = memo(function ProductCard({
   const procedencia = [product.brand?.name, product.category?.name].filter(Boolean).join(" · ");
 
   return (
-    <div className="group relative rounded-xl overflow-hidden border border-[#E7EDF4] hover:border-primary shadow-[0_1px_2px_rgba(13,23,40,.04)] hover:shadow-[0_10px_28px_rgba(0,87,217,.12)] transition-[border-color,box-shadow] duration-200">
+    <div className="group relative rounded-lg overflow-hidden border border-border hover:border-primary transition-colors duration-200">
       {/* La imagen ES la tarjeta: define el alto y no comparte espacio con
           nada. Casi cuadrada y apenas vertical, que es la proporción en la que
           entra un repuesto sin recortarlo raro. */}
@@ -82,7 +82,7 @@ export const ProductCard = memo(function ProductCard({
       <span
         className={clsx(
           "absolute top-2.5 right-2.5 inline-flex items-center gap-[5px] rounded-pill py-1 px-2.5",
-          "bg-[rgba(255,255,255,.94)] shadow-[0_1px_4px_rgba(7,17,31,.10)] font-mono text-[11px]",
+          "bg-[rgba(255,255,255,.94)] font-body text-[12px] font-medium",
           !inStock ? "text-textFaint" : escaso ? "text-warning" : "text-success",
         )}
         aria-label={inStock ? `${product.stock} en stock` : "Sin stock"}
@@ -91,7 +91,6 @@ export const ProductCard = memo(function ProductCard({
           className={clsx(
             "w-[5px] h-[5px] rounded-full shrink-0",
             !inStock ? "bg-borderStrong" : escaso ? "bg-warning" : "bg-success",
-            escaso && "animate-[stockPulse_1.4s_ease-in-out_infinite]",
           )}
           aria-hidden="true"
         />
@@ -110,7 +109,7 @@ export const ProductCard = memo(function ProductCard({
         }}
         className={clsx(
           "absolute z-20 top-2.5 left-2.5 w-[30px] h-[30px] rounded-full flex items-center justify-center border cursor-pointer",
-          "shadow-[0_1px_4px_rgba(7,17,31,.10)] transition-[opacity,background-color,color,border-color] duration-150",
+          "transition-[opacity,background-color,color,border-color] duration-150",
           fav
             ? "border-primary bg-primary text-white opacity-100"
             : "border-white bg-[rgba(255,255,255,.94)] text-textFaint hover:text-ink800 " + REVELADO,
@@ -148,15 +147,15 @@ export const ProductCard = memo(function ProductCard({
       </div>
 
       {/* El panel. Apoyado sobre la imagen, no debajo. */}
-      <div className="relative rounded-[10px] bg-[rgba(255,255,255,.94)] backdrop-blur-[6px] border border-white shadow-[0_4px_16px_rgba(7,17,31,.10)] py-3 px-3.5">
-        <div className="flex items-baseline justify-between gap-2 font-mono text-[10.5px] tracking-[.09em] uppercase text-textFaint mb-1.5">
+      <div className="relative rounded-md bg-[rgba(255,255,255,.96)] border border-white py-3 px-3.5">
+        <div className="flex items-baseline justify-between gap-2 font-body text-[12px] text-textFaint mb-1">
           <span className="truncate">{procedencia}</span>
-          <span className="shrink-0 normal-case tracking-normal text-textFaint">{product.sku}</span>
+          <span className="shrink-0 font-mono text-[11px] text-textFaint">{product.sku}</span>
         </div>
 
         {/* Dos líneas como máximo: un nombre largo se comería la foto, y una
             grilla donde cada panel mide distinto se ve dentada. */}
-        <h3 className="font-body text-[14.5px] font-semibold leading-[1.32] text-ink900 mb-2.5 line-clamp-2">
+        <h3 className="font-body text-[15px] font-medium leading-[1.35] text-ink900 mb-2.5 line-clamp-2">
           <Link to={detailUrl} className="no-underline text-inherit">
             {product.name}
           </Link>
@@ -169,14 +168,14 @@ export const ProductCard = memo(function ProductCard({
             // significando dos cosas distintas -- un precio que no está y un
             // botón que abre un chat -- se lee mal. Además empareja con la
             // ficha de producto, que usa el mismo texto.
-            <span className="font-body text-[15px] font-semibold text-textMuted">A consultar</span>
+            <span className="font-body text-[15px] font-medium text-textMuted">A consultar</span>
           ) : (
             <span className="whitespace-nowrap">
               {/* El símbolo más chico y gris hace que el ojo caiga en la cifra
                   y no en el peso. Unbounded acá sí: es UN número por tarjeta,
                   no una tipografía repetida en cada línea de texto. */}
-              <span className="font-body text-[13.5px] font-semibold text-textFaint align-[2px]">$</span>
-              <span className="font-display text-[20px] font-bold tracking-[-.04em] text-ink900">
+              <span className="font-body text-[13px] font-medium text-textFaint align-[2px]">$</span>
+              <span className="font-display text-[19px] font-medium tracking-[-.03em] text-ink900">
                 {formatPrice(product.price).replace(/^\$\s?/, "")}
               </span>
             </span>
@@ -189,7 +188,7 @@ export const ProductCard = memo(function ProductCard({
           <Link
             to={detailUrl}
             tabIndex={-1}
-            className="font-body text-[12.5px] font-semibold text-primary shrink-0 no-underline hover:text-primaryDark"
+            className="font-body text-[13px] font-medium text-primary shrink-0 no-underline hover:text-primaryDark"
           >
             Ver ficha
             <span className="inline-block ml-1 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true">

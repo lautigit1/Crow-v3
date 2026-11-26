@@ -30,7 +30,7 @@ import { AuthError, FieldRow, PasswordStrengthMeter, StampButton, type FieldDef 
 type Mode = "login" | "register";
 type Key = "full_name" | "email" | "phone" | "password";
 
-const ALL_FIELDS: (Omit<FieldDef, "index"> & { modes: Mode[] })[] = [
+const ALL_FIELDS: (FieldDef & { modes: Mode[] })[] = [
   { key: "full_name", label: "Nombre completo", type: "text", icon: "users", autoComplete: "name", modes: ["register"] },
   { key: "email", label: "Email", type: "email", icon: "mail", autoComplete: "email", modes: ["login", "register"] },
     // Obligatorio: sin teléfono el botón de WhatsApp del panel no tiene a dónde
@@ -41,7 +41,6 @@ const ALL_FIELDS: (Omit<FieldDef, "index"> & { modes: Mode[] })[] = [
   { key: "password", label: "Contraseña", type: "password", icon: "lock", autoComplete: "current-password", modes: ["login", "register"] },
 ];
 
-const pad = (n: number) => String(n).padStart(2, "0");
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -52,16 +51,16 @@ function ModeWord({ label, active, onClick }: { label: string; active: boolean; 
       onClick={onClick}
       aria-current={active}
       className={clsx(
-        "relative bg-transparent pb-2 font-display font-black leading-none tracking-[-.02em] outline-none transition-all duration-300",
+        "relative bg-transparent pb-2 font-display font-medium leading-none tracking-[-.025em] outline-none transition-all duration-300",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary",
-        active ? "cursor-default text-[30px] text-ink900 sm:text-[34px]" : "cursor-pointer text-[17px] text-ink900/25 hover:text-ink900/45 sm:text-[19px]"
+        active ? "cursor-default text-[30px] text-ink900 sm:text-[34px]" : "cursor-pointer text-[17px] text-textFaint hover:text-ink900 sm:text-[19px]"
       )}
     >
       {label}
       {active && (
         <motion.span
           layoutId="authModeUnderline"
-          className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-primary"
+          className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
         />
       )}
@@ -80,25 +79,25 @@ function LeftInfo({ mode }: { mode: Mode }) {
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25, ease: EASE }}
         >
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[.14em] text-[#6FA3E0]">
+          <span className="font-body text-caption text-textOnDarkFaint">
             {mode === "login" ? "Acceso de cliente" : "Alta de cliente"}
           </span>
-          <h1 className="mt-3 max-w-[380px] font-display text-[40px] font-black leading-[1.05] tracking-[-.02em] text-white">
+          <h1 className="mt-3 max-w-[380px] font-display text-display-lg font-medium text-white">
             {mode === "login" ? "Bienvenido de nuevo." : "Creá tu cuenta."}
           </h1>
-          <p className="mt-4 max-w-[360px] font-body text-[15px] leading-relaxed text-[#8AA3BC]">
+          <p className="mt-4 max-w-[360px] font-body text-body text-textOnDarkFaint">
             {mode === "login"
               ? "Entrá para gestionar tus cotizaciones y pedidos."
-              : "Registrate gratis y empezá a cotizar repuestos en minutos."}
+              : "Registrate gratis y empezá a cotizar repuestos."}
           </p>
         </motion.div>
       </AnimatePresence>
 
-      <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-7">
-        <MetricTile value="1H" label="Respuesta máx." />
-        <MetricTile value="HOY" label="Entrega en Mendoza" />
-        <MetricTile value="100%" label="Garantía de fábrica" />
-        <MetricTile value="0" label="Bots · asesor real" accent />
+      <div className="mt-14 grid grid-cols-2 gap-x-8 gap-y-6">
+        <MetricTile value="Tus cotizaciones" label="Seguí las respuestas en un solo lugar" />
+        <MetricTile value="Tus pedidos" label="Mirá en qué estado está cada uno" />
+        <MetricTile value="Favoritos" label="Guardá los repuestos que usás seguido" />
+        <MetricTile value="Sin bots" label="Te responde una persona" />
       </div>
     </div>
   );
@@ -114,7 +113,7 @@ export function AuthPanel() {
     mode === "login" ? "Iniciar sesión" : "Crear cuenta",
     mode === "login"
       ? "Ingresá a tu cuenta Crow Repuestos para gestionar cotizaciones y pedidos."
-      : "Registrate gratis en Crow Repuestos y empezá a cotizar repuestos en minutos."
+      : "Registrate gratis en Crow Repuestos y empezá a cotizar repuestos."
   );
 
   const { login, register } = useAuth();
@@ -160,17 +159,17 @@ export function AuthPanel() {
       <div className="w-full max-w-[440px] lg:max-w-[420px]">
         <div className="mb-2 flex items-baseline gap-5">
           <ModeWord label="Ingresar" active={mode === "login"} onClick={() => goTo("login")} />
-          <span className="translate-y-[-3px] font-display text-[18px] font-black text-ink900/10">/</span>
+          <span aria-hidden="true" className="translate-y-[-3px] font-display text-[18px] font-medium text-borderStrong">/</span>
           <ModeWord label="Crear cuenta" active={mode === "register"} onClick={() => goTo("register")} />
         </div>
 
-        <p className="mb-8 font-body text-[14px] leading-snug text-ink900/50">
-          {mode === "login" ? "Entrá para gestionar tus cotizaciones y pedidos." : "Registrate gratis y cotizá en minutos."}
+        <p className="mb-8 font-body text-[15px] leading-snug text-textMuted">
+          {mode === "login" ? "Entrá para gestionar tus cotizaciones y pedidos." : "Registrate gratis para cotizar y seguir tus pedidos."}
         </p>
 
         <motion.form layout onSubmit={submit} className="flex flex-col">
           <AnimatePresence initial={false}>
-            {fields.map((f, i) => (
+            {fields.map((f) => (
               <motion.div
                 key={f.key}
                 layout
@@ -183,7 +182,6 @@ export function AuthPanel() {
                 <FieldRow
                   def={{
                     key: f.key,
-                    index: pad(i + 1),
                     label: f.label,
                     type: f.type,
                     icon: f.icon,

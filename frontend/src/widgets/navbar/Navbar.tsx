@@ -10,7 +10,6 @@ import { useAuth } from "@/entities/session";
 import { useCart } from "@/app/providers/CartProvider";
 import { useScrolled } from "@/shared/lib/useScrolled";
 import { useBreakpoint } from "@/shared/lib/useBreakpoint";
-import { useIsOpenNow } from "@/shared/lib/useIsOpenNow";
 import { CATEGORIES } from "@/shared/config";
 import { useWaLink } from "@/entities/settings/useSiteSettings";
 
@@ -21,30 +20,9 @@ const LINKS = [
   { to: "/contacto", label: "Contacto" },
 ];
 
-// ── Status chip ───────────────────────────────────────────────────────────────
-// Dato real, no decorativo: calculado vía useIsOpenNow() (ver ese archivo --
-// usa un horario fijo lun-sáb 8-18, no el texto libre de Configuración).
-// Sin borde/fondo propio a propósito (ver feedback de usuario en tasks.md,
-// N7): un punto + texto flotando junto al logo, no una "caja" más en la
-// barra.
-function StatusChip({ className }: { className?: string }) {
-  const open = useIsOpenNow();
-  return (
-    <span className={clsx("items-center gap-1.5", className)}>
-      <span className="relative flex h-[6px] w-[6px] shrink-0">
-        <span
-          className={clsx(
-            "absolute inset-0 rounded-full",
-            open ? "bg-[#4ADE80] animate-[pulse-glow_2s_ease-in-out_infinite]" : "bg-[rgba(255,255,255,.3)]"
-          )}
-        />
-      </span>
-      <span className="font-mono text-[10px] font-medium tracking-[0.08em] text-[rgba(255,255,255,.45)] whitespace-nowrap">
-        {open ? "Abierto ahora" : "Cerrado"}
-      </span>
-    </span>
-  );
-}
+// (El indicador "Abierto ahora / Cerrado" que iba junto al logo se sacó: el
+// comercio hoy atiende consultas y ese punto verde prometía un local abierto.
+// El horario de atención sigue en el hero, el contacto y el footer.)
 
 // ── Nav cluster (desktop) ─────────────────────────────────────────────────────
 // "Hablanos" (WhatsApp) vivió acá un momento, pero el usuario notó que
@@ -85,11 +63,11 @@ function NavCluster() {
     <nav
       ref={railRef}
       onMouseLeave={() => setHovered(null)}
-      className="relative flex items-center gap-1 rounded-full border border-[rgba(255,255,255,.08)] bg-[rgba(255,255,255,.03)] p-1.5"
+      className="relative flex items-center gap-1"
     >
       {bar.ready && (
         <motion.span
-          className="absolute bottom-[3px] h-[2px] rounded-full bg-[linear-gradient(90deg,#0057D9,#7FB0FF)]"
+          className="absolute -bottom-[3px] h-[2px] bg-[#7FB0FF]"
           animate={{ left: bar.left + 12, width: bar.width - 24 }}
           transition={{ type: "spring", stiffness: 420, damping: 34 }}
         />
@@ -105,8 +83,8 @@ function NavCluster() {
           onMouseEnter={() => setHovered(l.to)}
           className={({ isActive }) =>
             clsx(
-              "relative z-10 rounded-full px-3.5 py-[7px] font-body text-[13px] font-semibold whitespace-nowrap no-underline outline-none [transition:color_.16s] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7FB0FF]",
-              isActive ? "text-white" : "text-[rgba(255,255,255,.55)] hover:text-white"
+              "relative z-10 rounded-sm px-3 py-2 font-body text-[14px] font-medium whitespace-nowrap no-underline outline-none [transition:color_.16s] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7FB0FF]",
+              isActive ? "text-white" : "text-textOnDarkFaint hover:text-white"
             )
           }
         >
@@ -174,7 +152,7 @@ function SearchPalette({ open, onClose }: { open: boolean; onClose: () => void }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className="relative h-fit w-full max-w-[560px] overflow-hidden rounded-2xl bg-white shadow-lg"
+            className="relative h-fit w-full max-w-[560px] overflow-hidden rounded-lg bg-white shadow-lg"
           >
             <form onSubmit={submit} className="flex h-14 items-center gap-3 border-b border-border px-5">
               <Icon name="search" size={17} className="shrink-0 text-textFaint" />
@@ -191,7 +169,7 @@ function SearchPalette({ open, onClose }: { open: boolean; onClose: () => void }
             </form>
 
             <div className="p-4">
-              <div className="mb-2.5 px-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-textFaint">
+              <div className="mb-2.5 px-1 font-body text-caption text-textFaint">
                 Categorías
               </div>
               <div className="flex flex-wrap gap-2">
@@ -203,7 +181,7 @@ function SearchPalette({ open, onClose }: { open: boolean; onClose: () => void }
                     className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface py-1.5 pl-2.5 pr-3 outline-none [transition:border-color_.14s,background-color_.14s] hover:border-primary hover:bg-primarySoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <Icon name={c.icon} size={13} className="text-primary" />
-                    <span className="font-body text-[12.5px] font-semibold text-ink800">{c.label}</span>
+                    <span className="font-body text-[13px] font-medium text-ink800">{c.label}</span>
                   </button>
                 ))}
               </div>
@@ -283,7 +261,7 @@ function MobileDock({ onSearch, onMore }: { onSearch: () => void; onMore: () => 
         <button
           onClick={onSearch}
           aria-label="Buscar"
-          className="relative -mt-6 flex h-14 w-14 items-center justify-center rounded-full border-4 border-ink900 bg-primary text-white shadow-[0_10px_24px_rgba(0,87,217,.5)] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="relative -mt-6 flex h-14 w-14 items-center justify-center rounded-full border-4 border-ink900 bg-primary text-white shadow-none outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           <Icon name="search" size={20} />
         </button>
@@ -424,26 +402,9 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-// ── Scroll progress — línea sutil en el borde inferior de la barra ──────────────
-function useScrollProgress() {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const onScroll = () => {
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - doc.clientHeight;
-      setProgress(scrollable > 0 ? Math.min(1, window.scrollY / scrollable) : 0);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return progress;
-}
-
 // ── Navbar ────────────────────────────────────────────────────────────────────
 export function Navbar() {
   const scrolled = useScrolled();
-  const progress = useScrollProgress();
   // `isMobile` sigue siendo un booleano de JS (no un breakpoint `md:`) a
   // propósito: las dos ramas montan subárboles interactivos
   // estructuralmente distintos (dock+hoja vs. rail+cápsula) -- renderizar
@@ -480,14 +441,12 @@ export function Navbar() {
             /* ── Mobile top strip: mínima a propósito, la navegación vive en el dock ── */
             <div className="flex w-full items-center gap-2.5">
               <Logo variant="dark" size="sm" />
-              <StatusChip className="ml-auto flex" />
             </div>
           ) : (
             /* ── Desktop: una sola superficie oscura, sin cajas sueltas ── */
             <>
               <div className="mr-6 flex shrink-0 items-center gap-2.5">
                 <Logo variant="dark" size="sm" />
-                <StatusChip className="hidden lg:flex" />
               </div>
 
               <NavCluster />
@@ -499,11 +458,6 @@ export function Navbar() {
           )}
         </Container>
 
-        {/* Progreso de scroll — barra que "carga" a medida que se avanza por la página */}
-        <div
-          className="h-[2px] bg-[linear-gradient(90deg,#0057D9,#7FB0FF)] [transition:width_.15s_linear]"
-          style={{ width: `${progress * 100}%` }}
-        />
       </header>
 
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />

@@ -50,6 +50,9 @@ const TerminosPage        = lazy(() => import("@/pages/legal/TerminosPage").then
 const CookiesPage         = lazy(() => import("@/pages/legal/CookiesPage").then((m) => ({ default: m.CookiesPage })));
 const LicenciasPage       = lazy(() => import("@/pages/legal/LicenciasPage").then((m) => ({ default: m.LicenciasPage })));
 const AccesibilidadPage   = lazy(() => import("@/pages/legal/AccesibilidadPage").then((m) => ({ default: m.AccesibilidadPage })));
+const AvisoLegalPage      = lazy(() => import("@/pages/legal/AvisoLegalPage").then((m) => ({ default: m.AvisoLegalPage })));
+const PropiedadIntelectualPage = lazy(() => import("@/pages/legal/PropiedadIntelectualPage").then((m) => ({ default: m.PropiedadIntelectualPage })));
+const DesarrolloMantenimientoPage = lazy(() => import("@/pages/legal/DesarrolloMantenimientoPage").then((m) => ({ default: m.DesarrolloMantenimientoPage })));
 
 export function App() {
   return (
@@ -85,6 +88,11 @@ export function App() {
         <Route path="/legal/cookies" element={<Suspense fallback={<CenteredSpinner />}><CookiesPage /></Suspense>} />
         <Route path="/legal/licencias" element={<Suspense fallback={<CenteredSpinner />}><LicenciasPage /></Suspense>} />
         <Route path="/legal/accesibilidad" element={<Suspense fallback={<CenteredSpinner />}><AccesibilidadPage /></Suspense>} />
+        <Route path="/legal/aviso-legal" element={<Suspense fallback={<CenteredSpinner />}><AvisoLegalPage /></Suspense>} />
+        <Route path="/legal/propiedad-intelectual" element={<Suspense fallback={<CenteredSpinner />}><PropiedadIntelectualPage /></Suspense>} />
+        <Route path="/legal/desarrollo-y-mantenimiento" element={<Suspense fallback={<CenteredSpinner />}><DesarrolloMantenimientoPage /></Suspense>} />
+        {/* `/legal` a secas no tiene página propia: lleva a los términos. */}
+        <Route path="/legal" element={<Navigate to="/legal/terminos" replace />} />
 
         {/* Client account area — lazy */}
         <Route

@@ -1,0 +1,133 @@
+/*
+ * Hero: franjas de livery.
+ *
+ * El único recurso gráfico son tres bandas en curva, como la decoración
+ * lateral de un auto de competición, en los colores de marca. Se "pintan"
+ * una sola vez al cargar (stroke-dashoffset sobre pathLength=1), de arriba
+ * hacia la derecha, y después quedan quietas. El texto entra con una máscara
+ * en el mismo momento. Nada se repite ni se mueve solo después.
+ */
+
+.livery {
+  --lv-ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Franjas ------------------------------------------------------------------ */
+
+.lv-stripe {
+  fill: none;
+  stroke-linecap: butt;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: lv-paint var(--dur, 1100ms) var(--lv-ease) var(--d, 0ms) both;
+}
+
+.lv-lettering {
+  fill: #fff;
+  font-family: "Unbounded", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  animation: lv-fade 500ms ease var(--d, 0ms) both;
+}
+
+/* Texto -------------------------------------------------------------------- */
+
+.lv-reveal {
+  animation: lv-reveal 700ms var(--lv-ease) var(--d, 0ms) both;
+}
+
+.lv-rise {
+  animation: lv-rise 500ms var(--lv-ease) var(--d, 0ms) both;
+}
+
+/* Acciones ----------------------------------------------------------------- */
+
+.lv-cta {
+  transition:
+    background-color 160ms ease,
+    transform 160ms var(--lv-ease);
+}
+
+.lv-cta:active {
+  transform: scale(0.97);
+}
+
+/* El subrayado del enlace secundario se dibuja de izquierda a derecha. */
+.lv-link {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  transition: background-size 260ms var(--lv-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lv-link {
+    background-size: 0% 1px;
+  }
+  .lv-link:hover {
+    background-size: 100% 1px;
+  }
+}
+
+.lv-link:focus-visible {
+  background-size: 100% 1px;
+}
+
+/* Keyframes ---------------------------------------------------------------- */
+
+@keyframes lv-paint {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes lv-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lv-reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(18px);
+  }
+  to {
+    clip-path: inset(0 0 -15% 0);
+    transform: none;
+  }
+}
+
+@keyframes lv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/*
+ * Movimiento reducido: todo aparece completo y sin demoras (la regla global
+ * acorta las duraciones pero no los delays).
+ */
+@media (prefers-reduced-motion: reduce) {
+  .livery .lv-stripe,
+  .livery .lv-lettering,
+  .livery .lv-reveal,
+  .livery .lv-rise {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+  .livery .lv-cta:active {
+    transform: none;
+  }
+}
+
+/*
+ * En celular y tablet las franjas nacen debajo del texto: el tramo de arriba
+ * se desvanece en vez de cortarse en seco contra el borde del SVG.
+ */
+.lv-compact {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 45%);
+}

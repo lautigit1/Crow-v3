@@ -6,7 +6,7 @@ import { Icon } from "@/shared/ui";
 import { AuthShell, InfoBlock, MobileTopStrip } from "./AuthShell";
 import { AuthError, FieldRow, StampButton, type FieldDef } from "./AuthFormKit";
 
-const EMAIL_FIELD: FieldDef = { key: "email", index: "01", label: "Email", type: "email", icon: "mail", autoComplete: "email" };
+const EMAIL_FIELD: FieldDef = { key: "email", label: "Email", type: "email", icon: "mail", autoComplete: "email" };
 
 export function ForgotPasswordPage() {
   usePageMeta("Recuperar contraseña", "Ingresá tu email y te mandamos un enlace para restablecer tu contraseña.");
@@ -47,15 +47,15 @@ export function ForgotPasswordPage() {
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF4FF]">
               <Icon name="mail" size={22} className="text-primary" />
             </div>
-            <h1 className="mb-2.5 font-display text-[26px] font-black tracking-[-.02em] text-ink900">Revisá tu bandeja</h1>
+            <h1 className="mb-2.5 font-display text-display-sm font-medium text-ink900">Revisá tu bandeja</h1>
             <p className="mb-5 font-body text-[14px] leading-[1.65] text-ink900/55">
               Si el email <strong className="text-ink900">{email}</strong> está registrado, vas a recibir un enlace en los próximos minutos.
             </p>
-            <p className="font-body text-[12.5px] text-ink900/40">No olvides revisar la carpeta de spam.</p>
+            <p className="font-body text-caption text-textFaint">No olvides revisar la carpeta de spam.</p>
           </div>
         ) : (
           <>
-            <h1 className="mb-1.5 font-display text-[30px] font-black leading-tight tracking-[-.02em] text-ink900">
+            <h1 className="mb-1.5 font-display text-display-md font-medium text-ink900">
               Recuperar contraseña
             </h1>
             <p className="mb-8 font-body text-[14px] leading-snug text-ink900/50">
