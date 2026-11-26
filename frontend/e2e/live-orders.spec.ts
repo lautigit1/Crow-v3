@@ -89,6 +89,9 @@ test.describe("Eventos en vivo", () => {
     await cliente.page.getByRole("button", { name: "Continuar" }).click();
     await cliente.page.getByRole("button", { name: "Transferencia" }).click();
     await cliente.page.getByRole("button", { name: "Confirmar pedido" }).click();
+    // Esperar la confirmación antes de navegar: si el goto le gana al POST,
+    // "Mis pedidos" carga vacío y el test se cae sin que nada esté roto.
+    await expect(cliente.page.getByText("Pedido recibido")).toBeVisible();
 
     await cliente.page.goto("/cuenta/pedidos");
     await cliente.page.getByText(/Pedido #\d+/).first().click();

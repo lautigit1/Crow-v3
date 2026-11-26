@@ -94,6 +94,7 @@ test.describe("Admin — gestión de pedidos", () => {
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Transferencia" }).click();
     await page.getByRole("button", { name: "Confirmar pedido" }).click();
+    await expect(page.getByText("Pedido recibido")).toBeVisible();
     await logout(page, customer.firstName);
 
     await loginAsAdmin(page);
@@ -146,6 +147,9 @@ test.describe("Admin — gestión de pedidos", () => {
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Transferencia" }).click();
     await page.getByRole("button", { name: "Confirmar pedido" }).click();
+    // Esperar la confirmación antes de navegar: si el goto le gana al POST,
+    // "Mis pedidos" carga vacío y el test se cae sin que nada esté roto.
+    await expect(page.getByText("Pedido recibido")).toBeVisible();
 
     // Recién hecho: el cobro está pendiente, y así se lo dice al cliente con
     // sus palabras ("Pago pendiente"), no con las del negocio ("Sin cobrar").
